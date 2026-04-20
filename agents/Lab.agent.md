@@ -31,7 +31,7 @@ Vault 存储三类内容：
 
 **科研语境**（`_context.md`）：研究问题、当前方向、活跃假设、未解决问题、最近决策。每次对话必读，保持 ≤1 页。
 
-**工程进展**（`_progress.md`）：当前任务状态、已知阻塞（≤1 页，每次 handoff 覆写）。历史记录见 `_progress-history.md`（追加 changelog，agent 启动不读）。
+**工程续接**（`_progress.md`）：当前目标、进度（文件/函数级）、未完成步骤、关键上下文、相关文件、续接指引。每次 handoff 覆写，不限长度。历史记录见 `_progress-history.md`（追加 changelog，agent 启动不读）。
 
 **科研知识图谱**（`ideas/`）：h/q/f/d atoms + `_map.md` MOC。不受对话模式限制，按需读写。
 
@@ -52,7 +52,7 @@ Vault 结构（每个科研项目对应一个 vault）：
 ```
 vault root/
 ├── _context.md            ← 研究语境快照（每次对话必读，≤1页，覆写）
-├── _progress.md           ← 当前任务状态（每次对话必读，≤1页，覆写）
+├── _progress.md           ← 工程续接文档（每次对话必读，handoff 覆写，不限长度）
 ├── _progress-history.md   ← changelog（追加，agent 启动不读，人工参考）
 └── ideas/
     ├── _map.md       ← MOC 总图（idea 讨论模式时读写）

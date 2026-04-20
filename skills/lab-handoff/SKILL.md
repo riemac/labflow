@@ -14,7 +14,7 @@ description: 对话收尾与 vault 全盘刷新。当用户准备结束当前 se
 | 文件 | 操作 | 绝对禁止 |
 |------|------|----------|
 | `_context.md` | **覆写整个文件** | 在末尾追加（文件会膨胀成历史记录） |
-| `_progress.md` | **覆写**（只保留当前任务） | 追加历史（历史去 _progress-history.md） |
+| `_progress.md` | **覆写**（完整续接文档，不限长度） | 只追加、不覆写（内容会失去"当前"意义） |
 | `_progress-history.md` | **追加** changelog 一条（2-4 行） | 写详细 session notes |
 | ideas/ atoms | 创建新 atom；`property:set` 更新 status | 删除 atom（改 status=abandoned 而非删除） |
 | `_map.md` | 加新链接；已 abandoned 的迁入 deprecated 区 | 只追加新的 |
@@ -68,22 +68,48 @@ obsidian vault=<name> create name="_context" content="<新内容>" overwrite sil
 
 **注意**：wikilinks 用 `[[atom-slug]]` 格式，只链接 `status=active` 的 atom。已 resolved/abandoned 的从这里移除。
 
-### 3. 更新 `_progress.md` 和 `_progress-history.md`
+### 3. 覆写 `_progress.md`
 
-**`_progress.md`** = 当前任务状态（≤1 页，每次覆写）：
+`_progress.md` = 工程续接文档，给下一个 session 提供完整续接信息，不限长度。每次 handoff 整体覆写：
 
 ```bash
-obsidian vault=<name> create name="_progress" content="# 当前任务：{项目名}\n\n## 进行中\n- [ ] xxx\n\n## 待开始\n- [ ] yyy\n\n## 阻塞\n- ⚠️ zzz" overwrite silent
+obsidian vault=<name> create name="_progress" content="<完整续接文档>" overwrite silent
 ```
 
-**`_progress-history.md`** = changelog（追加，人工参考，agent 启动不读）：
+参考模板（填充具体内容，不要留 placeholder）：
+
+```markdown
+# 工程续接：{项目名}
+
+## 当前目标
+{正在做什么}
+
+## 当前进度
+{具体到文件/函数：已完成哪些步骤}
+
+## 未完成
+- [ ] {最高优先级，具体且可操作}
+- [ ] {次优先级}
+
+## 关键上下文
+{续接必须知道的：设计决策、踩过的坑、依赖关系}
+
+## 相关文件
+- `/abs/path/file.py`：描述
+
+## 续接指引
+{下一步从哪里开始，注意事项}
+
+## 阻塞
+{如有}
+```
+
+**`_progress-history.md`** = changelog（追加，human reference，agent 启动不读）：
 
 ```bash
 obsidian vault=<name> append file="_progress-history" \
   content="\n## $(date +%Y-%m-%d)\n- 完成：xxx\n- 决策：yyy\n- 遗留：zzz"
 ```
-
-changelog 每条 2-4 行，只记关键事实，不写过程细节。
 
 ### 4. 处理 ideas/ atoms
 
