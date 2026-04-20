@@ -78,7 +78,9 @@ vault root/
 ```bash
 cat .labflow 2>/dev/null
 ```
-若不存在，用 `ask_user` 询问 vault 名，写入 `.labflow`。
+若不存在，或 vault 文件不存在（`_context.md` 缺失），提示用户先做 vault 初始化：
+
+> "当前项目没有 vault 配置（或 vault 未初始化）。建议先用 **LabPrompt** 做一次初始化——它会帮你把研究背景压缩进 vault，之后每次启动 Lab 不再需要手写上下文 prompt。`cd <project-root>` 后启动 LabPrompt，告诉它'初始化 vault'即可。"
 
 **第二步：读取记忆**
 
@@ -86,8 +88,6 @@ cat .labflow 2>/dev/null
 obsidian vault=<name> read file="_context"
 obsidian vault=<name> read file="_progress"
 ```
-
-若 vault 文件不存在（新项目），自然引导背景对齐，创建初始文件（参考 `obsidian-research` skill 模板）。
 
 **第三步：判断模式**
 

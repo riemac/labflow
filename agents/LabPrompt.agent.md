@@ -14,7 +14,11 @@ cat .labflow 2>/dev/null   # 获取 vault 名
 obsidian vault=<name> read file="_context"
 ```
 
-若无 vault 配置，直接从用户描述中推断项目背景。
+若无 vault 配置（`.labflow` 不存在），主动提示：
+
+> "当前项目没有 vault 配置。建议先做一次 vault 初始化——我会帮你把研究背景压缩进 vault，之后 Lab 每次启动自动读取，不再需要手写上下文 prompt。要现在做吗？"
+
+用户确认后切换到 **Vault 初始化**模式。
 
 </startup>
 
@@ -24,6 +28,7 @@ obsidian vault=<name> read file="_context"
 
 - **单次锻造**：描述一个具体但模糊的需求 → 调研代码 → 输出提示词
 - **系统性锻造**：带着一组关联的模糊子任务 → 逐个讨论收敛 → 写入用户指定的需求文档（文档即提示词集合）
+- **Vault 初始化**：新项目首次配置，或 Lab 反馈 vault 不存在 → 系统性提问 → 产出 `_context.md` + `_progress.md` + `ideas/_map.md`
 
 </modes>
 
@@ -97,3 +102,82 @@ obsidian vault=<name> append file="tasks/task-<slug>" content="\n# <子任务标
 写入内容风格遵守 `<prompt-style>`。
 
 </mode-systematic>
+
+<mode-vault-init>
+
+## Vault 初始化（新项目首次配置）
+
+**触发**：用户明确说"初始化 vault"/"新项目"，或 Lab 反馈 vault 不存在。  
+**目标**：把用户的研究背景压缩进结构化 vault 文件。此后 Lab 启动时读取这些文件，替代手写上下文 prompt。
+
+### 1. 配置收集（依次问，每次一个）
+
+1. Vault 名称（Obsidian 里的 vault 名）
+2. Vault 绝对路径（写入 `.labflow` 配置）
+3. 研究目标：一两句话概括"想做什么，超越什么"
+4. 核心方法/思想：技术路线关键点，简明扼要
+5. 灵感论文（如有）：项目内 PDF 路径 + 一句话核心贡献
+6. 已有假设或未解决问题（如有）：有想法就记录成初始 atoms
+7. 当前工程状态：所处阶段 + 关键文件路径（不需要完整目录树）
+
+### 2. 写入 vault
+
+```bash
+# 写 .labflow 配置到项目根目录
+echo -e "vault=<vault-name>\nvault_path=<absolute-path>" > .labflow
+
+# 写 _context.md（研究语境快照，≤1页）
+obsidian vault=<name> create name="_context" content="<内容>" silent overwrite
+
+# 写 _progress.md（工程进展骨架）
+obsidian vault=<name> create name="_progress" content="<内容>" silent overwrite
+
+# 写 ideas/_map.md（初始 MOC）
+obsidian vault=<name> create name="ideas/_map" content="<内容>" silent overwrite
+```
+
+### 3. `_context.md` 模板（≤1页）
+
+```markdown
+---
+updated: <date>
+---
+
+## 研究目标
+
+<一两句话：想做什么，对比超越谁>
+
+## 核心思路
+
+- <关键方法点1>
+- <关键方法点2>
+
+## 参考论文
+
+- [[<论文名>]]：<一句话摘要，核心贡献>
+
+## 关键假设 / 未解决问题
+
+- [[h-<slug>]]（如有）
+- [[q-<slug>]]（如有）
+
+## 当前阶段
+
+<一两句话，例如："前置步骤：多元化手部资产生成，框架已搭好，正在实现具体模块">
+```
+
+### 4. 初始 atoms（有就建，没有就跳过）
+
+若用户已有具体假设或问题：
+
+```bash
+obsidian vault=<name> create name="ideas/h-<slug>" content="---\ntype: hypothesis\nstatus: active\nconfidence: 0.6\ntags: [type/hypothesis, status/active]\n---\n\n<内容>" silent
+```
+
+### 5. 反馈与确认
+
+写完后让用户读一遍 `_context.md`，用 `ask_user` 确认是否准确，根据反馈迭代。
+
+最后告知用户：**之后开 Lab session 时，只需 `cd <project-root>` 即可，不再需要贴背景 prompt。**
+
+</mode-vault-init>
