@@ -208,6 +208,6 @@ related: []       # 关联的 ideas atoms，如 ["[[h-xxx]]", "[[d-yyy]]"]
 
 - **轻量读取**：正常对话只读 `_context.md` + `_progress.md`，不全量读 vault
 - **按需深入**：只有在 idea 讨论模式或用户明确要求时，才读 `ideas/` 下的文件
-- **追加优先**：用 `append` 而非覆盖，保留历史
+- **写入语义**：`_context.md` 和 `_progress.md` 每次 handoff **覆写**（快照语义）；ideas/ atoms 和 `_progress-history.md` **追加**（保留历史）；不要对快照文件用 append，会变成 history log（反模式）
 - **atom 粒度**：每个 h/q/f/d 一个文件，便于 backlinks 和 tag 搜索
 - **状态驱动**：通过 `property:set` 更新 status，而不是删除旧文件
