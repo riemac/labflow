@@ -1,48 +1,48 @@
 ---
 name: pdf-read
-description: PDF 文档读取技能。阅读本地或远程 PDF 文件，提取文本、元数据和图片时使用。适用于阅读论文、技术文档。
+description: PDF document reading skill. Use when reading local or remote PDF files to extract text, metadata, or images. Ideal for academic papers and technical documentation.
 ---
 
-# PDF 文档读取
+# PDF Reading
 
-两种工具按需选择：**MCP**（完整功能，图片/元数据/远程URL）和 **CLI pdftotext**（快速文本搜索，无需 MCP 上下文）。
+Two tools available — choose based on need: **MCP** (full features, images/metadata/remote URL) and **CLI pdftotext** (fast text search, no MCP context overhead).
 
 ---
 
-## 工具一：MCP（`mcp_pdf-reader_read_pdf`）
+## Tool 1: MCP (`mcp_pdf-reader_read_pdf`)
 
-功能完整，支持图片提取和远程 URL，首选用于精读。
+Full-featured, supports image extraction and remote URLs. Preferred for careful reading.
 
-| 参数 | 说明 |
-|------|------|
-| `sources` | PDF 来源列表，支持 `path`（本地）或 `url`（远程） |
-| `pages` | 指定页码，如 `[1, 2, 3]` |
-| `include_metadata` | 提取标题、作者、DOI 等 |
-| `include_page_count` | 获取总页数 |
-| `include_full_text` | 提取全部文本 |
-| `include_images` | 提取嵌入图片（⚠️ 必须配合 `pages` 使用） |
+| Parameter | Description |
+|-----------|-------------|
+| `sources` | List of PDF sources: `path` (local) or `url` (remote) |
+| `pages` | Specific page numbers, e.g. `[1, 2, 3]` |
+| `include_metadata` | Extract title, authors, DOI, etc. |
+| `include_page_count` | Get total page count |
+| `include_full_text` | Extract all text |
+| `include_images` | Extract embedded images (⚠️ must specify `pages`) |
 
-### 基本用法
+### Basic usage
 
 ```
-# 获取元数据和页数
+# Get metadata and page count
 mcp_pdf-reader_read_pdf(
   sources: [{"path": "/path/to/paper.pdf"}],
   include_metadata: true,
   include_page_count: true
 )
 
-# 按页读取
+# Read specific pages
 mcp_pdf-reader_read_pdf(
   sources: [{"path": "paper.pdf", "pages": [1, 2, 11, 12]}]
 )
 
-# 读取远程 PDF（arxiv 等）
+# Read remote PDF (arxiv, etc.)
 mcp_pdf-reader_read_pdf(
   sources: [{"url": "https://arxiv.org/pdf/2510.12724", "pages": [1]}]
 )
 
-# 批量读取多篇论文摘要
+# Batch: read abstracts from multiple papers
 mcp_pdf-reader_read_pdf(
   sources: [
     {"path": "paper1.pdf", "pages": [1]},
@@ -51,9 +51,9 @@ mcp_pdf-reader_read_pdf(
 )
 ```
 
-### 图片提取
+### Image extraction
 
-**必须指定 `pages`**，否则不返回图片：
+**Must specify `pages`**, otherwise no images are returned:
 
 ```
 mcp_pdf-reader_read_pdf(
@@ -62,51 +62,51 @@ mcp_pdf-reader_read_pdf(
 )
 ```
 
-- ⚠️ 不指定页码 → 无图片返回
-- 返回该页**所有**嵌入图片（无法按 Figure 编号选择）
-- 需先读文本确定 Figure 所在页码，再提取
+- ⚠️ No page specified → no images returned
+- Returns **all** embedded images on the page (cannot filter by Figure number)
+- Workflow: read text first to find the page containing the figure, then extract
 
 ---
 
-## 工具二：CLI pdftotext（快速文本，不消耗 MCP 上下文）
+## Tool 2: CLI pdftotext (fast text, no MCP context overhead)
 
-适合关键词定位、grep 搜索、快速确认页码后再用 MCP 精读。需要 `poppler-utils`：
+Good for keyword search, grep, and quickly confirming page numbers before switching to MCP for careful reading. Requires `poppler-utils`:
 
 ```bash
-which pdftotext || echo "需要安装: sudo apt install poppler-utils"
+which pdftotext || echo "Install with: sudo apt install poppler-utils"
 ```
 
-### 常用命令
+### Common commands
 
 ```bash
-# 读取全文（-layout 保留双栏排版）
+# Extract full text (-layout preserves two-column layout)
 pdftotext -layout paper.pdf -
 
-# 读取指定页（第 1-3 页）
+# Extract specific pages (pages 1–3)
 pdftotext -layout -f 1 -l 3 paper.pdf -
 
-# 获取元数据（标题、作者、总页数）
+# Get metadata (title, authors, page count)
 pdfinfo paper.pdf
 
-# 定位关键词所在行
+# Locate keyword
 pdftotext -layout paper.pdf - | grep -n "Figure 3"
 pdftotext -layout paper.pdf - | grep -n "Ablation" | head -10
 ```
 
-### 推荐工作流：CLI 定位 → MCP 精读
+### Recommended workflow: CLI locate → MCP read
 
 ```bash
-# 1. 先用 CLI 找到关键词所在页
+# 1. Use CLI to find keyword location
 pdftotext -layout paper.pdf - | grep -n "reward shaping"
 
-# 2. 再用 MCP 按页精读（假设找到在第 8 页附近）
+# 2. Use MCP to read those pages precisely (e.g. found near page 8)
 mcp_pdf-reader_read_pdf(sources: [{"path": "paper.pdf", "pages": [7, 8, 9]}])
 ```
 
 ---
 
-## 已知限制
+## Known limitations
 
-- 不支持 OCR（扫描版 PDF）
-- 数学公式转为 Unicode，可能不完整
-- 不支持加密 PDF
+- No OCR support (scanned PDFs)
+- Math formulas converted to Unicode — may be incomplete
+- Encrypted PDFs not supported
