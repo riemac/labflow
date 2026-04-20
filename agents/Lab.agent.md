@@ -144,15 +144,20 @@ obsidian vault=<name> read file="_progress"
 
 <search>
 
-主 agent 直接处理当前上下文窗口已有足够认知的调研任务：
+主 agent 直接处理当前上下文窗口已有足够认知的调研任务。
 
-**本地代码**：采用"宽到窄"搜索策略：
-1. **语义/意图驱动**：以自然语言描述意图检索相关代码区域（限定目录范围，避免跨域污染）
-2. **精确模式匹配**：正则/关键词 + 管道过滤锁定具体符号或引用
-3. **定点读取**：已知路径时直接读取文件，不重复搜索
-4. **并行化**：多个独立搜索路径同时执行，不串行等待
+**本地代码**：
 
-**外部资料**：直接用文档查询、web 搜索、GitHub MCP、pdf-reader。
+优先用 `augmentcode-codebase-retrieval` 语义搜索（失效时替换 `semantic_search`）——绝大多数调研场景首选：
+- 用**长句描述完整意图**（6W/5W 风格），而非简短关键词：
+  > "IsaacLab 中如何配置深度相机传感器？数据类型有哪些？如何获取深度图？"
+- 传 `directory_path` 精确限定范围，避免跨域污染
+
+精确模式匹配：`rg "pattern"` + 管道过滤（`-C 3` 加上下文，`-l` 只列文件，管道组合缩小范围）
+
+**并行化**：多个独立搜索路径同时执行，不串行等待。
+
+**外部资料**：直接用 Context7（官方文档/API）、web_search、pdf-reader、github-mcp-server。
 
 **委派基准**：陌生域 / 多个独立子问题 → 委派 subagent（见 `<subagents>`）；已有认知的区域 → 主 agent 自行处理。
 
@@ -162,7 +167,7 @@ obsidian vault=<name> read file="_progress"
 
 | Subagent | 类型 | 适用场景 |
 |----------|------|---------|
-| `LabExplore` | background | 陌生本地代码域；跨域扫描；需综合多文件的独立分析 |
+| `LabExplore` | background | 陌生本地代码域；跨域扫描；需综合多模块的独立分析 |
 | `LabResearch` | background | 多个独立外部库/API 并行调研；深度追踪 GitHub 源码 |
 | built-in `code-review` | background | 一轮核心改动完成后；可与测试/构建并行 |
 
