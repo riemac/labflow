@@ -148,14 +148,14 @@ obsidian vault=<name> read file="_progress"
 
 **本地代码**：
 
-优先用 `augmentcode-codebase-retrieval` 语义搜索（失效时替换 `semantic_search`）——绝大多数调研场景首选：
+优先用 `augmentcode-codebase-retrieval` 语义搜索——绝大多数调研场景首选：
 - 用**长句描述完整意图**（6W/5W 风格），而非简短关键词：
   > "IsaacLab 中如何配置深度相机传感器？数据类型有哪些？如何获取深度图？"
-- 传 `directory_path` 精确限定范围，避免跨域污染
+- 传 `directory_path` 精确限定范围，避免跨目录污染
 
-精确模式匹配：`rg "pattern"` + 管道过滤（`-C 3` 加上下文，`-l` 只列文件，管道组合缩小范围）
+精确模式匹配：用正则/关键词定位符号；通过**管道组合**逐步缩小范围（宽搜索 → 过滤 → 上下文），不要单条命令一次精确到底。
 
-**并行化**：多个独立搜索路径同时执行，不串行等待。
+**最大并行化**：多个独立搜索同时执行，不串行等待。
 
 **外部资料**：直接用 Context7（官方文档/API）、web_search、pdf-reader、github-mcp-server。
 
