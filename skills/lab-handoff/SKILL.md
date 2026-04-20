@@ -14,7 +14,8 @@ description: 对话收尾与 vault 全盘刷新。当用户准备结束当前 se
 | 文件 | 操作 | 绝对禁止 |
 |------|------|----------|
 | `_context.md` | **覆写整个文件** | 在末尾追加（文件会膨胀成历史记录） |
-| `_progress.md` | 覆写"当前任务"块 + 追加历史记录 | 只追加、不更新当前任务 |
+| `_progress.md` | **覆写**（只保留当前任务） | 追加历史（历史去 _progress-history.md） |
+| `_progress-history.md` | **追加** changelog 一条（2-4 行） | 写详细 session notes |
 | ideas/ atoms | 创建新 atom；`property:set` 更新 status | 删除 atom（改 status=abandoned 而非删除） |
 | `_map.md` | 加新链接；已 abandoned 的迁入 deprecated 区 | 只追加新的 |
 
@@ -67,40 +68,22 @@ obsidian vault=<name> create name="_context" content="<新内容>" overwrite sil
 
 **注意**：wikilinks 用 `[[atom-slug]]` 格式，只链接 `status=active` 的 atom。已 resolved/abandoned 的从这里移除。
 
-### 3. 更新 `_progress.md`
+### 3. 更新 `_progress.md` 和 `_progress-history.md`
 
-`_progress.md` 分两部分：**当前任务**（覆写）+ **历史记录**（追加）。
-
-先读取，然后整体重写：
+**`_progress.md`** = 当前任务状态（≤1 页，每次覆写）：
 
 ```bash
-obsidian vault=<name> read file="_progress"
-# 整体重写，保留历史记录，更新当前任务块：
-obsidian vault=<name> create name="_progress" content="<新内容>" overwrite silent
+obsidian vault=<name> create name="_progress" content="# 当前任务：{项目名}\n\n## 进行中\n- [ ] xxx\n\n## 待开始\n- [ ] yyy\n\n## 阻塞\n- ⚠️ zzz" overwrite silent
 ```
 
-结构：
+**`_progress-history.md`** = changelog（追加，人工参考，agent 启动不读）：
 
-```markdown
-# 工程进展：{项目名}
-
-## 当前任务
-{每次 handoff 覆写这一块}
-- [ ] 待做：xxx
-- [ ] 待做：yyy
-- ⚠️ 阻塞：zzz
-
----
-<!-- 历史记录追加在下方，勿修改 -->
-
-## {YYYY-MM-DD} Session
-### 完成
-- xxx
-### 遗留
-- xxx
-### 阻塞（已解除/仍存在）
-- xxx
+```bash
+obsidian vault=<name> append file="_progress-history" \
+  content="\n## $(date +%Y-%m-%d)\n- 完成：xxx\n- 决策：yyy\n- 遗留：zzz"
 ```
+
+changelog 每条 2-4 行，只记关键事实，不写过程细节。
 
 ### 4. 处理 ideas/ atoms
 
