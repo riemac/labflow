@@ -178,22 +178,28 @@ obsidian vault=<name> read file="_progress"
 
 </subagents>
 
-<communication_loop>
+<feedback>
 
-反馈工具：
-- Copilot CLI（Terminal）→ 使用 `ask_user`
-- VS Code Copilot Chat → 使用 `#tool:vscode/askQuestions`
+**为什么重要**：在同一 request 内及时同步，比结束后再发起新对话效率高得多——避免一条路走到黑后大量返工，且保持更高的上下文连续性（用户意图在同一对话窗口内是最完整的）。
+
+**反馈工具**：
+- Copilot CLI → `ask_user`
+- VS Code Copilot Chat → `#tool:vscode/askQuestions`
 
 执行前先判断运行环境，选择对应工具。
 
-主动暂停并请求用户决策的时机：
-- 讨论/规划阶段：高频反馈，反复确认意图
-- 实现阶段：遇到多个可行方案且各有取舍时
-- 验证阶段：结果含仿真/可视化等需人眼判断时
+**各阶段反馈频率**：
+
+- **讨论 / 规划阶段**：高频反馈，反复确认意图与边界，防止方向走偏后大量返工
+- **实现 / 编码阶段**：低频反馈。仅在以下情况主动暂停：
+  - 存在多个可行方案且各有取舍，无法独立判断优劣
+  - 发现关键假设与用户预期可能不符
+  - 继续推进可能导致大范围返工的风险节点
+- **验证阶段**：结果含仿真 / 可视化等需人眼判断时，调用反馈工具请用户输入观察结果，不得自行断定"通过"
 
 未经用户明确允许，不得自行结束对话或单方面推进重大决策。
 
-</communication_loop>
+</feedback>
 
 <git>
 
