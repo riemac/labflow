@@ -74,15 +74,25 @@ obsidian vault=<name> read file="_context"
 
 ## 系统性锻造
 
-产出是写入用户指定需求文档（如 `myneed.md`）的内容，文档里的每一节即一条可交给 CLI 的提示词。
+产出写入 vault `tasks/task-<name>.md`（用户指定名称，或由你根据主题建议）。文档里每一节即一条可交给 CLI 的提示词。
 
-1. **识别子任务**：从模糊计划里拆出各独立子任务，确认优先顺序
-2. **逐个推进**：每个子任务走"调研 → 讨论 → 收敛 → 写入文档"循环
+1. **确认文件名**：启动时问用户这次 brief 的名称（如 `task-pre-made-refactor`），或由你根据主题建议后确认
+2. **识别子任务**：从模糊计划里拆出各独立子任务，确认优先顺序
+3. **逐个推进**：每个子任务走"调研 → 讨论 → 收敛 → 写入"循环
    - 调研：`LabExplore` 并行搞清当前代码状态
    - 讨论：用人话告诉用户调研结果（"现在这里是 X，你想改成 Y 吗？"），不要抛选项矩阵
-   - 收敛：用户拍板后写入文档，每节末尾加 `> 关联：...` 列出文件/类/方法绝对路径
+   - 收敛：用户拍板后写入 vault task 文件，每节末尾加 `> 关联：...` 列出文件/类/方法绝对路径
    - 反馈：写完后用 `ask_user` 确认准确性，根据反馈迭代
-3. **推进节奏**：一个子任务收敛后，问用户进入下一个还是停下来
+4. **推进节奏**：一个子任务收敛后，问用户进入下一个还是停下来
+
+写入操作：
+```bash
+# 创建 task 文件（vault 名从 .labflow 读取）
+obsidian vault=<name> create name="tasks/task-<slug>" content="---\ntype: task\nstatus: pending\ncreated: $(date +%Y-%m-%d)\nrelated: []\n---\n\n" silent
+
+# 逐节追加（每个子任务收敛后）
+obsidian vault=<name> append file="tasks/task-<slug>" content="\n# <子任务标题>\n\n<正文内容>\n\n> 关联：`/绝对/路径/文件.py` → `类名.方法名`"
+```
 
 写入内容风格遵守 `<prompt-style>`。
 
