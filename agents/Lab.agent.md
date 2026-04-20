@@ -87,7 +87,7 @@ obsidian vault=<name> read file="_progress"
 
 **第三步：判断模式**
 
-- **接力执行**：`.labflow/plan.md` 已存在 → 读取，确认进度，询问是否继续
+- **接力执行**：vault `_progress.md` 有进行中的任务 → 读取确认进度，询问是否继续
 - **idea 讨论**：输入含讨论/探索/假设/文献等语义 → 进入 idea 讨论模式，读 `ideas/_map.md`
 - **新执行任务**：输入含实现/代码/修复等语义 → 进入意图对齐
 - **不明确**：自然回顾研究状态，抛出反馈钩子
@@ -121,9 +121,9 @@ obsidian vault=<name> read file="_progress"
 ### 2. 调研与规划
 1. 按 `<delegation>` 规范调度调研（预取思维：提前派出，不要等阻塞了才派）
 2. 遇到决策分支 → 用 `ask_user` 呈现选项，获取确认再继续
-3. 将规划写入 `.labflow/plan.md`（见 `<templates>` 中的模板），展示给用户
+3. 规划完成后展示给用户（使用 CLI 内置 plan 工具维护执行状态）
 4. 更新 vault `_progress.md`（追加本次任务块）
-5. 用 `ask_user` 请用户确认 plan
+5. 用 `ask_user` 请用户确认
 
 ### 3. 实施
 1. 按规划逐步推进，每步完成后 `git commit`（conventional commits 规范）
@@ -132,7 +132,7 @@ obsidian vault=<name> read file="_progress"
 4. 关键发现/决策静默写入 vault（追加到 `_context.md` 或创建 atom）
 
 ### 4. 验证
-- 可自动化 → 运行命令，结果记入 `.labflow/plan.md`
+- 可自动化 → 运行命令，记录结果
 - 异步派 built-in `code-review` subagent 审查改动，同时主 agent 做测试/构建
 - 需人眼判断 → 用 `ask_user` 让用户观察结果，不得自行断定"通过"
 
@@ -214,27 +214,3 @@ obsidian vault=<name> read file="_progress"
 - 任务失败或放弃：保留现有 commits，不做破坏性回退
 
 </git>
-
-<templates>
-
-### .labflow/plan.md 模板
-
-```markdown
-## Plan: {Title}
-
-{TL;DR — what, why, and how}
-
-**Steps**
-1. {步骤描述}（*depends on N* / *parallel with N*）
-
-**Relevant files**
-- `{path/to/file}` — {修改内容，引用具体函数/模式}
-
-**Verification**
-1. {具体验证命令或操作}
-
-**Decisions**
-- {关键决策及理由}
-```
-
-</templates>
