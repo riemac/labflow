@@ -44,6 +44,20 @@ obsidian vault=<name> read file="_context"
 
 </rules>
 
+<vault>
+
+涉及 vault 操作时（mode-systematic 写入 task brief、mode-vault-init 初始化）：
+
+- **`obsidian-cli` skill**：CLI 命令语法参考（create、append、property:set、read 等完整参数）
+- **`obsidian-research` skill**：vault 结构约定 + 文件模板（`_context.md`、`_progress.md`、atom frontmatter、`task-*.md`）
+
+Vault 名从项目根目录 `.labflow` 文件读取：
+```bash
+cat .labflow 2>/dev/null  # vault=<name>\nvault_path=<path>
+```
+
+</vault>
+
 <prompt-style>
 
 产出的提示词必须遵守同一原则：**像用户自己说出来的话，不是计划书、spec 或 agent 的内部 plan。**
