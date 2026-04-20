@@ -136,59 +136,21 @@ obsidian vault=<name> append file="tasks/task-<slug>" content="\n# <子任务标
 
 ### 2. 写入 vault
 
+文件模板参见 **`obsidian-research` skill**（`_context.md`、`_progress.md`、atom frontmatter），CLI 语法参见 **`obsidian-cli` skill**。
+
 ```bash
 # 写 .labflow 配置到项目根目录
 echo -e "vault=<vault-name>\nvault_path=<absolute-path>" > .labflow
 
-# 写 _context.md（研究语境快照，≤1页）
-obsidian vault=<name> create name="_context" content="<内容>" silent overwrite
-
-# 写 _progress.md（工程进展骨架）
-obsidian vault=<name> create name="_progress" content="<内容>" silent overwrite
-
-# 写 ideas/_map.md（初始 MOC）
-obsidian vault=<name> create name="ideas/_map" content="<内容>" silent overwrite
+# 按 obsidian-research skill 模板创建三个核心文件
+obsidian vault=<name> create name="_context" content="<_context.md模板填充>" silent overwrite
+obsidian vault=<name> create name="_progress" content="<_progress.md模板填充>" silent overwrite
+obsidian vault=<name> create name="ideas/_map" content="<初始MOC>" silent overwrite
 ```
 
-### 3. `_context.md` 模板（≤1页）
+若用户已有具体假设/问题，按 obsidian-research skill 的 atom frontmatter 格式创建初始 atoms。
 
-```markdown
----
-updated: <date>
----
-
-## 研究目标
-
-<一两句话：想做什么，对比超越谁>
-
-## 核心思路
-
-- <关键方法点1>
-- <关键方法点2>
-
-## 参考论文
-
-- [[<论文名>]]：<一句话摘要，核心贡献>
-
-## 关键假设 / 未解决问题
-
-- [[h-<slug>]]（如有）
-- [[q-<slug>]]（如有）
-
-## 当前阶段
-
-<一两句话，例如："前置步骤：多元化手部资产生成，框架已搭好，正在实现具体模块">
-```
-
-### 4. 初始 atoms（有就建，没有就跳过）
-
-若用户已有具体假设或问题：
-
-```bash
-obsidian vault=<name> create name="ideas/h-<slug>" content="---\ntype: hypothesis\nstatus: active\nconfidence: 0.6\ntags: [type/hypothesis, status/active]\n---\n\n<内容>" silent
-```
-
-### 5. 反馈与确认
+### 3. 反馈与确认
 
 写完后让用户读一遍 `_context.md`，用 `ask_user` 确认是否准确，根据反馈迭代。
 
