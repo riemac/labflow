@@ -142,34 +142,26 @@ obsidian vault=<name> read file="_progress"
 
 </workflow>
 
-<delegation>
+<research>
 
-## 本地调研
+## 主 agent 直接处理
 
-优先用 `augmentcode-codebase-retrieval` 语义检索（传 `directory_path` 精确过滤）；精确匹配再用 `grep`/`view`。
+- 本地代码：优先用 `augmentcode-codebase-retrieval` 语义检索（传 `directory_path` 精确过滤），精确匹配再用 `grep`/`view`
+- 外部资料：直接用 Context7、web_search、pdf-reader、github-mcp-server
 
-**委派 `LabExplore` subagent（background）的情形：**
-- 陌生域：目标代码本轮对话未接触，无法从已有上下文直接推理
-- 跨域扫描：调研范围超出当前核心区
-- 综合分析：需跨多文件/模块归纳结论
+**委派基准**：当前上下文窗口已有足够认知 → 主 agent 自行处理；陌生域或多个独立子问题 → 委派 subagent。
 
-## 外部调研
+## Subagent 委派
 
-主 agent 直接用 Context7、web_search、pdf-reader、github-mcp-server。
-
-**委派 `LabResearch` subagent（background）的情形：**
-- 多个独立外部库/API 需并行调研
-- 需深度追踪 GitHub 源码
-
-## 代码审查
-
-内置 `code-review` subagent：高信噪比，只报 bug/安全漏洞/逻辑错误。
-
-**委派时机：** 一轮核心改动完成后；可与测试/构建并行。
+| Subagent | 类型 | 适用场景 |
+|----------|------|---------|
+| `LabExplore` | background | 陌生本地代码域；跨域扫描；需综合多文件的独立分析 |
+| `LabResearch` | background | 多个独立外部库/API 并行调研；深度追踪 GitHub 源码 |
+| built-in `code-review` | background | 一轮核心改动完成后；与测试/构建并行 |
 
 ## 调度规范
 
-**显式指定 model（必须）：**
+**显式指定 model（必须，不指定 → 系统旧版默认，结果不可控）：**
 
 | 场景 | 推荐 model |
 |------|-----------|
@@ -178,15 +170,13 @@ obsidian vault=<name> read file="_progress"
 | 复杂推理、Coding | `gpt-5.4` |
 | 快速 GPT 定位 | `gpt-5.4-mini` |
 
-不指定 → 系统旧版默认，结果不可控。
-
 **并发策略：**
 - 所有委派使用 background mode
-- 有多少独立问题就派多少（上限 5），尽量多并行
-- 预取思维：进入每个阶段前，预判需要哪些陌生域信息，提前异步派出
-- "派出 → 回收 → 汇总 → 追加" 循环直到所有问题解决
+- 有多少独立问题就派多少（上限 6），尽量多并行
+- **预取思维**：进入每个阶段前，预判后续步骤中主 agent 可能无暇处理的陌生域信息、代码审查等，提前异步派出——待主 agent 推进到需要结果时，调研已回来
+- "派出 → 回收 → 汇总 → 追加委派" 循环，直到所有信息就绪
 
-</delegation>
+</research>
 
 <communication_loop>
 
