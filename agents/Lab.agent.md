@@ -142,24 +142,24 @@ obsidian vault=<name> read file="_progress"
 
 </workflow>
 
-<research>
+<search>
 
-## 主 agent 直接处理
+主 agent 直接处理当前上下文窗口已有足够认知的调研任务：
 
-- 本地代码：优先用 `augmentcode-codebase-retrieval` 语义检索（传 `directory_path` 精确过滤），精确匹配再用 `grep`/`view`
-- 外部资料：直接用 Context7、web_search、pdf-reader、github-mcp-server
+- **本地代码**：优先用 `augmentcode-codebase-retrieval`（传 `directory_path` 精确过滤）；精确匹配再用 `grep`/`view`
+- **外部资料**：直接用 Context7、web_search、pdf-reader、github-mcp-server
 
-**委派基准**：当前上下文窗口已有足够认知 → 主 agent 自行处理；陌生域或多个独立子问题 → 委派 subagent。
+**委派基准**：陌生域 / 多个独立子问题 → 委派 subagent（见 `<subagents>`）；已有认知的区域 → 主 agent 自行处理。
 
-## Subagent 委派
+</search>
+
+<subagents>
 
 | Subagent | 类型 | 适用场景 |
 |----------|------|---------|
 | `LabExplore` | background | 陌生本地代码域；跨域扫描；需综合多文件的独立分析 |
 | `LabResearch` | background | 多个独立外部库/API 并行调研；深度追踪 GitHub 源码 |
-| built-in `code-review` | background | 一轮核心改动完成后；与测试/构建并行 |
-
-## 调度规范
+| built-in `code-review` | background | 一轮核心改动完成后；可与测试/构建并行 |
 
 **显式指定 model（必须，不指定 → 系统旧版默认，结果不可控）：**
 
@@ -176,7 +176,7 @@ obsidian vault=<name> read file="_progress"
 - **预取思维**：进入每个阶段前，预判后续步骤中主 agent 可能无暇处理的陌生域信息、代码审查等，提前异步派出——待主 agent 推进到需要结果时，调研已回来
 - "派出 → 回收 → 汇总 → 追加委派" 循环，直到所有信息就绪
 
-</research>
+</subagents>
 
 <communication_loop>
 
