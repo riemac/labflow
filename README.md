@@ -30,7 +30,7 @@ plugins/labflow/
 From this repository:
 
 ```bash
-codex plugin marketplace add /home/hac/labflow-codex
+codex plugin marketplace add /home/hac/labflow
 ```
 
 If Codex reports that the marketplace already exists, follow the CLI's suggested upgrade command.
@@ -46,13 +46,13 @@ If Codex reports that the marketplace already exists, follow the CLI's suggested
 From any research project:
 
 ```bash
-/home/hac/labflow-codex/plugins/labflow/scripts/codex-lab
+/home/hac/labflow/plugins/labflow/scripts/codex-lab
 ```
 
 Pass an initial request if useful:
 
 ```bash
-/home/hac/labflow-codex/plugins/labflow/scripts/codex-lab "继续上次的 reward shaping 任务"
+/home/hac/labflow/plugins/labflow/scripts/codex-lab "继续上次的 reward shaping 任务"
 ```
 
 ## Start A LabPrompt Session
@@ -60,7 +60,7 @@ Pass an initial request if useful:
 Use LabPrompt as a separate Codex window/session for turning rough ideas into a natural execution prompt:
 
 ```bash
-/home/hac/labflow-codex/plugins/labflow/scripts/codex-labprompt "我想重构一下相机观测，但还没想清楚"
+/home/hac/labflow/plugins/labflow/scripts/codex-labprompt "我想重构一下相机观测，但还没想清楚"
 ```
 
 Set `LABFLOW_PROJECT_DIR=/abs/project` if you want the launcher to start Codex in a different project directory.

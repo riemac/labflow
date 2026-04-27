@@ -93,20 +93,21 @@ Do not turn LabPrompt into a background subagent. Its intended UX is a separate 
 Prefer CLI tools when they are cheaper and clearer:
 
 - Obsidian CLI for vault read/write.
-- `pdftotext` for fast PDF text extraction.
-- MCP pdf-reader only for capabilities CLI cannot replace, such as image extraction or remote PDFs.
-- augmentcode/context7 MCP when semantic code search or official documentation lookup is materially useful.
+- `pdftotext` can be used for fast local PDF text extraction, but paper reading should keep `pdf-reader` MCP available because it handles richer PDF workflows better.
+- `pdf-reader` MCP is important for paper reading, image extraction, and remote PDFs.
+- `augmentcode` MCP is the primary local code search path when semantic codebase retrieval is available.
+- `context7` MCP is useful for official documentation lookup when version-specific API behavior matters.
 
 ## Iterating On labflow
 
-1. Work on the Codex worktree, usually `/home/hac/labflow-codex`.
+1. Work on `/home/hac/labflow` on the `main` branch.
 2. Edit files under `plugins/labflow/`.
 3. Validate JSON manifests and scripts.
 4. Commit with conventional commits.
 5. Re-add or upgrade the local marketplace if needed:
 
 ```bash
-codex plugin marketplace add /home/hac/labflow-codex
+codex plugin marketplace add /home/hac/labflow
 ```
 
 Changes affect new Codex sessions after the plugin/marketplace is reloaded.

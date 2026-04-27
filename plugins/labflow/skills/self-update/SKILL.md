@@ -35,7 +35,7 @@ description: 对 labflow Codex plugin 本身进行自更新。当某个 skill、
 ### 3. 提交到 git
 
 ```bash
-cd /home/hac/labflow-codex
+cd /home/hac/labflow
 git add -A
 git commit -m "refactor: <改动一句话描述>
 
@@ -50,7 +50,7 @@ Commit 类型参考：
 ### 4. 重新加载本地 marketplace
 
 ```bash
-codex plugin marketplace add /home/hac/labflow-codex
+codex plugin marketplace add /home/hac/labflow
 ```
 
 如果 marketplace 已存在而 Codex 要求升级，使用当前 Codex CLI 提示的 upgrade 流程。
