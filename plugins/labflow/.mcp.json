@@ -10,25 +10,17 @@
     "augmentcode": {
       "type": "stdio",
       "command": "auggie",
-      "args": ["--mcp", "--mcp-auto-workspace"]
+      "args": [
+        "--mcp",
+        "--mcp-auto-workspace"
+      ]
     },
-    "io.github.upstash/context7": {
+    "context7": {
       "type": "stdio",
       "command": "npx",
       "args": [
         "@upstash/context7-mcp@1.0.30"
-      ],
-      "env": {
-        "CONTEXT7_API_KEY": "${input:CONTEXT7_API_KEY}"
-      }
+      ]
     }
-  },
-  "inputs": [
-    {
-      "id": "CONTEXT7_API_KEY",
-      "type": "promptString",
-      "description": "API key for Context7",
-      "password": true
-    }
-  ]
+  }
 }

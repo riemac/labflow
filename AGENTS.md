@@ -1,121 +1,120 @@
-# labflow — AI Coding Agent Context
+# labflow — Codex Plugin Development Context
 
-This file provides context for AI agents working on the **labflow** plugin itself (self-updates, refinements, new features). It is NOT part of the plugin and does NOT affect projects that install labflow.
-
----
+This file is for agents working on **labflow itself**. It is not shipped into downstream research projects as their project instructions.
 
 ## What This Is
 
-**labflow** is a GitHub Copilot CLI plugin for scientific research workflows. It packages reusable agents, skills, and MCP configuration into an installable plugin that integrates Obsidian as the primary knowledge hub.
+**labflow** is now a Codex-native plugin for scientific research workflows. It packages reusable skills, MCP configuration, top-level launch prompts, and background research/exploration agents around Obsidian as the persistent knowledge hub.
 
-**Installs as:** `copilot plugin install ~/labflow`  
-**Users:** Researchers working on projects like IsaacLab-based robotics, simulation, reinforcement learning.
+Legacy GitHub Copilot support is preserved on the `copilot-legacy` branch. The `main` branch is for Codex-only iteration.
 
----
+## Repository Shape
 
-## Architecture
-
-```
+```text
 labflow/
-├── plugin.json              # Plugin manifest
-├── .mcp.json                # MCP: pdf-reader, augmentcode, context7
-├── agents/
-│   ├── Lab.agent.md         # Main research agent (idea exploration + execution)
-│   ├── LabExplore.agent.md  # Subagent: local codebase exploration
-│   ├── LabResearch.agent.md # Subagent: external research (no DeepWiki)
-│   └── LabPrompt.agent.md   # Pre-work agent: crystallize vague needs into precise prompts
-└── skills/
-    ├── annotation/          # Scientific code annotation (67%+ comment density, LaTeX)
-    ├── pseudocode/          # Skeleton + TODO pseudocode for design phase
-    ├── pdf-read/            # Dual-mode: MCP (full features) + pdftotext CLI (fast text)
-    ├── obsidian-cli/        # Obsidian CLI tool reference (copied from obsidian-skills plugin)
-    ├── obsidian-research/   # Research vault domain knowledge (structure, templates, workflow)
-    ├── lab-handoff/         # End-of-session vault refresh (overwrite _context.md, _progress.md)
-    └── self-update/         # Procedure for iterating on labflow itself
+├── .agents/plugins/marketplace.json        # Local Codex marketplace entry
+├── plugins/labflow/
+│   ├── .codex-plugin/plugin.json           # Codex plugin manifest
+│   ├── .mcp.json                           # MCP: pdf-reader, augmentcode, context7
+│   ├── agents/
+│   │   ├── lab-explore.md                  # Background local code exploration agent
+│   │   └── lab-research.md                 # Background external research agent
+│   ├── prompts/
+│   │   ├── lab.md                          # Top-level Lab session prompt
+│   │   └── labprompt.md                    # Top-level LabPrompt session prompt
+│   ├── scripts/
+│   │   ├── codex-lab                       # Launch Codex with Lab prompt
+│   │   └── codex-labprompt                 # Launch Codex with LabPrompt prompt
+│   └── skills/
+│       ├── annotation/
+│       ├── pseudocode/
+│       ├── pdf-read/
+│       ├── obsidian-cli/
+│       ├── obsidian-research/
+│       ├── lab-handoff/
+│       └── self-update/
+└── README.md
 ```
-
----
 
 ## Core Design Principles
 
-### 1. Obsidian Vault as the Only Persistent Memory
-All cross-session research memory lives in the Obsidian vault. No `/memories/` private files, no `session-state/memory.md`. The vault is the single source of truth.
+### 1. Obsidian Vault Is the Only Persistent Research Memory
 
-**Vault structure:**
-```
+All cross-session research memory lives in the Obsidian vault. Do not add private `/memories/`, hidden session-state files, or parallel long-term state stores.
+
+Vault structure:
+
+```text
 vault root/
-├── _context.md            ← Research context snapshot (OVERWRITE each handoff, ≤1 page)
-├── _progress.md           ← Engineering handoff doc (OVERWRITE each handoff, no length limit)
-├── _progress-history.md   ← Changelog (APPEND only, agent never reads at startup)
+├── _context.md            # Research context snapshot, overwritten each handoff, short
+├── _progress.md           # Engineering handoff snapshot, overwritten each handoff, no fixed length
+├── _progress-history.md   # Changelog, append only, not read automatically at startup
 ├── ideas/
-│   ├── _map.md            ← MOC (idea discussion mode)
-│   ├── h-*.md             ← hypothesis atoms
-│   ├── q-*.md             ← question atoms
-│   ├── f-*.md             ← finding atoms
-│   └── d-*.md             ← decision atoms
+│   ├── _map.md
+│   ├── h-*.md
+│   ├── q-*.md
+│   ├── f-*.md
+│   └── d-*.md
 └── tasks/
-    └── task-*.md          ← Task briefs (LabPrompt writes, human navigation layer)
+    └── task-*.md          # LabPrompt writes these; humans choose when to use them
 ```
 
-**Key distinction:**
-- `_context.md` = scientific context (hypotheses, directions, decisions) — always ≤1 page
-- `_progress.md` = engineering handoff (current target, progress to file/function level, resume guide) — no length limit, overwritten
-- `tasks/` = human navigation layer, agents do NOT read this automatically
+Key distinction:
 
-### 2. Don't Interfere with Agent-Native Mechanisms
-The vault is for **human-readable project state**, not agent-internal execution planning.
+- `_context.md` is scientific context: current hypotheses, directions, decisions, and unresolved questions.
+- `_progress.md` is engineering handoff: current target, file/function-level progress, resume guide, and known blockers.
+- `tasks/` is a human navigation layer; Lab does not automatically read it.
 
-- **CLI built-in plan** = agent's internal task steps (current session, engineering-level)
-- **`_progress.md`** = cross-session handoff doc (project-level, human-readable)
-- **`tasks/task-*.md`** = task briefs crystallized by LabPrompt (human navigation)
+### 2. Do Not Replace Codex-Native Planning
 
-Never make the vault replace the CLI's built-in plan/todo/spec mechanism. The vault and the CLI plan operate at different abstraction levels and timescales.
+The vault is human-readable project state. It is not a replacement for Codex's current-session plan/tooling.
 
-### 3. ideas/ Vault Access is On-Demand, Mode-Independent
-Any conversation mode can read ideas/ atoms when the context calls for it. The agent uses `obsidian search` before making decisions that might touch existing hypotheses or findings.
+- Codex plan/checklist tools are for the current execution session.
+- `_progress.md` is for cross-session handoff.
+- `tasks/task-*.md` files are prompt briefs that a human can choose to paste or run later.
 
-Write rules:
-- **Execution mode decisions** → `d-*.md` atom
-- **Test/experiment conclusions** → `f-*.md` atom
-- Atoms are NEVER deleted — mark as `status: resolved` or `status: abandoned`
+### 3. Separate Top-Level Workflows From Background Agents
 
-### 4. Selective De-MCP
-Use CLI tools (obsidian CLI, pdftotext) where possible to minimize context overhead. Keep pdf-reader MCP for features CLI can't replace (image extraction, remote URLs). augmentcode MCP is primary for local code search.
+- **Lab** is a top-level Codex session prompt for research discussion and implementation.
+- **LabPrompt** is a separate top-level Codex session prompt for discussing vague ideas and forging natural-language execution prompts.
+- **lab-explore** and **lab-research** are background agents for bounded delegated investigations.
 
-### 5. Agent Separation
-- **Lab** = execution-focused (idea discussion + code implementation)
-- **LabPrompt** = pre-work, separate session, produces `tasks/task-*.md` artifacts
-- **LabExplore / LabResearch** = background subagents, never use `create`/`edit`/`ask_user`
+Do not turn LabPrompt into a background subagent. Its intended UX is a separate Codex window/session.
 
----
+### 4. Keep Tools Codex-Native
 
-## How to Iterate on labflow
+- Use Codex plugin manifest format: `plugins/labflow/.codex-plugin/plugin.json`.
+- Use Codex marketplace format: `.agents/plugins/marketplace.json`.
+- Use plugin MCP config: `plugins/labflow/.mcp.json`.
+- Avoid Copilot-only assumptions such as `copilot plugin install`, `ask_user`, `.agent.md` top-level launch agents, or Copilot `inputs`.
 
-1. **Edit** files in `~/labflow/agents/` or `~/labflow/skills/`
-2. **Commit** with conventional commits (`refactor:`, `feat:`, `fix:`)
-3. **Reload cache:** `copilot plugin install ~/labflow`
-4. **Changes take effect in the NEXT session** (current session uses cached content)
+### 5. Selective De-MCP
 
-Use the `self-update` skill for the full guided procedure.
+Prefer CLI tools when they are cheaper and clearer:
 
----
+- Obsidian CLI for vault read/write.
+- `pdftotext` for fast PDF text extraction.
+- MCP pdf-reader only for capabilities CLI cannot replace, such as image extraction or remote PDFs.
+- augmentcode/context7 MCP when semantic code search or official documentation lookup is materially useful.
 
-## Key Technical Facts (First-Hand Verified)
+## Iterating On labflow
 
-- `tools: [...]` in agent frontmatter = **whitelist filter**, not additive. Omit it to inherit all tools.
-- `agents: [...]` = VS Code only, causes warnings in CLI. Don't write for CLI agents.
-- `model:` in frontmatter = optional override. User selects model at invocation time.
-- Plugin installs are **global** (`~/.copilot/installed-plugins/`). No native project-scoping.
-- Project-level overrides: place agents/skills in `.copilot/agents/` or `.copilot/skills/` within the project directory.
-- Background subagents cannot respond to permission dialogs. Don't use `create`/`edit`/`ask_user` in subagents.
-- Plugin cache must be refreshed after changes: `copilot plugin install ~/labflow`
+1. Work on the Codex worktree, usually `/home/hac/labflow-codex`.
+2. Edit files under `plugins/labflow/`.
+3. Validate JSON manifests and scripts.
+4. Commit with conventional commits.
+5. Re-add or upgrade the local marketplace if needed:
 
----
+```bash
+codex plugin marketplace add /home/hac/labflow-codex
+```
 
-## Anti-Patterns to Avoid
+Changes affect new Codex sessions after the plugin/marketplace is reloaded.
 
-- ❌ Appending to `_context.md` instead of overwriting — it becomes a historical log
-- ❌ Making `_progress.md` replace the CLI plan — they're at different abstraction levels
-- ❌ Making Lab read `tasks/` automatically — it's a human navigation layer
-- ❌ Adding `tools: [...]` to agent frontmatter — restricts rather than extends
-- ❌ Big-bang refactors — change one clear thing at a time, verify next session
+## Anti-Patterns
+
+- Appending to `_context.md` or `_progress.md` instead of overwriting snapshots.
+- Making `_progress.md` replace Codex's current-session plan.
+- Making Lab read `tasks/` automatically.
+- Reintroducing Copilot-specific agent frontmatter or install instructions on `main`.
+- Forcing model overrides in prompts unless the user explicitly asks for that behavior.

@@ -157,7 +157,7 @@ obsidian vault=<name> append file="ideas/_map" \
 - _map.md 已追加新链接
 ```
 
-用 `ask_user` 确认是否有遗漏，根据反馈补充后才算收尾完成。
+用自然语言请用户确认是否有遗漏，根据反馈补充后才算收尾完成。
 
 ---
 

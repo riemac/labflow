@@ -1,0 +1,20 @@
+{
+  "name": "labflow-local",
+  "interface": {
+    "displayName": "Labflow Local"
+  },
+  "plugins": [
+    {
+      "name": "labflow",
+      "source": {
+        "source": "local",
+        "path": "./plugins/labflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Research"
+    }
+  ]
+}

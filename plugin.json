@@ -1,7 +1,0 @@
-{
-  "name": "labflow",
-  "version": "0.1.0",
-  "description": "Scientific research workflow plugin for GitHub Copilot CLI — code annotation, pseudocode drafting, PDF reading, and Obsidian-based research knowledge management.",
-  "agents": "agents/",
-  "skills": "skills/"
-}
