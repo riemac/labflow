@@ -35,6 +35,7 @@ labflow/
 │       ├── design-scaffold/
 │       ├── engineering-handoff/
 │       ├── external-research/
+│       ├── git-task-flow/
 │       ├── obsidian-cli/
 │       ├── pdf-read/
 │       ├── pseudocode/
@@ -56,6 +57,7 @@ Current skill boundaries:
 - `external-research`: official docs, third-party APIs, upstream source, papers, version differences, GitHub issues/PRs; uses Context7, `gh`, web, pdf-reader, and `lab-research`.
 - `design-scaffold`: design-stage idea concretization; writes distributed prompt material into code skeletons, field docs, TODO anchors, or design notes.
 - `engineering-handoff`: explicit-path engineering handoff only; no scientific context maintenance.
+- `git-task-flow`: task-scoped git boundaries, commits, history review, and final push/cleanup mechanics.
 - `annotation`: research-oriented code comments and docstrings.
 - `pseudocode`: already-clear algorithm TODOs and pseudocode skeletons.
 - `obsidian-cli`: Obsidian CLI command reference and safety rules.

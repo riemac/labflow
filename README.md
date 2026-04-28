@@ -8,6 +8,7 @@ labflow provides reusable skills for research-heavy coding work in Codex:
 - External research over official docs, upstream source, papers, and version-specific evidence.
 - Design scaffolding that turns ideas into reviewable interfaces, fields, docs, and TODO anchors.
 - Engineering handoff snapshots written only to an explicitly specified path.
+- Git task flow for task boundaries, commits, history review, and GitHub publishing mechanics.
 - Scientific annotation, pseudocode drafting, PDF reading, Obsidian CLI operations, and self-update.
 - Background agents for read-heavy local exploration and external research.
 - MCP configuration for `pdf-reader`, `augmentcode`, and `context7`.
@@ -50,6 +51,7 @@ Install or reload the marketplace, then use the plugin by naming the skill in th
 - `使用 external-research 查 IsaacLab 官方相机 API`
 - `使用 design-scaffold 把这个扰动配置 idea 落成接口草图和字段说明`
 - `使用 engineering-handoff 更新 vault=Research path=_progress.md`
+- `使用 git-task-flow 提交并推送当前任务`
 
 Codex may also trigger these skills automatically when the request clearly matches their descriptions.
 
