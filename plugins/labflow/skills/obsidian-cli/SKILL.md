@@ -42,6 +42,15 @@ Commands target the most recently focused vault by default. Use `vault=<name>` a
 obsidian vault="My Vault" search query="test"
 ```
 
+Before any write operation, confirm the active vault:
+
+```bash
+obsidian vault info=name
+obsidian vault info=path
+```
+
+Do not assume `vault=<name>` failed safely when the name is wrong; verify the reported vault before writing. Prefer `path=<path>` over `file=<name>` for agent writes because `path` is exact and avoids same-name note collisions.
+
 ## Common patterns
 
 ```bash

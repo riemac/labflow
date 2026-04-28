@@ -1,7 +1,7 @@
 {
   "name": "labflow",
-  "version": "0.2.0",
-  "description": "Codex-native scientific research workflow plugin with Obsidian-backed memory, research prompts, background agents, and MCP configuration.",
+  "version": "0.3.0",
+  "description": "Codex-native research coding skill toolbox with codebase research, external research, design scaffolding, handoff, Obsidian, PDF, and MCP support.",
   "author": {
     "name": "hac",
     "url": "https://github.com/"
@@ -13,16 +13,17 @@
     "research",
     "obsidian",
     "codex",
-    "scientific-workflow",
-    "prompt-forging",
+    "research-coding",
+    "design-scaffold",
+    "codebase-research",
     "mcp"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Labflow",
-    "shortDescription": "Codex workflows for research coding with Obsidian memory",
-    "longDescription": "Labflow brings Codex-native scientific research workflows into a project: Obsidian-backed context and progress handoff, research-friendly annotation and pseudocode skills, PDF reading workflows, prompt-forging sessions, and background exploration/research agents.",
+    "shortDescription": "Research coding skills for Codex",
+    "longDescription": "Labflow is a Codex skill toolbox for research coding: local codebase research, external evidence gathering, idea-to-scaffold design work, engineering handoff, research-friendly annotation, pseudocode drafting, Obsidian CLI operations, PDF reading, and read-heavy background agents.",
     "developerName": "hac",
     "category": "Research",
     "capabilities": [
@@ -34,9 +35,10 @@
     "privacyPolicyURL": "https://github.com/",
     "termsOfServiceURL": "https://github.com/",
     "defaultPrompt": [
-      "Start a Lab research coding session from this project.",
-      "Open LabPrompt and turn my rough idea into a Codex prompt.",
-      "Refresh the Obsidian handoff for this research project."
+      "Use codebase-research to investigate the camera configuration pipeline.",
+      "Use external-research to check the official API behavior for this library version.",
+      "Use design-scaffold to turn this idea into reviewable interfaces, fields, and TODO anchors.",
+      "Use engineering-handoff to update vault=Research path=_progress.md."
     ],
     "brandColor": "#2D6A4F",
     "screenshots": []

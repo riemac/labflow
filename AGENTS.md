@@ -4,9 +4,16 @@ This file is for agents working on **labflow itself**. It is not shipped into do
 
 ## What This Is
 
-**labflow** is now a Codex-native plugin for scientific research workflows. It packages reusable skills, MCP configuration, top-level launch prompts, and background research/exploration agents around Obsidian as the persistent knowledge hub.
+**labflow** is a Codex-native research coding skill toolbox.
 
-Legacy GitHub Copilot support is preserved on the `copilot-legacy` branch. The `main` branch is for Codex-only iteration.
+The current `main` branch is **skill-first**:
+
+- Skills are the primary user-facing interface.
+- Prompts are optional manual reference material.
+- Background agents are read-heavy helpers for delegation, not top-level personas.
+- Obsidian is available as a CLI-backed note system, but labflow no longer tries to enforce an automatic scientific knowledge graph.
+
+Legacy GitHub Copilot support is preserved on the `copilot-legacy` branch. Do not reintroduce Copilot-only structures on `main`.
 
 ## Repository Shape
 
@@ -17,93 +24,97 @@ labflow/
 │   ├── .codex-plugin/plugin.json           # Codex plugin manifest
 │   ├── .mcp.json                           # MCP: pdf-reader, augmentcode, context7
 │   ├── agents/
-│   │   ├── lab-explore.md                  # Background local code exploration agent
-│   │   └── lab-research.md                 # Background external research agent
+│   │   ├── lab-explore.md                  # Read-heavy local code exploration subagent
+│   │   └── lab-research.md                 # Read-heavy external research subagent
 │   ├── prompts/
-│   │   ├── lab.md                          # Top-level Lab session prompt
-│   │   └── labprompt.md                    # Top-level LabPrompt session prompt
-│   ├── scripts/
-│   │   ├── codex-lab                       # Launch Codex with Lab prompt
-│   │   └── codex-labprompt                 # Launch Codex with LabPrompt prompt
+│   │   ├── lab.md                          # Optional manual reference prompt
+│   │   └── labprompt.md                    # Optional legacy/manual reference prompt
 │   └── skills/
 │       ├── annotation/
-│       ├── pseudocode/
-│       ├── pdf-read/
+│       ├── codebase-research/
+│       ├── design-scaffold/
+│       ├── engineering-handoff/
+│       ├── external-research/
 │       ├── obsidian-cli/
-│       ├── obsidian-research/
-│       ├── lab-handoff/
+│       ├── pdf-read/
+│       ├── pseudocode/
 │       └── self-update/
 └── README.md
 ```
 
+There should be no `plugins/labflow/scripts/` launch workflow on `main`.
+
 ## Core Design Principles
 
-### 1. Obsidian Vault Is the Only Persistent Research Memory
+### 1. Skills Are The Primary Interface
 
-All cross-session research memory lives in the Obsidian vault. Do not add private `/memories/`, hidden session-state files, or parallel long-term state stores.
+labflow should package stable repeated work as Codex skills.
 
-Vault structure:
+Current skill boundaries:
 
-```text
-vault root/
-├── _context.md            # Research context snapshot, overwritten each handoff, short
-├── _progress.md           # Engineering handoff snapshot, overwritten each handoff, no fixed length
-├── _progress-history.md   # Changelog, append only, not read automatically at startup
-├── ideas/
-│   ├── _map.md
-│   ├── h-*.md
-│   ├── q-*.md
-│   ├── f-*.md
-│   └── d-*.md
-└── tasks/
-    └── task-*.md          # LabPrompt writes these; humans choose when to use them
-```
+- `codebase-research`: local repository investigation; uses augmentcode, `rg`, key-file reads, and `lab-explore` delegation.
+- `external-research`: official docs, third-party APIs, upstream source, papers, version differences, GitHub issues/PRs; uses Context7, `gh`, web, pdf-reader, and `lab-research`.
+- `design-scaffold`: design-stage idea concretization; writes distributed prompt material into code skeletons, field docs, TODO anchors, or design notes.
+- `engineering-handoff`: explicit-path engineering handoff only; no scientific context maintenance.
+- `annotation`: research-oriented code comments and docstrings.
+- `pseudocode`: already-clear algorithm TODOs and pseudocode skeletons.
+- `obsidian-cli`: Obsidian CLI command reference and safety rules.
+- `pdf-read`: PDF/paper reading workflow.
+- `self-update`: updating labflow itself.
 
-Key distinction:
+Do not create skills for imagined workflows that have not been proven through repeated use.
 
-- `_context.md` is scientific context: current hypotheses, directions, decisions, and unresolved questions.
-- `_progress.md` is engineering handoff: current target, file/function-level progress, resume guide, and known blockers.
-- `tasks/` is a human navigation layer; Lab does not automatically read it.
+### 2. Prompts Are Reference Material, Not Product Surface
 
-### 2. Do Not Replace Codex-Native Planning
+`prompts/lab.md` and `prompts/labprompt.md` can remain as manual prompt references, but do not design the plugin around top-level agent switching.
 
-The vault is human-readable project state. It is not a replacement for Codex's current-session plan/tooling.
+Codex currently does not provide a VS Code top-level custom agent switcher equivalent to `agent.md`. Do not pretend prompts are first-class top-level agents.
 
-- Codex plan/checklist tools are for the current execution session.
-- `_progress.md` is for cross-session handoff.
-- `tasks/task-*.md` files are prompt briefs that a human can choose to paste or run later.
+### 3. Background Agents Are Read-Heavy Helpers
 
-### 3. Separate Top-Level Workflows From Background Agents
+`lab-explore` and `lab-research` are kept because they can save main-session context during heavy investigation.
 
-- **Lab** is a top-level Codex session prompt for research discussion and implementation.
-- **LabPrompt** is a separate top-level Codex session prompt for discussing vague ideas and forging natural-language execution prompts.
-- **lab-explore** and **lab-research** are background agents for bounded delegated investigations.
+- Use `lab-explore` for local codebase exploration.
+- Use `lab-research` for external evidence gathering.
+- Do not turn them into the main product interface.
+- Do not merge their full behavior into a single persona prompt.
 
-Do not turn LabPrompt into a background subagent. Its intended UX is a separate Codex window/session.
+### 4. Obsidian Is A Tool, Not An Automatic Research OS
 
-### 4. Keep Tools Codex-Native
+Obsidian remains useful for user-maintained research notes and explicit engineering handoff.
+
+Rules:
+
+- Do not restore `obsidian-research` or automatic `ideas/h/q/f/d` graph maintenance unless the user explicitly asks.
+- Do not make agents silently write scientific context or decisions to the vault.
+- `engineering-handoff` may write only when the user explicitly provides the target path.
+- Before Obsidian writes, verify the active vault with `obsidian vault info=name` and `obsidian vault info=path`.
+- Prefer `path=` over `file=` for agent writes.
+
+### 5. Keep Tools Codex-Native
 
 - Use Codex plugin manifest format: `plugins/labflow/.codex-plugin/plugin.json`.
 - Use Codex marketplace format: `.agents/plugins/marketplace.json`.
 - Use plugin MCP config: `plugins/labflow/.mcp.json`.
-- Avoid Copilot-only assumptions such as `copilot plugin install`, `ask_user`, `.agent.md` top-level launch agents, or Copilot `inputs`.
+- Avoid Copilot-only assumptions such as `copilot plugin install`, `ask_user`, `.agent.md` top-level launch agents, Copilot `inputs`, or Copilot `tools:` frontmatter.
 
-### 5. Selective De-MCP
+### 6. Selective Tooling
 
-Prefer CLI tools when they are cheaper and clearer:
+Prefer the cheapest reliable tool:
 
-- Obsidian CLI for vault read/write.
-- `pdftotext` can be used for fast local PDF text extraction, but paper reading should keep `pdf-reader` MCP available because it handles richer PDF workflows better.
-- `pdf-reader` MCP is important for paper reading, image extraction, and remote PDFs.
-- `augmentcode` MCP is the primary local code search path when semantic codebase retrieval is available.
-- `context7` MCP is useful for official documentation lookup when version-specific API behavior matters.
+- augmentcode for semantic local codebase retrieval when available.
+- `rg` for exact local search.
+- Context7 for official/version-specific API documentation when available.
+- `gh` for GitHub release/source/issue/PR investigation.
+- pdf-reader for richer PDF workflows, paper reading, images, and remote PDFs.
+- Obsidian CLI for explicit note read/write operations.
 
 ## Iterating On labflow
 
 1. Work on `/home/hac/labflow` on the `main` branch.
-2. Edit files under `plugins/labflow/`.
-3. Validate JSON manifests and scripts.
-4. Commit with conventional commits.
+2. Prefer edits under `plugins/labflow/` unless updating repository-level instructions or marketplace metadata.
+3. Validate JSON manifests after manifest changes.
+4. Validate skills with `quick_validate.py` after skill changes.
 5. Re-add or upgrade the local marketplace if needed:
 
 ```bash
@@ -114,8 +125,10 @@ Changes affect new Codex sessions after the plugin/marketplace is reloaded.
 
 ## Anti-Patterns
 
-- Appending to `_context.md` or `_progress.md` instead of overwriting snapshots.
-- Making `_progress.md` replace Codex's current-session plan.
-- Making Lab read `tasks/` automatically.
-- Reintroducing Copilot-specific agent frontmatter or install instructions on `main`.
-- Forcing model overrides in prompts unless the user explicitly asks for that behavior.
+- Reintroducing `obsidian-research` as a scientific knowledge graph skill.
+- Making LabPrompt the central workflow again.
+- Reintroducing deleted `codex-lab` / `codex-labprompt` launcher scripts.
+- Treating prompts as top-level custom agents.
+- Making `engineering-handoff` infer a vault/path implicitly.
+- Adding broad persona behavior to `AGENTS.md`; this file is for labflow repository rules.
+- Forcing model overrides in prompts or subagents unless the user explicitly asks.

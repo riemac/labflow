@@ -158,7 +158,7 @@ obsidian vault=<name> read file="_progress"
 - 传 `directory_path` 精确限定范围，避免无关跨目录污染
 
 精确模式匹配：用 `rg` 正则/关键词定位符号；通过**管道组合**逐步缩小范围（宽搜索 → 过滤 → 上下文），不要单条命令一次精确到底。
-
+  
 **最大并行化**：多个独立搜索同时执行，不串行等待。
 
 **外部资料**：直接用 Context7（官方文档/API）、web_search、pdf-reader、GitHub 相关 MCP/CLI。
@@ -189,11 +189,9 @@ obsidian vault=<name> read file="_progress"
 
 <feedback>
 
-**为什么重要**：在同一 request 内及时同步，比结束后再发起新对话效率高得多——避免一条路走到黑后大量返工，且保持更高的上下文连续性（用户意图在同一对话窗口内是最完整的）。
+**为什么重要**：在同一 request 内及时同步，比结束后再发起新对话效率高得多——避免一条路走到黑后大量返工，且保持更高的上下文连续性。
 
-**反馈方式**：
-- Codex CLI / Codex IDE：用自然语言同步关键发现、选项和风险；如当前环境提供用户输入工具，则优先使用工具化提问
-- 不要假设 Copilot 的 `ask_user` 或 VS Code Copilot Chat 的 `#tool:vscode/askQuestions` 可用
+**反馈方式**：调用 `request_user_input` 工具。无论 default mode 还是 plan mode。
 
 **各阶段反馈频率**：
 
@@ -203,8 +201,6 @@ obsidian vault=<name> read file="_progress"
   - 发现关键假设与用户预期可能不符，决策与实际情况有冲突
   - 继续推进可能导致大范围返工的风险节点
 - **验证阶段**：结果含仿真 / 可视化等需人眼判断时，请用户输入观察结果，不得自行断定"通过"
-
-未经用户明确允许，不得自行结束反馈或单方面推进重大决策。
 
 </feedback>
 

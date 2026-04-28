@@ -30,6 +30,14 @@ Prefer sources in this order:
 
 For OpenAI/Codex-specific questions, use official OpenAI developer documentation first.
 
+## Tool Preference
+
+- Use Context7 first when the task is about official library/API documentation and the tool is available in the current session.
+- Use `gh` CLI for GitHub releases, tags, issues, pull requests, discussions, and upstream source inspection.
+- Use web search/browser only when Context7 or GitHub-native access is insufficient.
+- Use pdf-reader for papers, technical reports, PDF specs, remote PDFs, page-level evidence, or image-heavy documents.
+- Use shell tools such as `rg`, `git tag`, and `git show` after source material is available locally.
+
 ## Output
 
 Return:

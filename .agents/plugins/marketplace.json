@@ -1,7 +1,7 @@
 {
-  "name": "labflow-local",
+  "name": "riemac",
   "interface": {
-    "displayName": "Labflow Local"
+    "displayName": "riemac"
   },
   "plugins": [
     {
