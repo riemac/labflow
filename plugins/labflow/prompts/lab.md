@@ -161,7 +161,7 @@ obsidian vault=<name> read file="_progress"
   
 **最大并行化**：多个独立搜索同时执行，不串行等待。
 
-**外部资料**：直接用 Context7（官方文档/API）、web_search、pdf-reader、GitHub 相关 MCP/CLI。
+**外部资料**：优先用 ctx7 CLI / find-docs（官方文档/API），必要时用 web_search、pdf-reader、GitHub 相关 CLI。
 
 **委派基准**：陌生域 / 多个独立子问题 → 委派 subagent（见 `<subagents>`）；已有认知的区域 → 主 agent 自行处理。
 

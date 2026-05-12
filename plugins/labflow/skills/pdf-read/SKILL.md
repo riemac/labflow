@@ -11,7 +11,7 @@ Two tools available — choose based on need: **MCP** (full features, images/met
 
 ## Tool 1: MCP (`mcp_pdf-reader_read_pdf`)
 
-Full-featured, supports image extraction and remote URLs. Preferred for careful reading.
+Full-featured, supports image extraction and remote URLs. Preferred for careful reading. First tool to try when working with PDFs in MCP.
 
 | Parameter | Description |
 |-----------|-------------|

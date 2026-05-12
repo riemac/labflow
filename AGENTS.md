@@ -22,7 +22,7 @@ labflow/
 ├── .agents/plugins/marketplace.json        # Local Codex marketplace entry
 ├── plugins/labflow/
 │   ├── .codex-plugin/plugin.json           # Codex plugin manifest
-│   ├── .mcp.json                           # MCP: pdf-reader, augmentcode, context7
+│   ├── .mcp.json                           # MCP: pdf-reader, augmentcode
 │   ├── agents/
 │   │   ├── lab-explore.md                  # Read-heavy local code exploration subagent
 │   │   └── lab-research.md                 # Read-heavy external research subagent
@@ -54,7 +54,7 @@ labflow should package stable repeated work as Codex skills.
 Current skill boundaries:
 
 - `codebase-research`: local repository investigation; uses augmentcode, `rg`, key-file reads, and `lab-explore` delegation.
-- `external-research`: official docs, third-party APIs, upstream source, papers, version differences, GitHub issues/PRs; uses Context7, `gh`, web, pdf-reader, and `lab-research`.
+- `external-research`: lightweight orchestration for official docs, third-party APIs, upstream source, papers, version differences, GitHub issues/PRs; uses ctx7 CLI first, `gh`/web/pdf-reader as needed, and `lab-research` for high-noise external research.
 - `design-scaffold`: design-stage idea concretization; writes distributed prompt material into code skeletons, field docs, TODO anchors, or design notes.
 - `engineering-handoff`: explicit-path engineering handoff only; no scientific context maintenance.
 - `git-task-flow`: task-scoped git boundaries, commits, history review, and final push/cleanup mechanics.
@@ -106,7 +106,7 @@ Prefer the cheapest reliable tool:
 
 - augmentcode for semantic local codebase retrieval when available.
 - `rg` for exact local search.
-- Context7 for official/version-specific API documentation when available.
+- ctx7 CLI / find-docs for official/version-specific API documentation when available.
 - `gh` for GitHub release/source/issue/PR investigation.
 - pdf-reader for richer PDF workflows, paper reading, images, and remote PDFs.
 - Obsidian CLI for explicit note read/write operations.

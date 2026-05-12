@@ -7,7 +7,7 @@ description: 对 labflow Codex plugin 本身进行自更新。当某个 skill、
 
 对 labflow plugin 自身进行迭代改进：编辑 `plugins/labflow/` 下的 prompts、agents、skills、MCP 或 manifest → 验证 → 按需提交 → 重新加载 Codex marketplace。
 
-> **关键约束：** 当前 Codex session 不会自动吸收已安装插件内容的变化。改动完成后，重新添加/升级本地 marketplace，并开启新 session 验证。
+> **关键约束：** 当前 Codex session 不会自动吸收已安装插件内容的变化。改动完成后，重新加载本地 marketplace，并开启新 session 验证。
 
 ---
 
@@ -52,10 +52,19 @@ Commit 类型参考：
 ### 4. 重新加载本地 marketplace
 
 ```bash
+codex plugin marketplace remove riemac
 codex plugin marketplace add /home/hac/labflow
 ```
 
-如果 marketplace 已存在而 Codex 要求升级，使用当前 Codex CLI 提示的 upgrade 流程。
+这里要区分两类 marketplace：
+
+- **本地目录 marketplace**：当前 `labflow` 就属于这一类。经验上要把“刷新”当成
+  `remove` 再 `add`，不要只执行 `add`，也不要误用 `upgrade`。
+- **Git marketplace**：若 Codex CLI 明确把它识别为 Git marketplace，再使用
+  `codex plugin marketplace upgrade ...`。
+
+`codex plugin marketplace add /home/hac/labflow` 在 marketplace 已存在时，很多时候只会报告
+“already added”，并不可靠地表达“刷新完成”。因此本地目录源默认走 `remove -> add`。
 
 ### 5. 告知用户
 

@@ -11,7 +11,7 @@ labflow provides reusable skills for research-heavy coding work in Codex:
 - Git task flow for task boundaries, commits, history review, and GitHub publishing mechanics.
 - Scientific annotation, pseudocode drafting, PDF reading, Obsidian CLI operations, and self-update.
 - Background agents for read-heavy local exploration and external research.
-- MCP configuration for `pdf-reader`, `augmentcode`, and `context7`.
+- MCP configuration for `pdf-reader` and `augmentcode`.
 
 The old GitHub Copilot plugin version is preserved on the `copilot-legacy` branch. The `main` branch targets Codex only.
 
@@ -37,11 +37,10 @@ codex plugin marketplace add /home/hac/labflow
 
 If Codex reports that the marketplace already exists, follow the CLI's suggested upgrade command.
 
-`context7` expects `CONTEXT7_API_KEY` to be present in the shell environment before starting Codex. The other configured MCP servers use local commands:
+External library/API docs are handled by ctx7 CLI skills, not an MCP server. The configured MCP servers use local commands:
 
 - `npx @sylphx/pdf-reader-mcp`
 - `auggie --mcp --mcp-auto-workspace`
-- `npx @upstash/context7-mcp@1.0.30`
 
 ## Use In VS Code Codex
 
