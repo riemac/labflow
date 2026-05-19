@@ -52,8 +52,7 @@ Commit 类型参考：
 ### 4. 重新加载本地 marketplace
 
 ```bash
-codex plugin marketplace remove riemac
-codex plugin marketplace add /home/hac/labflow
+/home/hac/labflow/plugins/labflow/skills/self-update/scripts/reload_labflow_plugin.sh
 ```
 
 这里要区分两类 marketplace：

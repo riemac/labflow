@@ -33,8 +33,8 @@ For OpenAI/Codex-specific questions, use official OpenAI developer documentation
 
 ## Tool Preference
 
-- Use ctx7 CLI / find-docs first for official library/API documentation, configuration, examples, and migration notes.
-- Use `gh` CLI only when GitHub releases, tags, issues, pull requests, discussions, or upstream source materially affect the answer.
+- Use ctx7 CLI / find-docs first for official library/API documentation, configuration, examples, and migration notes. If the user asks how a library/tool should be used, start here even when the project is hosted on GitHub.
+- Use `gh` CLI only when GitHub-native facts materially affect the answer: releases, tags, issues, pull requests, discussions, repository metadata, commits, or upstream source implementation.
 - Use web search/browser only when ctx7 or GitHub-native access is insufficient.
 - Use pdf-reader for papers, technical reports, PDF specs, remote PDFs, page-level evidence, or image-heavy documents.
 - Use shell tools such as `rg`, `git tag`, and `git show` after source material is available locally.

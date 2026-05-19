@@ -11,10 +11,12 @@ description: 外部资料调研编排技能。用于第三方库/API、官方文
 
 ## Default Route
 
-- 库/API/官方文档/配置项/迁移说明：优先使用 `find-docs` skill，大部分情况优先使用。
-- GitHub release、tag、issue、PR、discussion、源码确认：按需使用 `gh` CLI，不强行交叉验证。
+- 库/API/官方文档/配置项/迁移说明：必须先使用 `find-docs` / ctx7 CLI。不要因为目标库托管在 GitHub，就先用 `gh` 查 repo 或源码。
+- 只有问题本身需要 GitHub 证据时，才直接使用 `gh` CLI：release/tag 日期、issue/PR/discussion、上游源码实现、commit 差异、仓库元信息、npm/release 状态核对。
 - 论文、技术报告、PDF spec、远程 PDF：使用 `pdf-read` / pdf-reader。
 - ctx7 不覆盖、官方站点不在 GitHub、或需要横向资料时，再用 web search/browser。
+
+判断顺序：先问“这是文档/API 用法问题吗？”如果是，ctx7 先行；再问“答案是否依赖 GitHub 事实或源码实现？”如果是，再补 `gh`。不要为了形式上的交叉验证而扩大工具面。
 
 ## Bootstrap
 
