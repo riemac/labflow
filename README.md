@@ -35,9 +35,11 @@ From this repository:
 ```bash
 codex plugin marketplace remove riemac
 codex plugin marketplace add /home/hac/labflow
+codex plugin remove labflow@riemac
+codex plugin add labflow@riemac
 ```
 
-For local directory marketplaces, prefer remove then add. A plain `add` may only report that the marketplace already exists.
+For local directory marketplaces, refresh both the marketplace source and the installed plugin cache. A plain marketplace `add` may only report that the marketplace already exists.
 
 External library/API docs are handled by ctx7 CLI skills, not an MCP server. The configured MCP servers use local commands:
 
@@ -64,6 +66,12 @@ python3 /home/hac/labflow/plugins/labflow/skills/stage-control/scripts/check_sta
 ```
 
 The hook uses only Python standard-library modules. In tmux, it tries to open a small HUD pane; outside tmux it silently skips the HUD.
+
+After changing Labflow itself, use:
+
+```bash
+/home/hac/labflow/plugins/labflow/skills/self-update/scripts/reload_labflow_plugin.sh
+```
 
 ## Use In VS Code Codex
 

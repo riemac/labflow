@@ -137,11 +137,13 @@ Prefer the cheapest reliable tool:
 2. Prefer edits under `plugins/labflow/` unless updating repository-level instructions, README, or marketplace metadata.
 3. Validate JSON manifests after manifest changes.
 4. Validate skills with `quick_validate.py` after skill changes.
-5. Re-add the local marketplace if needed:
+5. Reinstall the local plugin if needed:
 
 ```bash
 codex plugin marketplace remove riemac
 codex plugin marketplace add /home/hac/labflow
+codex plugin remove labflow@riemac
+codex plugin add labflow@riemac
 ```
 
 Changes affect new Codex sessions after the plugin/marketplace is reloaded.
