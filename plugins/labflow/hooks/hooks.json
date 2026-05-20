@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$PLUGIN_ROOT/hooks/stage_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "Checking Labflow stage"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$PLUGIN_ROOT/hooks/stage_hook.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

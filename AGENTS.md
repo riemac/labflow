@@ -29,17 +29,22 @@ labflow/
 │   ├── prompts/
 │   │   ├── lab.md                          # Optional manual reference prompt
 │   │   └── labprompt.md                    # Optional legacy/manual reference prompt
+│   ├── hooks/
+│   │   ├── hooks.json                       # Plugin-bundled Codex lifecycle hooks
+│   │   ├── stage_hook.py                    # Lightweight stage state/context runtime
+│   │   └── stage_hud.py                     # Optional tmux HUD for active stages
 │   └── skills/
 │       ├── annotation/
 │       ├── codebase-research/
 │       ├── design-scaffold/
-│       ├── engineering-handoff/
 │       ├── external-research/
 │       ├── git-task-flow/
 │       ├── obsidian-cli/
 │       ├── pdf-read/
-│       ├── pseudocode/
-│       └── self-update/
+│       ├── self-update/
+│       ├── stage-control/
+│       ├── stage-goal-clarify/
+│       └── stage-idea-refine/
 └── README.md
 ```
 
@@ -56,15 +61,29 @@ Current skill boundaries:
 - `codebase-research`: local repository investigation; uses augmentcode, `rg`, key-file reads, and `lab-explore` delegation.
 - `external-research`: lightweight orchestration for official docs, third-party APIs, upstream source, papers, version differences, GitHub issues/PRs; uses ctx7 CLI first, `gh`/web/pdf-reader as needed, and `lab-research` for high-noise external research.
 - `design-scaffold`: design-stage idea concretization; writes distributed prompt material into code skeletons, field docs, TODO anchors, or design notes.
-- `engineering-handoff`: explicit-path engineering handoff only; no scientific context maintenance.
 - `git-task-flow`: task-scoped git boundaries, commits, history review, and final push/cleanup mechanics.
 - `annotation`: research-oriented code comments and docstrings.
-- `pseudocode`: already-clear algorithm TODOs and pseudocode skeletons.
 - `obsidian-cli`: Obsidian CLI command reference and safety rules.
 - `pdf-read`: PDF/paper reading workflow.
 - `self-update`: updating labflow itself.
+- `stage-control`: lightweight stage runtime control, state inspection, and hook enablement guidance.
+- `stage-idea-refine`: discussion-stage research idea refinement; not a planning or implementation wrapper.
+- `stage-goal-clarify`: goal, scope, non-goal, and acceptance-criteria clarification; not a planning or implementation wrapper.
 
 Do not create skills for imagined workflows that have not been proven through repeated use.
+
+Stage skills are the exception only because they are intentionally thin wrappers over a plugin hook runtime. Do not add `stage-plan` or `stage-implement`; Codex native Plan Mode and normal implementation are sufficient.
+
+### Stage Runtime Is Lightweight
+
+The stage runtime exists to keep nonlinear research conversations aligned without recreating OMX-style orchestration.
+
+- Authoritative stage state lives in the active project at `.codex/labflow-stage/state.json`.
+- `UserPromptSubmit` may inject current-stage context.
+- `Stop` may clear state when the assistant emits a standalone `$stage-pass` / `$stage-cancel`, but must not auto-continue by default.
+- Plugin-bundled hooks require `[features].plugin_hooks = true` in Codex config.
+- Hook scripts must remain Python standard-library only unless the user explicitly accepts a dependency.
+- Do not use non-Codex frontmatter such as `argument-hint`; describe usage in the skill body instead.
 
 ### 2. Prompts Are Reference Material, Not Product Surface
 
@@ -98,6 +117,7 @@ Rules:
 - Use Codex plugin manifest format: `plugins/labflow/.codex-plugin/plugin.json`.
 - Use Codex marketplace format: `.agents/plugins/marketplace.json`.
 - Use plugin MCP config: `plugins/labflow/.mcp.json`.
+- Use plugin hook config at `plugins/labflow/hooks/hooks.json`; do not require project-local hook installation for Labflow stage runtime.
 - Avoid Copilot-only assumptions such as `copilot plugin install`, `ask_user`, `.agent.md` top-level launch agents, Copilot `inputs`, or Copilot `tools:` frontmatter.
 
 ### 6. Selective Tooling
@@ -114,12 +134,13 @@ Prefer the cheapest reliable tool:
 ## Iterating On labflow
 
 1. Work on `/home/hac/labflow` on the `main` branch.
-2. Prefer edits under `plugins/labflow/` unless updating repository-level instructions or marketplace metadata.
+2. Prefer edits under `plugins/labflow/` unless updating repository-level instructions, README, or marketplace metadata.
 3. Validate JSON manifests after manifest changes.
 4. Validate skills with `quick_validate.py` after skill changes.
-5. Re-add or upgrade the local marketplace if needed:
+5. Re-add the local marketplace if needed:
 
 ```bash
+codex plugin marketplace remove riemac
 codex plugin marketplace add /home/hac/labflow
 ```
 
@@ -131,6 +152,7 @@ Changes affect new Codex sessions after the plugin/marketplace is reloaded.
 - Making LabPrompt the central workflow again.
 - Reintroducing deleted `codex-lab` / `codex-labprompt` launcher scripts.
 - Treating prompts as top-level custom agents.
-- Making `engineering-handoff` infer a vault/path implicitly.
+- Re-adding broad handoff or pseudocode skills without repeated usage evidence.
 - Adding broad persona behavior to `AGENTS.md`; this file is for labflow repository rules.
+- Turning stage runtime into a heavy planner/executor or adding automatic Stop continuation by default.
 - Forcing model overrides in prompts or subagents unless the user explicitly asks.
