@@ -56,7 +56,7 @@ Labflow includes a lightweight stage runtime for nonlinear research work. Start 
 - `$stage-cancel`: cancel the current stage.
 - `$stage-status`: inspect current stage state.
 
-Stage state is stored in the active project at `.codex/labflow-stage/state.json`.
+Stage state is stored under the active project at `.codex/labflow-stage/` and scoped by Codex session, so parallel conversations in the same repository do not inherit each other's stage.
 
 Plugin-bundled hooks are opt-in in Codex. Check or enable the required feature flag with:
 

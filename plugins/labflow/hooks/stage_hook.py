@@ -18,7 +18,9 @@ from typing import Any
 
 
 STAGE_DIR = Path(".codex") / "labflow-stage"
-STATE_FILE = STAGE_DIR / "state.json"
+LEGACY_STATE_FILE = STAGE_DIR / "state.json"
+SESSIONS_DIR = STAGE_DIR / "sessions"
+
 
 STAGES = {
     "stage-idea-refine": {
@@ -64,9 +66,19 @@ def read_input() -> dict[str, Any]:
         return {}
 
 
-def project_state_path(cwd: str | None) -> Path:
+def safe_session_id(value: Any) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", value.strip())
+    return safe[:120] or None
+
+
+def project_state_path(cwd: str | None, session_id: Any = None) -> Path:
     base = Path(cwd or os.getcwd()).resolve()
-    return base / STATE_FILE
+    safe_id = safe_session_id(session_id)
+    if safe_id:
+        return base / SESSIONS_DIR / f"{safe_id}.json"
+    return base / LEGACY_STATE_FILE
 
 
 def read_state(path: Path) -> dict[str, Any] | None:
@@ -96,6 +108,16 @@ def active_state(path: Path) -> dict[str, Any] | None:
     return None
 
 
+def project_root_from_state(state_path: Path) -> Path:
+    state = read_state(state_path) or {}
+    cwd = state.get("cwd")
+    if isinstance(cwd, str) and cwd:
+        return Path(cwd).expanduser().resolve()
+    if state_path.parent.name == "sessions":
+        return state_path.parents[3]
+    return state_path.parents[2]
+
+
 def run_hud(action: str, state_path: Path) -> None:
     script = Path(__file__).with_name("stage_hud.py")
     if not script.exists():
@@ -103,7 +125,7 @@ def run_hud(action: str, state_path: Path) -> None:
     try:
         subprocess.run(
             ["python3", str(script), action, str(state_path)],
-            cwd=str(state_path.parent.parent.parent),
+            cwd=str(project_root_from_state(state_path)),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             timeout=1.5,
@@ -163,7 +185,7 @@ def start_stage(input_data: dict[str, Any], state_path: Path, stage: str) -> dic
 
 
 def finish_stage(state_path: Path, status: str) -> dict[str, Any] | None:
-    state = read_state(state_path)
+    state = active_state(state_path)
     if not state:
         return None
     state["status"] = status
@@ -193,13 +215,19 @@ def handle_user_prompt(input_data: dict[str, Any], state_path: Path) -> None:
         return
 
     if PASS_RE.search(prompt) or NATURAL_PASS_RE.search(prompt):
-        finish_stage(state_path, "passed")
-        output_context("Labflow stage has been marked passed. Continue normally unless the user starts a new stage.")
+        state = finish_stage(state_path, "passed")
+        if state:
+            output_context("Labflow stage has been marked passed for this session. Continue normally unless the user starts a new stage.")
+        else:
+            output_context("No active Labflow stage in this session.")
         return
 
     if CANCEL_RE.search(prompt) or NATURAL_CANCEL_RE.search(prompt):
-        finish_stage(state_path, "cancelled")
-        output_context("Labflow stage has been cancelled. Continue normally unless the user starts a new stage.")
+        state = finish_stage(state_path, "cancelled")
+        if state:
+            output_context("Labflow stage has been cancelled for this session. Continue normally unless the user starts a new stage.")
+        else:
+            output_context("No active Labflow stage in this session.")
         return
 
     if STATUS_RE.search(prompt):
@@ -223,7 +251,7 @@ def handle_stop(input_data: dict[str, Any], state_path: Path) -> None:
 
 def main() -> int:
     input_data = read_input()
-    state_path = project_state_path(input_data.get("cwd"))
+    state_path = project_state_path(input_data.get("cwd"), input_data.get("session_id"))
     event = input_data.get("hook_event_name")
     if event == "UserPromptSubmit":
         handle_user_prompt(input_data, state_path)

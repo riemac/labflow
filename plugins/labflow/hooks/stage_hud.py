@@ -15,7 +15,6 @@ import time
 from pathlib import Path
 
 
-HUD_FILE = "hud.json"
 HEARTBEAT_STALE_SECONDS = 3.0
 
 
@@ -38,7 +37,7 @@ def write_json(path: Path, value: dict) -> None:
 
 
 def hud_path(state_path: Path) -> Path:
-    return state_path.with_name(HUD_FILE)
+    return state_path.with_suffix(".hud.json")
 
 
 def is_process_alive(pid: int | None) -> bool:

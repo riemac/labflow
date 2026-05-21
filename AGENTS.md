@@ -78,8 +78,8 @@ Stage skills are the exception only because they are intentionally thin wrappers
 
 The stage runtime exists to keep nonlinear research conversations aligned without recreating OMX-style orchestration.
 
-- Authoritative stage state lives in the active project at `.codex/labflow-stage/state.json`.
-- `UserPromptSubmit` may inject current-stage context.
+- Authoritative stage state lives under the active project at `.codex/labflow-stage/` and must be scoped by Codex session to avoid cross-conversation contamination.
+- `UserPromptSubmit` may inject current-stage context only for the matching Codex session.
 - `Stop` may clear state when the assistant emits a standalone `$stage-pass` / `$stage-cancel`, but must not auto-continue by default.
 - Plugin-bundled hooks require `[features].plugin_hooks = true` in Codex config.
 - Hook scripts must remain Python standard-library only unless the user explicitly accepts a dependency.

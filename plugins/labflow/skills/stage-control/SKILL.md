@@ -15,15 +15,17 @@ Stage control is a thin runtime for research workflows that need temporary stage
 - `$stage-cancel`: cancel the current stage.
 - `$stage-status`: report current stage state.
 
-The authoritative state is stored in the active project at:
+The authoritative state is stored under the active project and scoped by Codex session:
 
 ```text
-.codex/labflow-stage/state.json
+.codex/labflow-stage/sessions/<session-id>.json
 ```
+
+A legacy `.codex/labflow-stage/state.json` may exist from older versions, but current hook events with `session_id` do not read it.
 
 ## Runtime Behavior
 
-- `UserPromptSubmit` injects model-visible context while a stage is active.
+- `UserPromptSubmit` injects model-visible context only for the current Codex session while a stage is active.
 - `Stop` only clears state when the assistant emits a standalone `$stage-pass` or `$stage-cancel` line.
 - `Stop` does not push an extra continuation turn by default.
 - When a stage starts, the hook best-effort opens a Ghostty `+new-window` HUD. If Ghostty is unavailable, it silently skips the HUD. Closing the HUD window does not finish the stage.
