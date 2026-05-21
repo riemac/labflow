@@ -65,7 +65,7 @@ python3 /home/hac/labflow/plugins/labflow/skills/stage-control/scripts/check_sta
 python3 /home/hac/labflow/plugins/labflow/skills/stage-control/scripts/check_stage_hooks.py --write
 ```
 
-The hook uses only Python standard-library modules. In tmux, it tries to open a small HUD pane; outside tmux it silently skips the HUD.
+The hook uses only Python standard-library modules. When a stage starts, it best-effort opens a Ghostty `+new-window` HUD; if Ghostty is unavailable, stage context injection still works normally.
 
 After changing Labflow itself, use:
 

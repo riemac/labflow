@@ -26,7 +26,7 @@ The authoritative state is stored in the active project at:
 - `UserPromptSubmit` injects model-visible context while a stage is active.
 - `Stop` only clears state when the assistant emits a standalone `$stage-pass` or `$stage-cancel` line.
 - `Stop` does not push an extra continuation turn by default.
-- In tmux, the hook tries to open a small HUD pane. Outside tmux it silently skips the HUD.
+- When a stage starts, the hook best-effort opens a Ghostty `+new-window` HUD. If Ghostty is unavailable, it silently skips the HUD. Closing the HUD window does not finish the stage.
 
 ## Hook Enablement
 

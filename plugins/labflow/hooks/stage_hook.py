@@ -155,7 +155,7 @@ def start_stage(input_data: dict[str, Any], state_path: Path, stage: str) -> dic
         "cwd": str(Path(input_data.get("cwd") or os.getcwd()).resolve()),
         "entered_at": previous.get("entered_at") if previous.get("stage") == stage else now,
         "updated_at": now,
-        "hud_pane_id": previous.get("hud_pane_id"),
+        "hud_backend": previous.get("hud_backend", "ghostty-window"),
     }
     write_state(state_path, state)
     run_hud("ensure", state_path)

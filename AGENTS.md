@@ -32,7 +32,7 @@ labflow/
 │   ├── hooks/
 │   │   ├── hooks.json                       # Plugin-bundled Codex lifecycle hooks
 │   │   ├── stage_hook.py                    # Lightweight stage state/context runtime
-│   │   └── stage_hud.py                     # Optional tmux HUD for active stages
+│   │   └── stage_hud.py                     # Optional Ghostty window HUD for active stages
 │   └── skills/
 │       ├── annotation/
 │       ├── codebase-research/
@@ -83,6 +83,7 @@ The stage runtime exists to keep nonlinear research conversations aligned withou
 - `Stop` may clear state when the assistant emits a standalone `$stage-pass` / `$stage-cancel`, but must not auto-continue by default.
 - Plugin-bundled hooks require `[features].plugin_hooks = true` in Codex config.
 - Hook scripts must remain Python standard-library only unless the user explicitly accepts a dependency.
+- Stage HUD should prefer Ghostty `+new-window`; do not reintroduce tmux/Zellij pane backends unless the user explicitly asks.
 - Do not use non-Codex frontmatter such as `argument-hint`; describe usage in the skill body instead.
 
 ### 2. Prompts Are Reference Material, Not Product Surface
