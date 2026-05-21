@@ -74,6 +74,14 @@ Do not create skills for imagined workflows that have not been proven through re
 
 Stage skills are the exception only because they are intentionally thin wrappers over a plugin hook runtime. Do not add `stage-plan` or `stage-implement`; Codex native Plan Mode and normal implementation are sufficient.
 
+### Skill Language Convention
+
+For Labflow skills, `SKILL.md` is the authoritative English, agent-facing instruction file loaded by Codex. If a Chinese companion exists, name it `SKILL_CN.md`; it is for the user to read, discuss, and review.
+
+Keep the two semantically synchronized, but do not mechanically translate. The English file should stay concise and operational; the Chinese file may carry more design rationale when it helps user-agent discussion.
+
+When a skill references bundled files such as `scripts/foo.py`, `references/bar.md`, or `assets/...`, write paths relative to that skill directory. Codex agents should resolve those paths against the loaded `SKILL.md` location, not against the shell cwd or repository root.
+
 ### Stage Runtime Is Lightweight
 
 The stage runtime exists to keep nonlinear research conversations aligned without recreating OMX-style orchestration.

@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import time
+import textwrap
 from pathlib import Path
 
 
@@ -69,6 +70,9 @@ def render(state: dict) -> str:
     cwd = state.get("cwd", "")
     entered = state.get("entered_at", "")
     updated = state.get("updated_at", "")
+    readiness = state.get("exit_readiness")
+    idea_state = str(state.get("idea_state") or "").strip()
+    brief_path = str(state.get("refined_brief_path") or "").strip()
     last_stop = state.get("last_stop_hook_at", "never")
     stop_count = state.get("stop_hook_count", 0)
     turn_id = state.get("last_stop_turn_id") or "none"
@@ -80,12 +84,27 @@ def render(state: dict) -> str:
         f"cwd     : {cwd}",
         f"entered : {entered}",
         f"updated : {updated}",
-        f"stop    : count={stop_count} | last={last_stop}",
-        f"turn    : {turn_id}",
-        "",
-        "commands: $stage-pass | $stage-cancel | $stage-status",
-        "note    : closing this window does not finish the stage",
     ]
+    if readiness:
+        lines.append(f"ready   : {readiness}")
+    if idea_state:
+        wrapped = textwrap.wrap(idea_state, width=72)
+        if wrapped:
+            lines.append(f"idea    : {wrapped[0]}")
+            lines.extend(f"          {line}" for line in wrapped[1:4])
+            if len(wrapped) > 4:
+                lines.append("          ...")
+    if brief_path:
+        lines.append(f"brief   : {brief_path}")
+    lines.extend(
+        [
+            f"stop    : count={stop_count} | last={last_stop}",
+            f"turn    : {turn_id}",
+            "",
+            "commands: $stage-pass | $stage-cancel | $stage-status",
+            "note    : closing this window does not finish the stage",
+        ]
+    )
     return "\n".join(lines)
 
 

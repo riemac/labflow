@@ -42,10 +42,11 @@ STAGES = {
     },
 }
 
-ENTER_RE = re.compile(r"(?:\$|使用\s+|use\s+)?(stage-idea-refine|stage-goal-clarify)\b", re.IGNORECASE)
+ENTER_RE = re.compile(r"(?<![\w./-])\$(stage-idea-refine|stage-goal-clarify)(?![\w./-])", re.IGNORECASE)
 PASS_RE = re.compile(r"(?m)^\s*\$stage-pass\s*$")
 CANCEL_RE = re.compile(r"(?m)^\s*\$stage-cancel\s*$")
 STATUS_RE = re.compile(r"(?m)^\s*\$stage-status\s*$")
+IDEA_READINESS_VALUES = {"vague", "not_ready", "candidate", "ready_to_pass"}
 
 NATURAL_PASS_RE = re.compile(
     r"(?:这个阶段|stage|阶段).{0,8}(?:过了|通过|完成|结束|退出)",
@@ -152,22 +153,43 @@ def output_context(text: str) -> None:
 def stage_context(state: dict[str, Any]) -> str:
     stage = str(state.get("stage"))
     spec = STAGES.get(stage, STAGES["stage-idea-refine"])
-    return "\n".join(
+    lines = [
+        "[Labflow Stage Runtime]",
+        f"Active stage: {spec['title']} (`{stage}`).",
+        spec["contract"],
+    ]
+    if stage == "stage-idea-refine":
+        readiness = str(state.get("exit_readiness") or "vague")
+        idea_state = str(state.get("idea_state") or "No idea_state recorded yet.")
+        updated_at = str(state.get("idea_state_updated_at") or "never")
+        state_path = str(state.get("_state_path") or "")
+        lines.extend(
+            [
+                f"exit_readiness: {readiness}.",
+                f"idea_state: {idea_state}",
+                f"idea_state_updated_at: {updated_at}.",
+                "Maintain exit_readiness/idea_state only when the discussion state clearly changes; it is not a per-turn ritual.",
+                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$stage-cancel` line.",
+                "When ready_to_pass, prefer asking the user to send `$stage-pass`; after the stage is truly passed, write a concise idea-refine brief for user recall if appropriate.",
+            ]
+        )
+        if state_path:
+            lines.append(f"State file: {state_path}")
+    lines.extend(
         [
-            "[Labflow Stage Runtime]",
-            f"Active stage: {spec['title']} (`{stage}`).",
-            spec["contract"],
             "Use repo/code/document inspection for discoverable facts before asking the user.",
             "For high-impact human preferences or tradeoffs, ask one focused question instead of guessing.",
             "If the stage is clearly complete, either ask the user to send `$stage-pass` or include a standalone `$stage-pass` line.",
             "User commands: `$stage-pass`, `$stage-cancel`, `$stage-status`.",
         ]
     )
+    return "\n".join(lines)
 
 
 def start_stage(input_data: dict[str, Any], state_path: Path, stage: str) -> dict[str, Any]:
     now = utc_now()
     previous = read_state(state_path) or {}
+    same_active_stage = previous.get("stage") == stage and previous.get("status") == "active"
     state = {
         "schema_version": 1,
         "status": "active",
@@ -175,10 +197,18 @@ def start_stage(input_data: dict[str, Any], state_path: Path, stage: str) -> dic
         "stage_label": STAGES[stage]["label"],
         "session_id": input_data.get("session_id"),
         "cwd": str(Path(input_data.get("cwd") or os.getcwd()).resolve()),
-        "entered_at": previous.get("entered_at") if previous.get("stage") == stage else now,
+        "entered_at": previous.get("entered_at") if same_active_stage else now,
         "updated_at": now,
         "hud_backend": previous.get("hud_backend", "ghostty-window"),
     }
+    if stage == "stage-idea-refine":
+        state["exit_readiness"] = previous.get("exit_readiness") if same_active_stage else "vague"
+        if state["exit_readiness"] not in IDEA_READINESS_VALUES:
+            state["exit_readiness"] = "vague"
+        state["idea_state"] = previous.get("idea_state") if same_active_stage else ""
+        state["idea_state_updated_at"] = previous.get("idea_state_updated_at") if same_active_stage else ""
+        state["idea_state_updated_by"] = previous.get("idea_state_updated_by") if same_active_stage else ""
+        state["refined_brief_path"] = previous.get("refined_brief_path") if same_active_stage else ""
     write_state(state_path, state)
     run_hud("ensure", state_path)
     return read_state(state_path) or state
@@ -203,7 +233,16 @@ def summarize_status(state_path: Path) -> str:
     status = state.get("status", "unknown")
     entered = state.get("entered_at", "unknown")
     updated = state.get("updated_at", "unknown")
-    return f"Labflow stage: {status}; stage={stage}; entered_at={entered}; updated_at={updated}."
+    parts = [f"Labflow stage: {status}", f"stage={stage}", f"entered_at={entered}", f"updated_at={updated}"]
+    if stage == "stage-idea-refine":
+        parts.append(f"exit_readiness={state.get('exit_readiness', 'vague')}")
+        idea_state = str(state.get("idea_state") or "").strip()
+        if idea_state:
+            parts.append(f"idea_state={idea_state}")
+        brief = str(state.get("refined_brief_path") or "").strip()
+        if brief:
+            parts.append(f"refined_brief_path={brief}")
+    return "; ".join(parts) + "."
 
 
 def handle_user_prompt(input_data: dict[str, Any], state_path: Path) -> None:
@@ -211,13 +250,20 @@ def handle_user_prompt(input_data: dict[str, Any], state_path: Path) -> None:
     enter = ENTER_RE.search(prompt)
     if enter:
         state = start_stage(input_data, state_path, enter.group(1))
+        state["_state_path"] = str(state_path)
         output_context(stage_context(state))
         return
 
     if PASS_RE.search(prompt) or NATURAL_PASS_RE.search(prompt):
         state = finish_stage(state_path, "passed")
         if state:
-            output_context("Labflow stage has been marked passed for this session. Continue normally unless the user starts a new stage.")
+            lines = ["Labflow stage has been marked passed for this session. Continue normally unless the user starts a new stage."]
+            if state.get("stage") == "stage-idea-refine" and state.get("exit_readiness") == "ready_to_pass":
+                lines.append(
+                    "The passed idea-refine stage was ready_to_pass; if useful, write a concise refined brief now for user recall."
+                )
+                lines.append(f"State file: {state_path}")
+            output_context("\n".join(lines))
         else:
             output_context("No active Labflow stage in this session.")
         return
@@ -236,6 +282,7 @@ def handle_user_prompt(input_data: dict[str, Any], state_path: Path) -> None:
 
     state = active_state(state_path)
     if state:
+        state["_state_path"] = str(state_path)
         output_context(stage_context(state))
 
 

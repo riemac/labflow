@@ -15,6 +15,8 @@ Stage control is a thin runtime for research workflows that need temporary stage
 - `$stage-cancel`: cancel the current stage.
 - `$stage-status`: report current stage state.
 
+Stage entry requires the `$` prefix. Mentioning `stage-idea-refine` in prose or a file path must not activate runtime state.
+
 The authoritative state is stored under the active project and scoped by Codex session:
 
 ```text
