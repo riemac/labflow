@@ -69,6 +69,9 @@ def render(state: dict) -> str:
     cwd = state.get("cwd", "")
     entered = state.get("entered_at", "")
     updated = state.get("updated_at", "")
+    last_stop = state.get("last_stop_hook_at", "never")
+    stop_count = state.get("stop_hook_count", 0)
+    turn_id = state.get("last_stop_turn_id") or "none"
     lines = [
         "Labflow Stage HUD",
         "=================",
@@ -77,6 +80,8 @@ def render(state: dict) -> str:
         f"cwd     : {cwd}",
         f"entered : {entered}",
         f"updated : {updated}",
+        f"stop    : count={stop_count} | last={last_stop}",
+        f"turn    : {turn_id}",
         "",
         "commands: $stage-pass | $stage-cancel | $stage-status",
         "note    : closing this window does not finish the stage",

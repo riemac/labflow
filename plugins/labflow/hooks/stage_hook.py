@@ -239,7 +239,19 @@ def handle_user_prompt(input_data: dict[str, Any], state_path: Path) -> None:
         output_context(stage_context(state))
 
 
+def record_stop_heartbeat(input_data: dict[str, Any], state_path: Path) -> dict[str, Any] | None:
+    state = active_state(state_path)
+    if not state:
+        return None
+    state["last_stop_hook_at"] = utc_now()
+    state["last_stop_turn_id"] = input_data.get("turn_id")
+    state["stop_hook_count"] = int(state.get("stop_hook_count") or 0) + 1
+    write_state(state_path, state)
+    return state
+
+
 def handle_stop(input_data: dict[str, Any], state_path: Path) -> None:
+    record_stop_heartbeat(input_data, state_path)
     message = str(input_data.get("last_assistant_message") or "")
     if PASS_RE.search(message):
         finish_stage(state_path, "passed")
