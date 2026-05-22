@@ -36,11 +36,13 @@ labflow/
 │   └── skills/
 │       ├── annotation/
 │       ├── codebase-research/
+│       ├── deep-research/
 │       ├── design-scaffold/
 │       ├── external-research/
 │       ├── git-task-flow/
 │       ├── obsidian-cli/
 │       ├── pdf-read/
+│       ├── research-brainstorm/
 │       ├── self-update/
 │       ├── stage-control/
 │       ├── stage-goal-clarify/
@@ -60,6 +62,8 @@ Current skill boundaries:
 
 - `codebase-research`: local repository investigation; uses augmentcode, `rg`, key-file reads, and `lab-explore` delegation.
 - `external-research`: lightweight orchestration for official docs, third-party APIs, upstream source, papers, version differences, GitHub issues/PRs; uses ctx7 CLI first, `gh`/web/pdf-reader as needed, and `lab-research` for high-noise external research.
+- `deep-research`: substantial evidence-backed investigation across local code, external docs/source/API, papers, and web/GitHub evidence; produces decision-oriented reports.
+- `research-brainstorm`: first-principles research ideation; generates and critiques method cards with assumptions, counterexamples, failure modes, and minimal validation probes.
 - `design-scaffold`: design-stage idea concretization; writes distributed prompt material into code skeletons, field docs, TODO anchors, or design notes.
 - `git-task-flow`: task-scoped git boundaries, commits, history review, and final push/cleanup mechanics.
 - `annotation`: research-oriented code comments and docstrings.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Brainstorm"
+  short_description: "First-principles research ideation"
+  default_prompt: "Use $research-brainstorm to tear down this research idea from first principles and propose candidate methods."

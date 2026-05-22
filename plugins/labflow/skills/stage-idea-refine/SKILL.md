@@ -66,4 +66,7 @@ The brief is for user recall and manual copy-paste after compaction or a new ses
 
 ## Abilities
 
-Ability design is intentionally deferred. Use only the abilities the user explicitly asks for or that are already available in the current session.
+Use abilities only when they serve the current idea-refine discussion. They are optional aids, not a required pipeline.
+
+- `research-brainstorm`: use when the idea needs first-principles teardown, candidate method generation, assumptions, counterexamples, failure modes, and minimal validation probes.
+- `deep-research`: use when a key feasibility question, technical route, paper/API/codebase fact, or cross-source claim needs evidence-backed investigation before the idea can be refined.
