@@ -46,14 +46,17 @@ Do not create new skills from imagined workflows. Add a skill when the behavior 
 - Abilities do not imply a fixed pipeline and may be used inside stages or normal Codex mode.
 - Codex native Plan Mode and normal implementation remain the default for planning/coding; do not wrap them unless there is a proven need.
 
-### Skill Language Convention
+### Bilingual Content Convention
 
-For Labflow skills:
+For Labflow skills and prompt templates:
 
-- `SKILL.md` is the authoritative English, agent-facing instruction file.
+- `SKILL.md` is the authoritative English, agent-facing skill instruction file.
 - `SKILL_CN.md`, when present, is Chinese user-facing discussion/review material.
-- Keep both semantically synchronized, not mechanically translated.
-- Bundled paths such as `scripts/foo.py` or `references/bar.md` are relative to the skill directory, not shell cwd.
+- Prompt templates follow the same convention: the English file is authoritative, and a `_CN.md` companion is the Chinese discussion/review version.
+- Keep paired files semantically synchronized, not mechanically translated.
+- Bundled skill paths such as `scripts/foo.py` or `references/bar.md` are relative to the skill directory, not shell cwd.
+
+`plugins/labflow/prompts/stage-AGENTS.md` is intended as the English source for a user's top-level Codex `AGENTS.md`; `stage-AGENTS_CN.md` is its Chinese companion.
 
 ### Stage Runtime
 
