@@ -40,13 +40,23 @@ STAGES = {
             "acceptance checks, required evidence, and risky tradeoffs before planning or implementation."
         ),
     },
+    "stage-design-scaffold": {
+        "label": "design-scaffold",
+        "title": "Design Scaffold",
+        "contract": (
+            "We are in the design-scaffold stage. Externalize a mature design into distributed prompts: "
+            "TODOs, docstrings, field documentation, interface shells, module notes, or design anchors. "
+            "Do not implement full behavior unless the user explicitly exits or asks to implement."
+        ),
+    },
 }
 
-ENTER_RE = re.compile(r"(?<![\w./-])\$(stage-idea-refine|stage-goal-clarify)(?![\w./-])", re.IGNORECASE)
+ENTER_RE = re.compile(r"(?<![\w./-])\$(stage-idea-refine|stage-goal-clarify|stage-design-scaffold)(?![\w./-])", re.IGNORECASE)
 PASS_RE = re.compile(r"(?m)^\s*\$stage-pass\s*$")
 CANCEL_RE = re.compile(r"(?m)^\s*\$stage-cancel\s*$")
 STATUS_RE = re.compile(r"(?m)^\s*\$stage-status\s*$")
 IDEA_READINESS_VALUES = {"vague", "not_ready", "candidate", "ready_to_pass"}
+SCAFFOLD_READINESS_VALUES = {"mapping", "scaffolding", "reviewing", "ready_to_pass"}
 
 NATURAL_PASS_RE = re.compile(
     r"(?:这个阶段|stage|阶段).{0,8}(?:过了|通过|完成|结束|退出)",
@@ -150,6 +160,14 @@ def output_context(text: str) -> None:
     )
 
 
+def format_list_for_context(value: Any) -> str:
+    if isinstance(value, list):
+        return "; ".join(str(item).strip() for item in value if str(item).strip())
+    if isinstance(value, str):
+        return value.strip()
+    return ""
+
+
 def stage_context(state: dict[str, Any]) -> str:
     stage = str(state.get("stage"))
     spec = STAGES.get(stage, STAGES["stage-idea-refine"])
@@ -173,6 +191,34 @@ def stage_context(state: dict[str, Any]) -> str:
                 "When ready_to_pass, prefer asking the user to send `$stage-pass`; after the stage is truly passed, write a concise idea-refine brief for user recall if appropriate.",
             ]
         )
+        if state_path:
+            lines.append(f"State file: {state_path}")
+    elif stage == "stage-design-scaffold":
+        readiness = str(state.get("scaffold_readiness") or "mapping")
+        design_goal = str(state.get("design_goal") or "No design_goal recorded yet.")
+        target_surfaces = state.get("target_surfaces") or []
+        current_surface = str(state.get("current_surface") or "No current_surface recorded yet.")
+        completed_surfaces = state.get("completed_surfaces") or []
+        open_questions = state.get("open_questions") or []
+        updated_at = str(state.get("scaffold_state_updated_at") or "never")
+        state_path = str(state.get("_state_path") or "")
+        lines.extend(
+            [
+                f"scaffold_readiness: {readiness}.",
+                f"design_goal: {design_goal}",
+                f"target_surfaces: {format_list_for_context(target_surfaces) or 'None recorded.'}",
+                f"current_surface: {current_surface}",
+                f"completed_surfaces: {format_list_for_context(completed_surfaces) or 'None recorded.'}",
+                f"open_questions: {format_list_for_context(open_questions) or 'None recorded.'}",
+                f"scaffold_state_updated_at: {updated_at}.",
+                "Maintain scaffold state only when design goal, target/current surface, completed surfaces, or open questions materially change.",
+                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$stage-cancel` line.",
+                "When ready_to_pass, prefer asking the user to send `$stage-pass`.",
+            ]
+        )
+        stop_guard = str(state.get("last_stop_guard") or "").strip()
+        if stop_guard:
+            lines.append(f"last_stop_guard: {stop_guard}")
         if state_path:
             lines.append(f"State file: {state_path}")
     lines.extend(
@@ -209,6 +255,20 @@ def start_stage(input_data: dict[str, Any], state_path: Path, stage: str) -> dic
         state["idea_state_updated_at"] = previous.get("idea_state_updated_at") if same_active_stage else ""
         state["idea_state_updated_by"] = previous.get("idea_state_updated_by") if same_active_stage else ""
         state["refined_brief_path"] = previous.get("refined_brief_path") if same_active_stage else ""
+    elif stage == "stage-design-scaffold":
+        state["scaffold_readiness"] = previous.get("scaffold_readiness") if same_active_stage else "mapping"
+        if state["scaffold_readiness"] not in SCAFFOLD_READINESS_VALUES:
+            state["scaffold_readiness"] = "mapping"
+        state["design_goal"] = previous.get("design_goal") if same_active_stage else ""
+        state["target_surfaces"] = previous.get("target_surfaces") if same_active_stage else []
+        state["current_surface"] = previous.get("current_surface") if same_active_stage else ""
+        state["completed_surfaces"] = previous.get("completed_surfaces") if same_active_stage else []
+        state["open_questions"] = previous.get("open_questions") if same_active_stage else []
+        state["scaffold_state_updated_at"] = previous.get("scaffold_state_updated_at") if same_active_stage else ""
+        state["scaffold_state_updated_by"] = previous.get("scaffold_state_updated_by") if same_active_stage else ""
+        state["scaffold_state_note"] = previous.get("scaffold_state_note") if same_active_stage else ""
+        state["last_stop_guard"] = previous.get("last_stop_guard") if same_active_stage else ""
+        state["last_stop_guard_at"] = previous.get("last_stop_guard_at") if same_active_stage else ""
     write_state(state_path, state)
     run_hud("ensure", state_path)
     return read_state(state_path) or state
@@ -242,6 +302,17 @@ def summarize_status(state_path: Path) -> str:
         brief = str(state.get("refined_brief_path") or "").strip()
         if brief:
             parts.append(f"refined_brief_path={brief}")
+    elif stage == "stage-design-scaffold":
+        parts.append(f"scaffold_readiness={state.get('scaffold_readiness', 'mapping')}")
+        design_goal = str(state.get("design_goal") or "").strip()
+        if design_goal:
+            parts.append(f"design_goal={design_goal}")
+        current_surface = str(state.get("current_surface") or "").strip()
+        if current_surface:
+            parts.append(f"current_surface={current_surface}")
+        completed = format_list_for_context(state.get("completed_surfaces") or [])
+        if completed:
+            parts.append(f"completed_surfaces={completed}")
     return "; ".join(parts) + "."
 
 
@@ -298,12 +369,20 @@ def record_stop_heartbeat(input_data: dict[str, Any], state_path: Path) -> dict[
 
 
 def handle_stop(input_data: dict[str, Any], state_path: Path) -> None:
-    record_stop_heartbeat(input_data, state_path)
+    state = record_stop_heartbeat(input_data, state_path)
     message = str(input_data.get("last_assistant_message") or "")
     if PASS_RE.search(message):
         finish_stage(state_path, "passed")
     elif CANCEL_RE.search(message):
         finish_stage(state_path, "cancelled")
+    elif state and state.get("stage") == "stage-design-scaffold":
+        state["last_stop_guard"] = (
+            "Previous assistant turn stopped while design-scaffold was still active. "
+            "On the next user turn, check whether design_goal, target/current surface, "
+            "completed surfaces, or open questions need a state update."
+        )
+        state["last_stop_guard_at"] = utc_now()
+        write_state(state_path, state)
     # Deliberately do not return decision:block. Stop must not push an extra turn
     # unless the user later opts into a stronger guard.
 

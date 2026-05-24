@@ -9,7 +9,7 @@ labflow provides reusable skills for research-heavy coding work in Codex:
 - External research over official docs, upstream source, papers, and version-specific evidence.
 - Deep research reports for complex cross-source feasibility and architecture questions.
 - First-principles research brainstorming with method cards, assumptions, counterexamples, and minimal validation probes.
-- Design scaffolding that turns ideas into reviewable interfaces, fields, docs, and TODO anchors.
+- Design-scaffold stage for turning mature ideas into reviewable interfaces, fields, docs, and TODO anchors.
 - Git task flow for task boundaries, commits, history review, and GitHub publishing mechanics.
 - Scientific annotation, PDF reading, Obsidian CLI operations, and self-update.
 - Background agents for read-heavy local exploration and external research.
@@ -54,6 +54,7 @@ Labflow includes a lightweight stage runtime for nonlinear research work. Start 
 
 - `$stage-idea-refine`: discuss research ideas, assumptions, routes, and risks.
 - `$stage-goal-clarify`: clarify goal, scope, non-goals, and acceptance checks.
+- `$stage-design-scaffold`: write mature design intent into distributed TODOs, docs, and interface anchors.
 - `$stage-pass`: mark the current stage as passed.
 - `$stage-cancel`: cancel the current stage.
 - `$stage-status`: inspect current stage state.
@@ -81,11 +82,11 @@ Install or reload the marketplace, then use the plugin by naming the skill in th
 
 - `使用 stage-idea-refine 讨论这个研究 idea`
 - `使用 stage-goal-clarify 明确验收标准`
+- `使用 stage-design-scaffold 把成熟设计沉淀成分布式 TODO、字段说明和接口锚点`
 - `使用 codebase-research 调研相机配置链路`
 - `使用 external-research 查 IsaacLab 官方相机 API`
 - `使用 deep-research 调研 IsaacLab 是否支持异构资产并行训练`
 - `使用 research-brainstorm 从第一性原理手撕这个研究 idea 并给出候选方法卡片`
-- `使用 design-scaffold 把这个扰动配置 idea 落成接口草图和字段说明`
 - `使用 git-task-flow 提交并推送当前任务`
 
 Codex may also trigger these skills automatically when the request clearly matches their descriptions.

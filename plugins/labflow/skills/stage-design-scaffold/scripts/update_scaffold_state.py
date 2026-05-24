@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Update design-scaffold stage state for the current Labflow session.
+
+This script is intentionally standard-library only. It edits the session state
+file that the Labflow stage hook owns; it does not infer design semantics.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+READINESS_VALUES = {"mapping", "scaffolding", "reviewing", "ready_to_pass"}
+SESSIONS_DIR = Path(".codex") / "labflow-stage" / "sessions"
+STAGE = "stage-design-scaffold"
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def safe_session_id(value: str | None) -> str | None:
+    if not value or not value.strip():
+        return None
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", value.strip())
+    return safe[:120] or None
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            value = json.load(handle)
+        return value if isinstance(value, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def write_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as handle:
+        json.dump(value, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    tmp.replace(path)
+
+
+def session_path(cwd: Path, session_id: str | None) -> Path | None:
+    safe_id = safe_session_id(session_id)
+    if safe_id:
+        return cwd / SESSIONS_DIR / f"{safe_id}.json"
+    return None
+
+
+def find_active_state(cwd: Path) -> Path:
+    active: list[Path] = []
+    for path in sorted((cwd / SESSIONS_DIR).glob("*.json")):
+        if path.name.endswith(".hud.json"):
+            continue
+        state = read_json(path)
+        if state.get("status") == "active" and state.get("stage") == STAGE:
+            active.append(path)
+    if len(active) == 1:
+        return active[0]
+    if not active:
+        raise SystemExit("No active stage-design-scaffold session state found; pass --state-path or --session-id.")
+    raise SystemExit("Multiple active stage-design-scaffold sessions found; pass --state-path or --session-id.")
+
+
+def resolve_state_path(args: argparse.Namespace) -> Path:
+    if args.state_path:
+        return Path(args.state_path).expanduser().resolve()
+    cwd = Path(args.cwd or os.getcwd()).expanduser().resolve()
+    path = session_path(cwd, args.session_id)
+    if path:
+        return path
+    return find_active_state(cwd)
+
+
+def split_items(values: list[str]) -> list[str]:
+    items: list[str] = []
+    for value in values:
+        for part in re.split(r"[\n;]+", value):
+            item = part.strip()
+            if item:
+                items.append(item)
+    return items
+
+
+def merge_unique(existing: Any, additions: list[str]) -> list[str]:
+    merged: list[str] = []
+    if isinstance(existing, list):
+        for item in existing:
+            text = str(item).strip()
+            if text and text not in merged:
+                merged.append(text)
+    elif isinstance(existing, str) and existing.strip():
+        merged.append(existing.strip())
+    for item in additions:
+        if item not in merged:
+            merged.append(item)
+    return merged
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--state-path", help="Exact .codex/labflow-stage/sessions/<session>.json path from hook context.")
+    parser.add_argument("--cwd", help="Project root; defaults to current working directory.")
+    parser.add_argument("--session-id", help="Codex session id if known.")
+    parser.add_argument("--scaffold-readiness", choices=sorted(READINESS_VALUES), required=True)
+    parser.add_argument("--design-goal", help="Concise design goal being externalized.")
+    parser.add_argument("--target-surfaces", action="append", default=[], help="Target files/modules/classes/configs/docs; repeat or separate with semicolons/newlines.")
+    parser.add_argument("--current-surface", help="Surface currently being discussed or edited.")
+    parser.add_argument("--completed-surfaces", action="append", default=[], help="Replace completed surfaces; repeat or separate with semicolons/newlines.")
+    parser.add_argument("--add-completed-surface", action="append", default=[], help="Append one or more completed surfaces.")
+    parser.add_argument("--open-questions", action="append", default=[], help="Open design questions; repeat or separate with semicolons/newlines.")
+    parser.add_argument("--note", default="", help="Optional short reason for this state update.")
+    args = parser.parse_args(argv)
+
+    state_path = resolve_state_path(args)
+    state = read_json(state_path)
+    if state.get("status") != "active" or state.get("stage") != STAGE:
+        raise SystemExit(f"State is not an active {STAGE} session: {state_path}")
+
+    now = utc_now()
+    state["scaffold_readiness"] = args.scaffold_readiness
+    if args.design_goal is not None:
+        state["design_goal"] = args.design_goal.strip()
+    target_surfaces = split_items(args.target_surfaces)
+    if target_surfaces:
+        state["target_surfaces"] = target_surfaces
+    if args.current_surface is not None:
+        state["current_surface"] = args.current_surface.strip()
+    completed = split_items(args.completed_surfaces)
+    if completed:
+        state["completed_surfaces"] = completed
+    additions = split_items(args.add_completed_surface)
+    if additions:
+        state["completed_surfaces"] = merge_unique(state.get("completed_surfaces"), additions)
+    open_questions = split_items(args.open_questions)
+    if open_questions:
+        state["open_questions"] = open_questions
+    state["scaffold_state_note"] = args.note.strip()
+    state["scaffold_state_updated_at"] = now
+    state["scaffold_state_updated_by"] = "agent"
+    state["updated_at"] = now
+    write_json(state_path, state)
+    print(
+        json.dumps(
+            {"state_path": str(state_path), "scaffold_readiness": args.scaffold_readiness},
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

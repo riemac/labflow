@@ -64,14 +64,31 @@ def hud_alive(path: Path) -> bool:
     return (time.time() - float(heartbeat)) <= HEARTBEAT_STALE_SECONDS
 
 
+def summarize_list(value: object, limit: int = 3) -> str:
+    if isinstance(value, list):
+        items = [str(item).strip() for item in value if str(item).strip()]
+    elif isinstance(value, str) and value.strip():
+        items = [value.strip()]
+    else:
+        items = []
+    shown = items[:limit]
+    suffix = " ..." if len(items) > limit else ""
+    return "; ".join(shown) + suffix
+
+
 def render(state: dict) -> str:
     status = state.get("status", "inactive")
     stage = state.get("stage_label") or state.get("stage", "none")
     cwd = state.get("cwd", "")
     entered = state.get("entered_at", "")
     updated = state.get("updated_at", "")
-    readiness = state.get("exit_readiness")
+    readiness = state.get("exit_readiness") or state.get("scaffold_readiness")
     idea_state = str(state.get("idea_state") or "").strip()
+    design_goal = str(state.get("design_goal") or "").strip()
+    target_surfaces = state.get("target_surfaces") or []
+    current_surface = str(state.get("current_surface") or "").strip()
+    completed_surfaces = state.get("completed_surfaces") or []
+    open_questions = state.get("open_questions") or []
     brief_path = str(state.get("refined_brief_path") or "").strip()
     last_stop = state.get("last_stop_hook_at", "never")
     stop_count = state.get("stop_hook_count", 0)
@@ -94,6 +111,21 @@ def render(state: dict) -> str:
             lines.extend(f"          {line}" for line in wrapped[1:4])
             if len(wrapped) > 4:
                 lines.append("          ...")
+    if design_goal:
+        wrapped = textwrap.wrap(design_goal, width=72)
+        if wrapped:
+            lines.append(f"goal    : {wrapped[0]}")
+            lines.extend(f"          {line}" for line in wrapped[1:3])
+            if len(wrapped) > 3:
+                lines.append("          ...")
+    if current_surface:
+        lines.append(f"current : {current_surface}")
+    if target_surfaces:
+        lines.append("targets : " + summarize_list(target_surfaces))
+    if completed_surfaces:
+        lines.append("done    : " + summarize_list(completed_surfaces))
+    if open_questions:
+        lines.append("open    : " + summarize_list(open_questions))
     if brief_path:
         lines.append(f"brief   : {brief_path}")
     lines.extend(

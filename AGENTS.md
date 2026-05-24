@@ -23,9 +23,9 @@ labflow/
 
 Main skill families:
 
-- Research discussion: `stage-idea-refine`, `stage-goal-clarify`, `stage-control`.
+- Research stages: `stage-idea-refine`, `stage-goal-clarify`, `stage-design-scaffold`, `stage-control`.
 - Research abilities: `research-brainstorm`, `deep-research`, `codebase-research`, `external-research`, `pdf-read`.
-- Design / implementation support: `design-scaffold`, `annotation`, `git-task-flow`, `obsidian-cli`, `self-update`.
+- Design / implementation support: `annotation`, `git-task-flow`, `obsidian-cli`, `self-update`.
 
 ## Design Principles
 

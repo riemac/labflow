@@ -1,7 +1,7 @@
 {
   "name": "labflow",
   "version": "0.4.0",
-  "description": "Codex-native research coding skill toolbox with stage-driven discussion hooks, codebase research, external research, design scaffolding, git task flow, Obsidian, PDF, and MCP support.",
+  "description": "Codex-native research coding skill toolbox with stage-driven discussion/design hooks, codebase research, external research, git task flow, Obsidian, PDF, and MCP support.",
   "author": {
     "name": "hac",
     "url": "https://github.com/"
@@ -14,7 +14,7 @@
     "obsidian",
     "codex",
     "research-coding",
-    "design-scaffold",
+    "stage-design-scaffold",
     "codebase-research",
     "git-task-flow",
     "mcp",
@@ -26,7 +26,7 @@
   "interface": {
     "displayName": "Labflow",
     "shortDescription": "Research coding skills for Codex",
-    "longDescription": "Labflow is a Codex skill toolbox for research coding: lightweight stage-driven discussion hooks, local codebase research, external evidence gathering, idea-to-scaffold design work, git task flow, research-friendly annotation, Obsidian CLI operations, PDF reading, and read-heavy background agents.",
+    "longDescription": "Labflow is a Codex skill toolbox for research coding: lightweight stage-driven discussion/design hooks, local codebase research, external evidence gathering, git task flow, research-friendly annotation, Obsidian CLI operations, PDF reading, and read-heavy background agents.",
     "developerName": "hac",
     "category": "Research",
     "capabilities": [
@@ -39,6 +39,7 @@
     "termsOfServiceURL": "https://github.com/",
     "defaultPrompt": [
       "Use stage-idea-refine to discuss this research idea before planning.",
+      "Use stage-design-scaffold to externalize a mature design into TODOs and interface anchors.",
       "Use codebase-research to investigate the asset generation pipeline.",
       "Use git-task-flow to commit and push the current task."
     ],

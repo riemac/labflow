@@ -11,6 +11,7 @@ Stage control is a thin runtime for research workflows that need temporary stage
 
 - `$stage-idea-refine`: enter the research idea refinement stage.
 - `$stage-goal-clarify`: enter the goal and acceptance-criteria clarification stage.
+- `$stage-design-scaffold`: enter the design scaffolding stage for distributed TODOs, docs, and interface anchors.
 - `$stage-pass`: mark the current stage as passed.
 - `$stage-cancel`: cancel the current stage.
 - `$stage-status`: report current stage state.

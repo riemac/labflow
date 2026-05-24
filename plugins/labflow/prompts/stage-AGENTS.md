@@ -33,7 +33,7 @@ flowchart TD
     U[User prompt] --> UPS[UserPromptSubmit hook]
 
     UPS --> HasCmd{包含 stage 命令?}
-    HasCmd -->|$stage-idea-refine / $stage-goal-clarify| Enter[写入 session-scoped stage state]
+    HasCmd -->|$stage-*| Enter[写入 session-scoped stage state]
     Enter --> HUDStart[启动 / 更新 HUD]
     Enter --> Inject[输出 additionalContext 给 Codex]
 
