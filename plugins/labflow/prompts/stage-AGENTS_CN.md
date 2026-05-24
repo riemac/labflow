@@ -33,12 +33,12 @@ flowchart TD
     U[User prompt] --> UPS[UserPromptSubmit hook]
 
     UPS --> HasCmd{包含 stage 命令?}
-    HasCmd -->|$stage-*| Enter[写入 session-scoped stage state]
+    HasCmd -->|$labflow:stage-*| Enter[写入 session-scoped stage state]
     Enter --> HUDStart[启动 / 更新 HUD]
     Enter --> Inject[输出 additionalContext 给 Codex]
 
-    HasCmd -->|$stage-status| Status[读取当前 session state 并回报]
-    HasCmd -->|$stage-pass / $stage-cancel| Finish[标记 passed / cancelled]
+    HasCmd -->|$labflow:stage-control status| Status[读取当前 session state 并回报]
+    HasCmd -->|$labflow:stage-control pass / $labflow:stage-control cancel| Finish[标记 passed / cancelled]
     Finish --> HUDStop[HUD 观察到非 active 后退出]
 
     HasCmd -->|无命令| CheckActive{当前 session 有 active stage?}
@@ -55,8 +55,8 @@ flowchart TD
     StopActive -->|无| Silent[静默结束]
     StopActive -->|有| Heartbeat[记录 last_stop_hook_at / stop_hook_count]
     Heartbeat --> Guard{assistant 最后一条消息含独立 pass/cancel?}
-    Guard -->|$stage-pass| Finish
-    Guard -->|$stage-cancel| Finish
+    Guard -->|$labflow:stage-control pass| Finish
+    Guard -->|$labflow:stage-control cancel| Finish
     Guard -->|否| Reminder[轻守护：不阻止停止，只保持 stage active]
     Reminder --> Silent
 ```

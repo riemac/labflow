@@ -64,8 +64,8 @@ The stage runtime should stay small and predictable:
 
 - State is session-scoped under the active project’s `.codex/labflow-stage/`.
 - `UserPromptSubmit` may inject active-stage context for the matching session.
-- Stage entry commands require explicit `$stage-*` commands.
-- `Stop` records heartbeat and clears state only on standalone `$stage-pass` / `$stage-cancel`; it must not auto-continue by default.
+- Stage entry commands require explicit plugin-prefixed `$labflow:stage-*` skill commands.
+- `Stop` records heartbeat and clears state only on standalone `$labflow:stage-control pass` / `$labflow:stage-control cancel`; it must not auto-continue by default.
 - Hook scripts should remain Python standard-library only unless the user accepts a dependency.
 - HUD is best-effort; failure to open or close a HUD must not block Codex.
 

@@ -33,12 +33,12 @@ flowchart TD
     U[User prompt] --> UPS[UserPromptSubmit hook]
 
     UPS --> HasCmd{Contains stage command?}
-    HasCmd -->|$stage-*| Enter[Write session-scoped stage state]
+    HasCmd -->|$labflow:stage-*| Enter[Write session-scoped stage state]
     Enter --> HUDStart[Start / update HUD]
     Enter --> Inject[Emit additionalContext to Codex]
 
-    HasCmd -->|$stage-status| Status[Read current session state and report]
-    HasCmd -->|$stage-pass / $stage-cancel| Finish[Mark passed / cancelled]
+    HasCmd -->|$labflow:stage-control status| Status[Read current session state and report]
+    HasCmd -->|$labflow:stage-control pass / $labflow:stage-control cancel| Finish[Mark passed / cancelled]
     Finish --> HUDStop[HUD exits after non-active state]
 
     HasCmd -->|No command| CheckActive{Current session has active stage?}
@@ -55,8 +55,8 @@ flowchart TD
     StopActive -->|No| Silent[Silent end]
     StopActive -->|Yes| Heartbeat[Record last_stop_hook_at / stop_hook_count]
     Heartbeat --> Guard{Assistant's last message contains standalone pass/cancel?}
-    Guard -->|$stage-pass| Finish
-    Guard -->|$stage-cancel| Finish
+    Guard -->|$labflow:stage-control pass| Finish
+    Guard -->|$labflow:stage-control cancel| Finish
     Guard -->|No| Reminder[Light guard: do not block stop, keep stage active]
     Reminder --> Silent
 ```

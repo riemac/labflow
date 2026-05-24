@@ -16,7 +16,7 @@ Stay in discussion mode until the stage is passed or cancelled.
 - Inspect local code/docs for discoverable facts before asking the user.
 - Challenge assumptions gently: boundary cases, counterexamples, hidden costs, feasibility risks, and evidence needs.
 - Do not enter implementation unless the user explicitly exits the stage or asks to implement.
-- If the stage was triggered accidentally while discussing files/hooks/commands, explain the misfire and cancel with a standalone `$stage-cancel` line.
+- If the stage was triggered accidentally while discussing files/hooks/commands, explain the misfire and cancel with a standalone `$labflow:stage-control cancel` line.
 
 ## State Semantics
 
@@ -45,7 +45,7 @@ The `scripts/...` paths are skill-relative. Resolve them against this skill dire
 
 ## Completion and Brief
 
-When `exit_readiness=ready_to_pass`, prefer asking the user to send `$stage-pass`. Emit a standalone `$stage-pass` yourself only when the user clearly asked you to exit the stage.
+When `exit_readiness=ready_to_pass`, prefer asking the user to send `$labflow:stage-control pass`. Emit a standalone `$labflow:stage-control pass` yourself only when the user clearly asked you to exit the stage.
 
 After the stage has truly passed, write a short user-facing recall brief when useful:
 

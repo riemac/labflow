@@ -51,10 +51,13 @@ STAGES = {
     },
 }
 
-ENTER_RE = re.compile(r"(?<![\w./-])\$(stage-idea-refine|stage-goal-clarify|stage-design-scaffold)(?![\w./-])", re.IGNORECASE)
-PASS_RE = re.compile(r"(?m)^\s*\$stage-pass\s*$")
-CANCEL_RE = re.compile(r"(?m)^\s*\$stage-cancel\s*$")
-STATUS_RE = re.compile(r"(?m)^\s*\$stage-status\s*$")
+ENTER_RE = re.compile(
+    r"(?<![\w./-])\$labflow:(stage-idea-refine|stage-goal-clarify|stage-design-scaffold)(?![\w./-])",
+    re.IGNORECASE,
+)
+PASS_RE = re.compile(r"(?m)^\s*\$labflow:stage-control\s+pass\s*$", re.IGNORECASE)
+CANCEL_RE = re.compile(r"(?m)^\s*\$labflow:stage-control\s+cancel\s*$", re.IGNORECASE)
+STATUS_RE = re.compile(r"(?m)^\s*\$labflow:stage-control\s+status\s*$", re.IGNORECASE)
 IDEA_READINESS_VALUES = {"vague", "not_ready", "candidate", "ready_to_pass"}
 SCAFFOLD_READINESS_VALUES = {"mapping", "scaffolding", "reviewing", "ready_to_pass"}
 
@@ -187,8 +190,8 @@ def stage_context(state: dict[str, Any]) -> str:
                 f"idea_state: {idea_state}",
                 f"idea_state_updated_at: {updated_at}.",
                 "Maintain exit_readiness/idea_state only when the discussion state clearly changes; it is not a per-turn ritual.",
-                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$stage-cancel` line.",
-                "When ready_to_pass, prefer asking the user to send `$stage-pass`; after the stage is truly passed, write a concise idea-refine brief for user recall if appropriate.",
+                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$labflow:stage-control cancel` line.",
+                "When ready_to_pass, prefer asking the user to send `$labflow:stage-control pass`; after the stage is truly passed, write a concise idea-refine brief for user recall if appropriate.",
             ]
         )
         if state_path:
@@ -212,8 +215,8 @@ def stage_context(state: dict[str, Any]) -> str:
                 f"open_questions: {format_list_for_context(open_questions) or 'None recorded.'}",
                 f"scaffold_state_updated_at: {updated_at}.",
                 "Maintain scaffold state only when design goal, target/current surface, completed surfaces, or open questions materially change.",
-                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$stage-cancel` line.",
-                "When ready_to_pass, prefer asking the user to send `$stage-pass`.",
+                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$labflow:stage-control cancel` line.",
+                "When ready_to_pass, prefer asking the user to send `$labflow:stage-control pass`.",
             ]
         )
         stop_guard = str(state.get("last_stop_guard") or "").strip()
@@ -225,8 +228,8 @@ def stage_context(state: dict[str, Any]) -> str:
         [
             "Use repo/code/document inspection for discoverable facts before asking the user.",
             "For high-impact human preferences or tradeoffs, ask one focused question instead of guessing.",
-            "If the stage is clearly complete, either ask the user to send `$stage-pass` or include a standalone `$stage-pass` line.",
-            "User commands: `$stage-pass`, `$stage-cancel`, `$stage-status`.",
+            "If the stage is clearly complete, either ask the user to send `$labflow:stage-control pass` or include a standalone `$labflow:stage-control pass` line.",
+            "User commands: `$labflow:stage-control pass`, `$labflow:stage-control cancel`, `$labflow:stage-control status`.",
         ]
     )
     return "\n".join(lines)
@@ -288,7 +291,7 @@ def finish_stage(state_path: Path, status: str) -> dict[str, Any] | None:
 def summarize_status(state_path: Path) -> str:
     state = read_state(state_path)
     if not state:
-        return "Labflow stage: inactive. Start with `$stage-idea-refine` or `$stage-goal-clarify`."
+        return "Labflow stage: inactive. Start with `$labflow:stage-idea-refine` or `$labflow:stage-goal-clarify`."
     stage = state.get("stage", "unknown")
     status = state.get("status", "unknown")
     entered = state.get("entered_at", "unknown")

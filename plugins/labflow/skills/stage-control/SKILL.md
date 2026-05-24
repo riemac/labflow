@@ -9,14 +9,14 @@ Stage control is a thin runtime for research workflows that need temporary stage
 
 ## Commands
 
-- `$stage-idea-refine`: enter the research idea refinement stage.
-- `$stage-goal-clarify`: enter the goal and acceptance-criteria clarification stage.
-- `$stage-design-scaffold`: enter the design scaffolding stage for distributed TODOs, docs, and interface anchors.
-- `$stage-pass`: mark the current stage as passed.
-- `$stage-cancel`: cancel the current stage.
-- `$stage-status`: report current stage state.
+- `$labflow:stage-idea-refine`: enter the research idea refinement stage.
+- `$labflow:stage-goal-clarify`: enter the goal and acceptance-criteria clarification stage.
+- `$labflow:stage-design-scaffold`: enter the design scaffolding stage for distributed TODOs, docs, and interface anchors.
+- `$labflow:stage-control pass`: mark the current stage as passed.
+- `$labflow:stage-control cancel`: cancel the current stage.
+- `$labflow:stage-control status`: report current stage state.
 
-Stage entry requires the `$` prefix. Mentioning `stage-idea-refine` in prose or a file path must not activate runtime state.
+Stage entry requires the plugin-prefixed `$labflow:` skill command. Mentioning `stage-idea-refine` in prose, a file path, or a bare `$stage-idea-refine` token must not activate runtime state.
 
 The authoritative state is stored under the active project and scoped by Codex session:
 
@@ -29,7 +29,7 @@ A legacy `.codex/labflow-stage/state.json` may exist from older versions, but cu
 ## Runtime Behavior
 
 - `UserPromptSubmit` injects model-visible context only for the current Codex session while a stage is active.
-- `Stop` only clears state when the assistant emits a standalone `$stage-pass` or `$stage-cancel` line.
+- `Stop` only clears state when the assistant emits a standalone `$labflow:stage-control pass` or `$labflow:stage-control cancel` line.
 - `Stop` does not push an extra continuation turn by default.
 - When a stage starts, the hook best-effort opens a Ghostty `+new-window` HUD. If Ghostty is unavailable, it silently skips the HUD. Closing the HUD window does not finish the stage.
 
@@ -53,6 +53,6 @@ Use `--write` only when the user explicitly wants Labflow to update `~/.codex/co
 
 ## Agent Contract
 
-When a stage is active, keep the conversation inside that stage unless the user exits it. If the stage is clearly complete, either ask the user to send `$stage-pass` or include a standalone `$stage-pass` line.
+When a stage is active, keep the conversation inside that stage unless the user exits it. If the stage is clearly complete, either ask the user to send `$labflow:stage-control pass` or include a standalone `$labflow:stage-control pass` line.
 
 Do not treat stage control as a replacement for Codex native Plan Mode or normal implementation.

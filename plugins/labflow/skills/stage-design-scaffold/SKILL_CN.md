@@ -90,7 +90,7 @@ python3 scripts/update_scaffold_state.py \
 
 当分布式 prompt 足以让未来实现者不必重新猜设计意图时，可以退出 stage。
 
-当 `scaffold_readiness=ready_to_pass` 时，agent 优先提醒用户发送 `$stage-pass`。只有用户明确要求 agent 代为退出 stage 时，才由 agent 输出独立 `$stage-pass` 行。
+当 `scaffold_readiness=ready_to_pass` 时，agent 优先提醒用户发送 `$labflow:stage-control pass`。只有用户明确要求 agent 代为退出 stage 时，才由 agent 输出独立 `$labflow:stage-control pass` 行。
 
 </Completion>
 

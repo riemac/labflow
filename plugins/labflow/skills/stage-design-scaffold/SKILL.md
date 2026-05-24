@@ -82,7 +82,7 @@ Avoid:
 
 The stage can end when the distributed prompt material is sufficient for a future implementer to proceed without re-deriving the design intent.
 
-When `scaffold_readiness=ready_to_pass`, prefer asking the user to send `$stage-pass`. Emit a standalone `$stage-pass` yourself only when the user clearly asked you to exit the stage.
+When `scaffold_readiness=ready_to_pass`, prefer asking the user to send `$labflow:stage-control pass`. Emit a standalone `$labflow:stage-control pass` yourself only when the user clearly asked you to exit the stage.
 
 ## Abilities
 

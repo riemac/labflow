@@ -133,7 +133,7 @@ def render(state: dict) -> str:
             f"stop    : count={stop_count} | last={last_stop}",
             f"turn    : {turn_id}",
             "",
-            "commands: $stage-pass | $stage-cancel | $stage-status",
+            "commands: $labflow:stage-control pass | cancel | status",
             "note    : closing this window does not finish the stage",
         ]
     )

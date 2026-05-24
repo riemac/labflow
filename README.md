@@ -50,14 +50,16 @@ External library/API docs are handled by ctx7 CLI skills, not an MCP server. The
 
 ## Stage-Driven Development
 
-Labflow includes a lightweight stage runtime for nonlinear research work. Start a stage by naming a stage skill or command in Codex:
+Labflow includes a lightweight stage runtime for nonlinear research work. Start a stage with Codex plugin-prefixed skill commands:
 
-- `$stage-idea-refine`: discuss research ideas, assumptions, routes, and risks.
-- `$stage-goal-clarify`: clarify goal, scope, non-goals, and acceptance checks.
-- `$stage-design-scaffold`: write mature design intent into distributed TODOs, docs, and interface anchors.
-- `$stage-pass`: mark the current stage as passed.
-- `$stage-cancel`: cancel the current stage.
-- `$stage-status`: inspect current stage state.
+- `$labflow:stage-idea-refine`: discuss research ideas, assumptions, routes, and risks.
+- `$labflow:stage-goal-clarify`: clarify goal, scope, non-goals, and acceptance checks.
+- `$labflow:stage-design-scaffold`: write mature design intent into distributed TODOs, docs, and interface anchors.
+- `$labflow:stage-control pass`: mark the current stage as passed.
+- `$labflow:stage-control cancel`: cancel the current stage.
+- `$labflow:stage-control status`: inspect current stage state.
+
+Bare `$stage-*` tokens are intentionally not stage-entry commands; this avoids accidental activation when discussing hook names or file paths.
 
 Stage state is stored under the active project at `.codex/labflow-stage/` and scoped by Codex session, so parallel conversations in the same repository do not inherit each other's stage.
 
@@ -80,9 +82,9 @@ After changing Labflow itself, use:
 
 Install or reload the marketplace, then use the plugin by naming the skill in the Codex chat inside any project:
 
-- `使用 stage-idea-refine 讨论这个研究 idea`
-- `使用 stage-goal-clarify 明确验收标准`
-- `使用 stage-design-scaffold 把成熟设计沉淀成分布式 TODO、字段说明和接口锚点`
+- `$labflow:stage-idea-refine 讨论这个研究 idea`
+- `$labflow:stage-goal-clarify 明确验收标准`
+- `$labflow:stage-design-scaffold 把成熟设计沉淀成分布式 TODO、字段说明和接口锚点`
 - `使用 codebase-research 调研相机配置链路`
 - `使用 external-research 查 IsaacLab 官方相机 API`
 - `使用 deep-research 调研 IsaacLab 是否支持异构资产并行训练`

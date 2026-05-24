@@ -22,4 +22,4 @@ Stay in clarification mode until the stage is passed or cancelled.
 
 The stage can end when the implementer would not need to make major product or research decisions.
 
-If complete, ask the user to send `$stage-pass` or include a standalone `$stage-pass` line.
+If complete, ask the user to send `$labflow:stage-control pass` or include a standalone `$labflow:stage-control pass` line.
