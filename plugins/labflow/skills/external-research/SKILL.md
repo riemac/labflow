@@ -11,7 +11,7 @@ description: 外部资料调研编排技能。用于第三方库/API、官方文
 
 ## Default Route
 
-- 库/API/官方文档/配置项/迁移说明：必须先使用 `find-docs` / ctx7 CLI。不要因为目标库托管在 GitHub，就先用 `gh` 查 repo 或源码。
+- 库/API/官方文档/配置项/迁移说明：必须先使用 `find-docs` skill / ctx7 CLI。不要因为目标库托管在 GitHub，就先用 `gh` 查 repo 或源码。
 - 只有问题本身需要 GitHub 证据时，才直接使用 `gh` CLI：release/tag 日期、issue/PR/discussion、上游源码实现、commit 差异、仓库元信息、npm/release 状态核对。
 - 论文、技术报告、PDF spec、远程 PDF：使用 `pdf-read` / pdf-reader。
 - ctx7 不覆盖、官方站点不在 GitHub、或需要横向资料时，再用 web search/browser。
@@ -31,7 +31,7 @@ bash <plugin-root>/skills/external-research/scripts/ctx7_bootstrap.sh ensure --y
 
 ## Delegate
 
-遇到高噪音、低信噪比、需要多跳搜索的外部调研时，强烈委派 `lab-research`。核心目的不是“能力不足”，而是让 subagent 吸收检索噪音，避免主 agent 的上下文被长网页、issue 串、半相关结果和无效文档污染。
+遇到高噪音、低信噪比、需要多跳搜索的外部调研时，强烈建议并行委派 `lab-research`。核心目的不是“能力不足”，而是让 subagent 吸收检索噪音，避免主 agent 的上下文被长网页、issue 串、半相关结果和无效文档污染。
 
 典型信号：
 
