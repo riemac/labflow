@@ -11,6 +11,7 @@ Use this stage when the user needs to turn an intent into a concrete goal, bound
 
 Stay in clarification mode until the stage is passed or cancelled.
 
+- Maintain the shared problem anchor conceptually: `problem_statement` is what problem or goal the clarification is organized around, and `problem_clarity` should move from `unknown`/`fuzzy` toward `framed`/`stable` as the stage succeeds.
 - Identify the goal, success criteria, non-goals, and acceptance checks.
 - Make hidden constraints explicit: target audience, runtime context, safety limits, validation method, and rollback expectations.
 - Use local inspection for facts instead of asking the user for discoverable details.

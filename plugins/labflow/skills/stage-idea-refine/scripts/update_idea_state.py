@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 READINESS_VALUES = {"vague", "not_ready", "candidate", "ready_to_pass"}
+PROBLEM_CLARITY_VALUES = {"unknown", "fuzzy", "framed", "stable"}
 SESSIONS_DIR = Path(".codex") / "labflow-stage" / "sessions"
 
 
@@ -86,6 +87,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--state-path", help="Exact .codex/labflow-stage/sessions/<session>.json path from hook context.")
     parser.add_argument("--cwd", help="Project root; defaults to current working directory.")
     parser.add_argument("--session-id", help="Codex session id if known.")
+    parser.add_argument("--problem-statement", help="Current-best statement of the problem or goal anchoring this stage.")
+    parser.add_argument("--problem-clarity", choices=sorted(PROBLEM_CLARITY_VALUES), help="How clear the problem anchor is.")
+    parser.add_argument("--problem-note", help="Optional short reason for updating the problem anchor.")
     parser.add_argument("--exit-readiness", choices=sorted(READINESS_VALUES), required=True)
     parser.add_argument("--idea-state", required=True, help="Free-text summary of the current research idea state.")
     parser.add_argument("--note", default="", help="Optional short reason for this state update.")
@@ -97,6 +101,21 @@ def main(argv: list[str]) -> int:
         raise SystemExit(f"State is not an active stage-idea-refine session: {state_path}")
 
     now = utc_now()
+    problem_changed = any(
+        value is not None
+        for value in (args.problem_statement, args.problem_clarity, args.problem_note)
+    )
+    if args.problem_statement is not None:
+        state["problem_statement"] = args.problem_statement.strip()
+    if args.problem_clarity is not None:
+        state["problem_clarity"] = args.problem_clarity
+    elif "problem_clarity" not in state:
+        state["problem_clarity"] = "unknown"
+    if args.problem_note is not None:
+        state["problem_statement_note"] = args.problem_note.strip()
+    if problem_changed:
+        state["problem_statement_updated_at"] = now
+        state["problem_statement_updated_by"] = "agent"
     state["exit_readiness"] = args.exit_readiness
     state["idea_state"] = args.idea_state.strip()
     state["idea_state_note"] = args.note.strip()

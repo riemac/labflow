@@ -82,6 +82,8 @@ def render(state: dict) -> str:
     cwd = state.get("cwd", "")
     entered = state.get("entered_at", "")
     updated = state.get("updated_at", "")
+    problem = str(state.get("problem_statement") or "").strip() or "<unset>"
+    problem_clarity = str(state.get("problem_clarity") or "unknown").strip() or "unknown"
     readiness = state.get("exit_readiness") or state.get("scaffold_readiness")
     idea_state = str(state.get("idea_state") or "").strip()
     design_goal = str(state.get("design_goal") or "").strip()
@@ -102,6 +104,13 @@ def render(state: dict) -> str:
         f"entered : {entered}",
         f"updated : {updated}",
     ]
+    wrapped_problem = textwrap.wrap(problem, width=72)
+    if wrapped_problem:
+        lines.append(f"problem : {wrapped_problem[0]}")
+        lines.extend(f"          {line}" for line in wrapped_problem[1:3])
+        if len(wrapped_problem) > 3:
+            lines.append("          ...")
+    lines.append(f"clarity : {problem_clarity}")
     if readiness:
         lines.append(f"ready   : {readiness}")
     if idea_state:

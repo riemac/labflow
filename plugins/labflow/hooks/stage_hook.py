@@ -60,6 +60,7 @@ CANCEL_RE = re.compile(r"(?m)^\s*\$labflow:stage-control\s+cancel\s*$", re.IGNOR
 STATUS_RE = re.compile(r"(?m)^\s*\$labflow:stage-control\s+status\s*$", re.IGNORECASE)
 IDEA_READINESS_VALUES = {"vague", "not_ready", "candidate", "ready_to_pass"}
 SCAFFOLD_READINESS_VALUES = {"mapping", "scaffolding", "reviewing", "ready_to_pass"}
+PROBLEM_CLARITY_VALUES = {"unknown", "fuzzy", "framed", "stable"}
 
 NATURAL_PASS_RE = re.compile(
     r"(?:这个阶段|stage|阶段).{0,8}(?:过了|通过|完成|结束|退出)",
@@ -171,6 +172,33 @@ def format_list_for_context(value: Any) -> str:
     return ""
 
 
+def normalize_problem_clarity(value: Any) -> str:
+    clarity = str(value or "unknown").strip()
+    return clarity if clarity in PROBLEM_CLARITY_VALUES else "unknown"
+
+
+def append_problem_context(lines: list[str], state: dict[str, Any]) -> None:
+    problem = str(state.get("problem_statement") or "").strip()
+    clarity = normalize_problem_clarity(state.get("problem_clarity"))
+    updated_at = str(state.get("problem_statement_updated_at") or "never")
+    note = str(state.get("problem_statement_note") or "").strip()
+    lines.extend(
+        [
+            f"problem_statement: {problem or '<unset>'}",
+            f"problem_clarity: {clarity}.",
+            f"problem_statement_updated_at: {updated_at}.",
+        ]
+    )
+    if note:
+        lines.append(f"problem_statement_note: {note}")
+    if not problem or clarity in {"unknown", "fuzzy"}:
+        lines.append(
+            "Current problem anchor is unset or unclear; clarify or maintain "
+            "problem_statement/problem_clarity when the stage state materially changes, "
+            "without making it a per-turn ritual."
+        )
+
+
 def stage_context(state: dict[str, Any]) -> str:
     stage = str(state.get("stage"))
     spec = STAGES.get(stage, STAGES["stage-idea-refine"])
@@ -179,6 +207,7 @@ def stage_context(state: dict[str, Any]) -> str:
         f"Active stage: {spec['title']} (`{stage}`).",
         spec["contract"],
     ]
+    append_problem_context(lines, state)
     if stage == "stage-idea-refine":
         readiness = str(state.get("exit_readiness") or "vague")
         idea_state = str(state.get("idea_state") or "No idea_state recorded yet.")
@@ -250,6 +279,12 @@ def start_stage(input_data: dict[str, Any], state_path: Path, stage: str) -> dic
         "updated_at": now,
         "hud_backend": previous.get("hud_backend", "ghostty-window"),
     }
+    state["problem_statement"] = previous.get("problem_statement") if same_active_stage else ""
+    state["problem_clarity"] = previous.get("problem_clarity") if same_active_stage else "unknown"
+    state["problem_clarity"] = normalize_problem_clarity(state["problem_clarity"])
+    state["problem_statement_note"] = previous.get("problem_statement_note") if same_active_stage else ""
+    state["problem_statement_updated_at"] = previous.get("problem_statement_updated_at") if same_active_stage else ""
+    state["problem_statement_updated_by"] = previous.get("problem_statement_updated_by") if same_active_stage else ""
     if stage == "stage-idea-refine":
         state["exit_readiness"] = previous.get("exit_readiness") if same_active_stage else "vague"
         if state["exit_readiness"] not in IDEA_READINESS_VALUES:
@@ -297,6 +332,9 @@ def summarize_status(state_path: Path) -> str:
     entered = state.get("entered_at", "unknown")
     updated = state.get("updated_at", "unknown")
     parts = [f"Labflow stage: {status}", f"stage={stage}", f"entered_at={entered}", f"updated_at={updated}"]
+    parts.append(f"problem_clarity={normalize_problem_clarity(state.get('problem_clarity'))}")
+    problem = str(state.get("problem_statement") or "").strip()
+    parts.append(f"problem_statement={problem or '<unset>'}")
     if stage == "stage-idea-refine":
         parts.append(f"exit_readiness={state.get('exit_readiness', 'vague')}")
         idea_state = str(state.get("idea_state") or "").strip()

@@ -20,6 +20,15 @@ Stay in design-scaffolding mode until the stage is passed or cancelled.
 
 ## State Semantics
 
+`problem_statement` is the shared stage anchor: the current-best statement of the problem or goal the scaffold is meant to preserve. `problem_clarity` is one of:
+
+- `unknown`: the agent cannot yet reliably restate the problem.
+- `fuzzy`: the direction exists, but object, boundary, motivation, success signal, or constraints are unstable.
+- `framed`: the problem can be clearly restated and the user broadly accepts it.
+- `stable`: the problem statement is stable enough to anchor this stage. It is not solved or permanently locked.
+
+Design scaffold should usually externalize a `framed` or `stable` problem plus design intent. If the problem is still `unknown` or `fuzzy`, clarify it before writing many distributed prompts.
+
 `scaffold_readiness` is the compact HUD-facing state:
 
 - `mapping`: identifying design goal, target surfaces, and open questions.
@@ -40,6 +49,8 @@ Update state only when this map materially changes, not every turn:
 ```bash
 python3 scripts/update_scaffold_state.py \
   --state-path <state-file-from-hook-context> \
+  --problem-statement "Problem or goal this scaffold preserves." \
+  --problem-clarity stable \
   --scaffold-readiness scaffolding \
   --design-goal "Concise design goal." \
   --target-surfaces "module.py: Config fields; docs/foo.md: design note" \

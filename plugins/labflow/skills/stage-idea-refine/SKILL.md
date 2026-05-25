@@ -20,6 +20,13 @@ Stay in discussion mode until the stage is passed or cancelled.
 
 ## State Semantics
 
+`problem_statement` is the shared stage anchor: the current-best statement of what problem, goal, or research question this stage is organized around. `problem_clarity` describes how reliable that anchor is:
+
+- `unknown`: the agent cannot yet reliably restate the problem.
+- `fuzzy`: the rough direction exists, but object, boundary, motivation, success signal, or constraints are unstable.
+- `framed`: the problem can be clearly restated and the user broadly accepts it, but it may still change after evidence or counterexamples.
+- `stable`: the problem statement is stable enough to anchor this stage. It is not solved or permanently locked.
+
 `exit_readiness` is the compact HUD-facing state:
 
 - `vague`: the user is not yet sure what they want or need.
@@ -27,19 +34,21 @@ Stay in discussion mode until the stage is passed or cancelled.
 - `candidate`: one or more concrete candidate routes exist, but details remain unsettled.
 - `ready_to_pass`: a refined route exists and the stage can exit.
 
-`idea_state` is free text describing the current research idea. It may change non-monotonically; research discussions can become less clear after a useful challenge.
+`idea_state` is free text describing the current route, understanding, assumptions, or risks around `problem_statement`. It may change non-monotonically; research discussions can become less clear after a useful challenge.
 
 When the discussion state clearly changes, update it with:
 
 ```bash
 python3 scripts/update_idea_state.py \
   --state-path <state-file-from-hook-context> \
+  --problem-statement "Current problem or research question." \
+  --problem-clarity framed \
   --exit-readiness candidate \
   --idea-state "Current concise research idea state." \
   --note "Why this changed."
 ```
 
-Do not update state mechanically every turn.
+Do not update state mechanically every turn. If `problem_statement` is unset or `problem_clarity` is `unknown`/`fuzzy`, prioritize clarifying the problem before over-committing to a technical route.
 
 The `scripts/...` paths are skill-relative. Resolve them against this skill directory, not the current shell working directory.
 
