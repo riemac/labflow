@@ -1,68 +1,89 @@
 ---
 name: git-task-flow
-description: Git 任务流管理技能。用于实现型任务的起始 tag、分步提交、变更核对、历史回溯、阶段重叠时的本地历史整理，以及最终合并
+description: "Git task-flow management skill for semantic implementation tasks: task-start anchors, checkpoint commits, diff review, history cleanup, final semantic commits, and lightweight SemVer/VERSION/CHANGELOG closure for repositories or self-contained subprojects."
 ---
 
 # Git Task Flow
 
-用于需要可回溯、可恢复、分步提交，且常出现多任务/多阶段改动交叠的实现型任务。
+Use this skill for meaningful implementation or documentation tasks that need recoverable git boundaries, checkpoint commits, semantic history cleanup, and version-aware task closure.
 
-## 适用场景
+## When To Use
 
-- 新任务开始，需要建立清晰的 git 边界
-- 进行中，需要核对实际变更与提交历史
-- 进行中发现漏提、混提、补丁型尾随提交，需要把历史按语义重新整理
-- 完成后，需要把中间提交整理成一个语义完整的最终提交
-- 任务中断或放弃时，需要保留可恢复现场
+- Starting a task that should have a clear git recovery anchor.
+- Reviewing the real worktree before or after edits.
+- Creating checkpoint commits for recoverability.
+- Fixing leaked, mixed, or patch-like commits before finalizing.
+- Closing a task as a clean semantic commit or small semantic commit series.
+- Updating `VERSION` / `CHANGELOG` when the task has versioned semantic output.
 
-## 核心规则
+## Core Rules
 
-1. 任务开始时创建起始 tag，格式建议为 `task/<name>/<YYYYMMDD>`。
-2. 编辑前后使用 `git status`、`git diff` 检查真实变更。
-3. 需要回顾任务历史时，使用 `git log <tag>..HEAD --oneline`。
-4. 每完成一个独立步骤就提交一次，commit message 使用 conventional commits；但临时 commit 只是检查点，不默认等于最终历史。
-5. 若任务成功依赖仿真、可视化或人工科研判断，最终语义 commit 必须等用户确认；确认前已经产生的 commit 只能视作 checkpoint。
-6. 若发现多个任务阶段的改动混在一起，优先整理本地历史，而不是机械追加新 commit。
-7. 用户确认任务成功后，用 `git commit --amend`、`git rebase -i` 或必要时 `git reset --soft <tag>` 将中间提交整理成语义清晰的最终历史。
-8. 用户确认某部分工作真正完成后，才清理对应 `DONE:` 标记；只删除状态痕迹，不删除仍有科研价值的规格说明。
-9. 任务失败、暂停或放弃时，保留现有 commits，不做破坏性回退。
+1. At task start, create a recovery tag, usually `task/<name>/<YYYYMMDD>`.
+2. Treat `task/...` tags as recovery anchors, not release/version tags.
+3. Check `git status` before staging, and use `git diff` to verify the real changes.
+4. Use conventional commit messages for checkpoint and final commits.
+5. Intermediate commits are checkpoints. They do not imply final history and must not trigger version bumps by themselves.
+6. Do not mix unrelated local edits into the task commit. If unrelated changes exist, leave them unstaged and mention them.
+7. If the task depends on simulation, visualization, experiments, or human research judgment, do not treat it as finally accepted until the user confirms the result.
+8. If verification fails after a checkpoint commit, keep the checkpoint and continue fixing; do not destructively rewind.
+9. Never use `git reset --hard` or destructive checkout/reset commands unless the user explicitly asks.
 
-## 历史整理原则
+## Version Closure
 
-- 把 commit 当作“语义边界”，而不是“时间顺序日志”。
-- 若后来才发现某个改动本应属于更早的任务阶段，可以把它插回更早的提交，而不是留在队尾。
-- 对“补丁型尾随提交”优先使用 `fixup` / `squash` 并回前一笔，而不是单独保留。
-- 对真正独立的新阶段改动，保留为独立 commit，避免硬塞进旧提交造成溯源混乱。
-- 若已经提前提交但后续验证失败，不要急着删除 task tag、回退到 `<tag>` 或重做提交链；先把该 commit 当作 checkpoint 继续修复，等用户确认真正成功后，再按用户明确指令用 `git commit --amend` 合并进原 commit，或用 `rebase -i` 做局部 squash。
-- 只有在分支已共享、历史改写会影响他人时，才优先避免 rebase/amend。
+When a user explicitly uses `git-task-flow`, assume the task is intended to produce at least patch-level semantic progress once it is truly closed.
 
-## 常用整理手段
+At task close:
 
+- Judge whether the completed task is `patch`, `minor`, or `major` for each relevant versioned surface.
+- If the change is `patch`, update the relevant `VERSION` / `CHANGELOG` by default and include that update in the final semantic commit.
+- If the change is `minor` or `major`, pause and ask the user to confirm the bump before editing version files or creating release tags.
+- Write `CHANGELOG` entries as human/agent-readable semantic task summaries, not per-commit logs.
+- Keep the newest version section near the top; read recent top sections by default unless older history is needed.
+- Keep version closure tied to the accepted task result, not to every checkpoint commit.
+
+Use this SemVer interpretation:
+
+- `patch`: fixes, documentation, tests, cleanup, small behavior corrections, or internal refactors that do not change the public contract.
+- `minor`: new capabilities or changed user-visible behavior/API/contracts that remain acceptable within the current compatibility story.
+- `major`: breaking changes to public APIs, persisted formats, generated artifact semantics, or workflow contracts after the project has a stable major line.
+
+For `0.x` research projects, breaking contract changes usually map to `minor` unless the repository already defines stricter release rules.
+
+## Repository And Subproject Versions
+
+- Repository-level release tags, such as `v0.2.1`, bind to repository-level version files and changelogs.
+- A self-contained subproject may maintain its own `VERSION` / `CHANGELOG` even before it becomes a package, submodule, or independently tagged release surface.
+- Do not force subproject git tags, submodules, or package metadata unless the repository already uses them or the user asks.
+- If a task bumps a subproject version and the repository also has a top-level version, prefer a repository `patch` bump unless project docs say otherwise or the user chooses not to.
+- A release tag should point to the commit that already contains the corresponding `VERSION` / `CHANGELOG` state.
+
+## History Cleanup Principles
+
+- Treat commits as semantic boundaries, not a pure time log.
+- If a later edit belongs in an earlier semantic commit, fold it back with `git commit --amend`, `fixup`, or an interactive rebase when safe.
+- Prefer squashing patch-like tail commits into the commit they repair.
+- Keep genuinely independent task phases as separate commits.
+- Before rewriting local history, create a recovery anchor if one does not already exist.
+- Avoid rewriting shared history unless the user explicitly chooses that tradeoff.
+
+## Useful Commands
+
+- `git status --short`
+- `git diff`
+- `git diff --staged`
+- `git log <task-tag>..HEAD --oneline`
 - `git commit --amend`
-  适合把漏掉的少量改动并回最近一笔提交。
 - `git rebase -i <base>`
-  适合重排、合并、拆分、改 message，或把补丁型提交回并到更早一笔。
 - `git reset --soft <tag-or-commit>`
-  适合把一串临时提交摊平，再按真正任务边界重新分提交。
-- `git cherry-pick`
-  适合把混在一起的改动重新摘出到新的语义提交。
-- 临时分支 / 临时 worktree
-  适合在不污染当前工作区的前提下试排历史、对照不同整理方案，尤其在工作区本身还有未提交改动时。
+- `git cherry-pick <commit>`
 - `git stash push -u`
-  适合在整理历史前暂存与当前整理动作无关的工作区改动，整理完成后再恢复。
 
-## 操作约束
+## Recommended Flow
 
-- 默认只使用非破坏性 git 命令。
-- 不随意重写与当前任务无关的历史。
-- 不使用 `git reset --hard`，除非用户明确要求。
-- 如果任务被拆成多个步骤，每一步都应能对应到一个清晰的 commit。
-- 在改写本地历史前，优先建立可恢复锚点：tag、备份分支，或必要时临时 worktree。
-
-## 推荐检查顺序
-
-1. 起点：确认当前分支与工作区状态。
-2. 过程中：用 `git diff` 验证改动是否符合预期。
-3. 若发现混提/漏提：先判断哪些改动真正属于哪个任务阶段，再决定 `amend`、`rebase -i`、`reset --soft`、`cherry-pick` 中哪种最省事。
-4. 收尾前：用 `git log <tag>..HEAD --oneline` 回看本任务提交链，检查是否仍按语义分段。
-5. 完成后：确认是否需要 squash 成单一语义提交，或保留分步历史。
+1. Start: inspect status and create a `task/...` recovery tag if appropriate.
+2. During work: make checkpoint commits only at clear recovery points.
+3. Before staging: review unstaged and staged diffs; keep unrelated changes out.
+4. Before final commit: decide the semantic commit boundary and whether history cleanup is needed.
+5. Version closure: judge `patch` / `minor` / `major`; auto-apply `patch`, ask for `minor` / `major`.
+6. Finalize: commit the accepted code/docs/version changes; create release tags only when the task is actually a release/version closure.
+7. Report: summarize final commit(s), version changes, validation, and any unrelated worktree changes left untouched.
