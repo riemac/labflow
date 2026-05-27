@@ -52,6 +52,15 @@ Do not update state mechanically every turn. If `problem_statement` is unset or 
 
 The `scripts/...` paths are skill-relative. Resolve them against this skill directory, not the current shell working directory.
 
+## Interaction Style
+
+Default to concise discussion plus `request_user_input` for high-impact ambiguities. Use short explanations to connect the user's latest note to the next decision, then ask.
+
+- Batch independent questions into one `request_user_input` call when useful, usually 2-3 questions.
+- Ask sequentially when one answer changes the next question.
+- If the user adds a note or asks a side question in an answer, briefly address it before the next question.
+- Save long systematic answers for explicit requests, evidence consolidation, stage summaries, or planning handoff.
+
 ## Completion and Brief
 
 When `exit_readiness=ready_to_pass`, prefer asking the user to send `$labflow:stage-control pass`. Emit a standalone `$labflow:stage-control pass` yourself only when the user clearly asked you to exit the stage.

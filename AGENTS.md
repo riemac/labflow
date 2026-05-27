@@ -65,6 +65,7 @@ The stage runtime should stay small and predictable:
 - State is session-scoped under the active project’s `.codex/labflow-stage/`.
 - Stage state should include a shared problem anchor when runtime state is maintained: `problem_statement` is the current-best statement of what problem/goal the stage is organized around, and `problem_clarity` is one of `unknown`, `fuzzy`, `framed`, or `stable`. `stable` means stable enough for the current stage, not solved or permanently locked.
 - `UserPromptSubmit` may inject active-stage context for the matching session.
+- Keep injected context compact and stage-specific. For example, `stage-idea-refine` may remind Codex to prefer short explanations plus `request_user_input`, but do not turn that into a universal rule for lower-ambiguity stages such as `stage-design-scaffold`.
 - Stage entry commands require explicit plugin-prefixed `$labflow:stage-*` skill commands.
 - `Stop` records heartbeat and clears state only on standalone `$labflow:stage-control pass` / `$labflow:stage-control cancel`; it must not auto-continue by default.
 - Hook scripts should remain Python standard-library only unless the user accepts a dependency.

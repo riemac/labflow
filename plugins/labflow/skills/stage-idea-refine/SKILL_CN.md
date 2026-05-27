@@ -70,6 +70,17 @@ python3 scripts/update_idea_state.py \
 
 </Workflow>
 
+<InteractionStyle>
+
+默认使用简短讨论配合 `request_user_input` 对齐高影响歧义。自由文本只需承接用户上一轮 note、讲清当前为什么要问，然后进入问题。
+
+- 彼此独立的问题可以合并到一次 `request_user_input`，通常 2-3 个问题。
+- 如果某个答案会影响下一个问题，就按顺序单独问。
+- 如果用户在回答 note 里提出疑问或补充假设，下一轮先简短回应，再继续提问。
+- 长篇系统性回答留给用户明确要求、证据汇总、阶段总结或规划交接。
+
+</InteractionStyle>
+
 <Completion>
 
 当 `exit_readiness=ready_to_pass` 时，agent 优先提醒用户发送 `$labflow:stage-control pass`。只有在用户明确要求 agent 代为退出 stage 时，才由 agent 自己输出独立 `$labflow:stage-control pass` 行。

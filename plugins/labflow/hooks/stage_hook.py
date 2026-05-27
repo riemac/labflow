@@ -177,54 +177,49 @@ def normalize_problem_clarity(value: Any) -> str:
     return clarity if clarity in PROBLEM_CLARITY_VALUES else "unknown"
 
 
-def append_problem_context(lines: list[str], state: dict[str, Any]) -> None:
-    problem = str(state.get("problem_statement") or "").strip()
+def problem_summary(state: dict[str, Any]) -> tuple[str, str]:
+    problem = str(state.get("problem_statement") or "").strip() or "<unset>"
     clarity = normalize_problem_clarity(state.get("problem_clarity"))
-    updated_at = str(state.get("problem_statement_updated_at") or "never")
+    return problem, clarity
+
+
+def append_problem_guidance(lines: list[str], state: dict[str, Any]) -> None:
+    problem, clarity = problem_summary(state)
     note = str(state.get("problem_statement_note") or "").strip()
-    lines.extend(
-        [
-            f"problem_statement: {problem or '<unset>'}",
-            f"problem_clarity: {clarity}.",
-            f"problem_statement_updated_at: {updated_at}.",
-        ]
-    )
     if note:
-        lines.append(f"problem_statement_note: {note}")
-    if not problem or clarity in {"unknown", "fuzzy"}:
+        lines.append(f"- problem_note: {note}")
+    if problem == "<unset>" or clarity in {"unknown", "fuzzy"}:
         lines.append(
-            "Current problem anchor is unset or unclear; clarify or maintain "
-            "problem_statement/problem_clarity when the stage state materially changes, "
-            "without making it a per-turn ritual."
+            "- Problem anchor is unset or unclear; clarify/update it only when the discussion state materially changes."
         )
 
 
 def stage_context(state: dict[str, Any]) -> str:
     stage = str(state.get("stage"))
     spec = STAGES.get(stage, STAGES["stage-idea-refine"])
+    problem, clarity = problem_summary(state)
+    state_path = str(state.get("_state_path") or "")
     lines = [
         "[Labflow Stage Runtime]",
-        f"Active stage: {spec['title']} (`{stage}`).",
-        spec["contract"],
+        f"stage: {spec['title']} (`{stage}`)",
+        f"problem: {problem} (clarity={clarity})",
     ]
-    append_problem_context(lines, state)
     if stage == "stage-idea-refine":
         readiness = str(state.get("exit_readiness") or "vague")
-        idea_state = str(state.get("idea_state") or "No idea_state recorded yet.")
-        updated_at = str(state.get("idea_state_updated_at") or "never")
-        state_path = str(state.get("_state_path") or "")
-        lines.extend(
-            [
-                f"exit_readiness: {readiness}.",
-                f"idea_state: {idea_state}",
-                f"idea_state_updated_at: {updated_at}.",
-                "Maintain exit_readiness/idea_state only when the discussion state clearly changes; it is not a per-turn ritual.",
-                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$labflow:stage-control cancel` line.",
-                "When ready_to_pass, prefer asking the user to send `$labflow:stage-control pass`; after the stage is truly passed, write a concise idea-refine brief for user recall if appropriate.",
-            ]
-        )
+        idea_state = str(state.get("idea_state") or "").strip() or "<unset>"
+        lines[1] = f"{lines[1]}, readiness={readiness}"
+        lines.append(f"idea_state: {idea_state}")
         if state_path:
-            lines.append(f"State file: {state_path}")
+            lines.append(f"state_file: {state_path}")
+        lines.append("")
+        lines.append("guidance:")
+        lines.append("- Stay in idea-refine discussion; do not implement unless the user exits or asks.")
+        lines.append(
+            "- Prefer short explanation + request_user_input for high-impact ambiguities; batch independent questions when useful."
+        )
+        lines.append("- Long systematic answers are for requested summaries, planning, or evidence consolidation.")
+        append_problem_guidance(lines, state)
+        lines.append("- Update problem/idea state only when discussion state materially changes.")
     elif stage == "stage-design-scaffold":
         readiness = str(state.get("scaffold_readiness") or "mapping")
         design_goal = str(state.get("design_goal") or "No design_goal recorded yet.")
@@ -232,35 +227,35 @@ def stage_context(state: dict[str, Any]) -> str:
         current_surface = str(state.get("current_surface") or "No current_surface recorded yet.")
         completed_surfaces = state.get("completed_surfaces") or []
         open_questions = state.get("open_questions") or []
-        updated_at = str(state.get("scaffold_state_updated_at") or "never")
-        state_path = str(state.get("_state_path") or "")
+        lines[1] = f"{lines[1]}, readiness={readiness}"
         lines.extend(
             [
-                f"scaffold_readiness: {readiness}.",
                 f"design_goal: {design_goal}",
                 f"target_surfaces: {format_list_for_context(target_surfaces) or 'None recorded.'}",
                 f"current_surface: {current_surface}",
                 f"completed_surfaces: {format_list_for_context(completed_surfaces) or 'None recorded.'}",
                 f"open_questions: {format_list_for_context(open_questions) or 'None recorded.'}",
-                f"scaffold_state_updated_at: {updated_at}.",
-                "Maintain scaffold state only when design goal, target/current surface, completed surfaces, or open questions materially change.",
-                "If this stage was triggered accidentally while discussing files, hooks, or commands, cancel it with a standalone `$labflow:stage-control cancel` line.",
-                "When ready_to_pass, prefer asking the user to send `$labflow:stage-control pass`.",
             ]
         )
         stop_guard = str(state.get("last_stop_guard") or "").strip()
         if stop_guard:
             lines.append(f"last_stop_guard: {stop_guard}")
         if state_path:
-            lines.append(f"State file: {state_path}")
-    lines.extend(
-        [
-            "Use repo/code/document inspection for discoverable facts before asking the user.",
-            "For high-impact human preferences or tradeoffs, ask one focused question instead of guessing.",
-            "If the stage is clearly complete, either ask the user to send `$labflow:stage-control pass` or include a standalone `$labflow:stage-control pass` line.",
-            "User commands: `$labflow:stage-control pass`, `$labflow:stage-control cancel`, `$labflow:stage-control status`.",
-        ]
-    )
+            lines.append(f"state_file: {state_path}")
+        lines.append("")
+        lines.append("guidance:")
+        lines.append("- Stay in design-scaffold mode; do not implement full behavior unless the user exits or asks.")
+        lines.append("- Update scaffold state only when design goal, surfaces, completed work, or open questions materially change.")
+        append_problem_guidance(lines, state)
+    else:
+        if state_path:
+            lines.append(f"state_file: {state_path}")
+        lines.append("")
+        lines.append("guidance:")
+        lines.append(f"- {spec['contract']}")
+        append_problem_guidance(lines, state)
+    lines.append("")
+    lines.append("commands: $labflow:stage-control pass | cancel | status")
     return "\n".join(lines)
 
 

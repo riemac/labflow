@@ -35,9 +35,15 @@ def test_user_prompt_context_includes_problem_anchor_defaults(tmp_path: Path) ->
         cwd=tmp_path,
     )
 
-    assert "problem_statement: <unset>" in context
-    assert "problem_clarity: unknown." in context
-    assert "Current problem anchor is unset or unclear" in context
+    assert "stage: Idea Refine (`stage-idea-refine`), readiness=vague" in context
+    assert "problem: <unset> (clarity=unknown)" in context
+    assert "idea_state: <unset>" in context
+    assert "guidance:" in context
+    assert "Prefer short explanation + request_user_input" in context
+    assert "commands: $labflow:stage-control pass | cancel | status" in context
+    assert "problem_statement:" not in context
+    assert "We are in the idea-refine stage" not in context
+    assert "User commands:" not in context
 
 
 def test_update_idea_state_can_update_problem_anchor(tmp_path: Path) -> None:
