@@ -31,7 +31,7 @@ A legacy `.codex/labflow-stage/state.json` may exist from older versions, but cu
 - `UserPromptSubmit` injects model-visible context only for the current Codex session while a stage is active.
 - `Stop` only clears state when the assistant emits a standalone `$labflow:stage-control pass` or `$labflow:stage-control cancel` line.
 - `Stop` does not push an extra continuation turn by default.
-- When a stage starts, the hook best-effort opens a Ghostty `+new-window` HUD. If Ghostty is unavailable, it silently skips the HUD. Closing the HUD window does not finish the stage.
+- When a stage starts, the hook best-effort opens a Ghostty `+new-window` HUD. If Ghostty is unavailable or `LABFLOW_STAGE_HUD_DISABLED=1` is set, it silently skips the HUD. Closing the HUD window does not finish the stage.
 
 ## Hook Enablement
 

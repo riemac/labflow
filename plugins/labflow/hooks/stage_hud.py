@@ -204,6 +204,8 @@ def ghostty_command(state_path: Path, cwd: Path) -> list[str]:
 
 
 def ensure(state_path: Path) -> int:
+    if os.environ.get("LABFLOW_STAGE_HUD_DISABLED"):
+        return 0
     state = read_json(state_path)
     if state.get("status") != "active":
         return 0

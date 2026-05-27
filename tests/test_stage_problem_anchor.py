@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -12,16 +13,23 @@ SCAFFOLD_UPDATE = ROOT / "plugins" / "labflow" / "skills" / "stage-design-scaffo
 
 
 def run_hook(payload: dict, cwd: Path) -> str:
+    env = os.environ.copy()
+    env["LABFLOW_STAGE_HUD_DISABLED"] = "1"
     result = subprocess.run(
         [sys.executable, str(HOOK)],
         input=json.dumps(payload),
         text=True,
         capture_output=True,
         cwd=cwd,
+        env=env,
         check=True,
     )
     output = json.loads(result.stdout)
     return output["hookSpecificOutput"]["additionalContext"]
+
+
+def hud_state_path(tmp_path: Path, session_id: str = "problem-anchor") -> Path:
+    return tmp_path / ".codex" / "labflow-stage" / "sessions" / f"{session_id}.hud.json"
 
 
 def test_user_prompt_context_includes_problem_anchor_defaults(tmp_path: Path) -> None:
@@ -35,6 +43,7 @@ def test_user_prompt_context_includes_problem_anchor_defaults(tmp_path: Path) ->
         cwd=tmp_path,
     )
 
+    assert not hud_state_path(tmp_path).exists()
     assert "stage: Idea Refine (`stage-idea-refine`), readiness=vague" in context
     assert "problem: <unset> (clarity=unknown)" in context
     assert "idea_state: <unset>" in context
@@ -148,3 +157,32 @@ def test_hud_render_always_shows_problem_and_clarity() -> None:
 
     assert "problem : <unset>" in rendered
     assert "clarity : unknown" in rendered
+
+
+def test_stage_hud_disabled_env_skips_ensure(tmp_path: Path) -> None:
+    state_path = tmp_path / ".codex" / "labflow-stage" / "sessions" / "problem-anchor.json"
+    state_path.parent.mkdir(parents=True)
+    state_path.write_text(
+        json.dumps(
+            {
+                "status": "active",
+                "stage": "stage-idea-refine",
+                "stage_label": "idea-refine",
+                "cwd": str(tmp_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["LABFLOW_STAGE_HUD_DISABLED"] = "1"
+
+    subprocess.run(
+        [sys.executable, str(HUD), "ensure", str(state_path)],
+        cwd=tmp_path,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert not hud_state_path(tmp_path).exists()

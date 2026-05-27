@@ -134,6 +134,8 @@ def project_root_from_state(state_path: Path) -> Path:
 
 
 def run_hud(action: str, state_path: Path) -> None:
+    if os.environ.get("LABFLOW_STAGE_HUD_DISABLED"):
+        return
     script = Path(__file__).with_name("stage_hud.py")
     if not script.exists():
         return

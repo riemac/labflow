@@ -69,7 +69,7 @@ The stage runtime should stay small and predictable:
 - Stage entry commands require explicit plugin-prefixed `$labflow:stage-*` skill commands.
 - `Stop` records heartbeat and clears state only on standalone `$labflow:stage-control pass` / `$labflow:stage-control cancel`; it must not auto-continue by default.
 - Hook scripts should remain Python standard-library only unless the user accepts a dependency.
-- HUD is best-effort; failure to open or close a HUD must not block Codex.
+- HUD is best-effort; failure to open or close a HUD must not block Codex. Automated tests should set `LABFLOW_STAGE_HUD_DISABLED=1` instead of opening windows that need cleanup.
 
 ### Tooling Choices
 
