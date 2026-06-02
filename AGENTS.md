@@ -75,7 +75,8 @@ The stage runtime should stay small and predictable:
 
 Use the cheapest reliable evidence source:
 
-- augmentcode for semantic local codebase retrieval when file locations are unknown.
+- The current local semantic/code-RAG tool for candidate recall when file locations are unknown; keep queries path-scoped and provider-neutral.
+- `tree` / `fd` for structure preview and file discovery with depth limits and excludes.
 - `rg` for exact local string search.
 - ctx7 / `find-docs` for official or version-specific library documentation.
 - `gh` for GitHub release/source/issue/PR evidence.

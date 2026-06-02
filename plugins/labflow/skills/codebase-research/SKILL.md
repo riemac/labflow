@@ -1,87 +1,51 @@
 ---
 name: codebase-research
-description: 本地代码库调研技能。用于架构追踪、符号定位、调用链梳理、类似实现查找、配置注册路径分析、跨文件数据流理解。优先使用 augmentcode 语义检索和 lab-explore background subagent，配合 rg 与关键文件精读。不要用于外部文档、论文、第三方 API 调研。
+description: Local codebase research skill for architecture tracing, symbol discovery, call-chain analysis, similar implementation lookup, config registration paths, and cross-file data-flow understanding. Use local semantic retrieval, shell search, and key-file reading; do not use for external docs, papers, or third-party API research.
 ---
 
 # Codebase Research
 
-本 skill 只处理**本地代码库**。目标是在动手实现前快速建立足够准确的代码理解，并把 read-heavy 工作从主上下文中剥离出去。
+Use only for **local codebase research**. For external docs, upstream source, releases, GitHub issues/PRs, papers, or third-party APIs, use `external-research`.
 
-不要把本 skill 用于外部资料；外部官方文档、论文、上游源码、版本差异使用 `external-research`。
+## Default Loop
 
-## 核心原则
+Use max parallelism whenever branches are independent.
 
-- **先语义，后精确**：陌生区域先用 augmentcode 语义检索，定位候选模块后再用 `rg` 和文件精读确认。
-- **长句检索**：augmentcode 查询使用完整意图句，不用短关键词。
-- **并行预取**：多个独立问题、陌生子系统、跨模块调用链，优先并行委派 `lab-explore`。
-- **主 agent 也要读关键文件**：subagent 返回后，主 agent 只精读会影响实现决策的入口、接口、配置和类似实现。若知道这些文件，直接读，不必先语义检索或委派 subagent。
-- **证据优先**：结论必须能落到路径、行号、函数/类/配置键或调用链。
+1. **Semantic retrieval**: use the current local semantic/code-RAG tool as a thin, replaceable entry point. Query one concept at a time. Always scope to the narrowest defensible repo/subproject/module path; re-scope deeper as evidence appears. Follow the active tool's own skill/docs for query style.
+2. **Shell narrowing**: use `tree` for structure, `fd` for file discovery, and `rg` for symbols/config keys/strings. Always use depth limits and excludes for caches, dependencies, generated files, logs, outputs, and data.
+3. **Read key files**: verify behavior in entry points, definitions, registration sites, one caller/callee layer, similar implementations, and relevant tests/examples. If key paths are already known, read directly; do not force semantic search.
 
-## 推荐流程
-
-### 1. 切分问题
-
-把调研拆成 1-4 个独立问题，例如：
-
-- 入口在哪里？
-- 配置如何注册？
-- 运行时如何消费配置？
-- 有没有可复用的类似实现？
-
-若问题之间互不依赖，立即并行委派 `lab-explore`，不要等主 agent 阻塞后才派。
-
-### 2. 语义检索
-
-优先使用 augmentcode 代码库语义检索（如果当前 Codex session 暴露该 MCP/tool）：
-
-```text
-IsaacLab 中相机传感器配置从 dataclass 到运行时 sensor 创建的完整链路是什么？
-```
-
-要求：
-
-- 用自然语言描述完整意图。
-- 传入尽可能具体的 `directory_path`。
-- 一次查一个概念，不把多个无关问题塞进同一 query。
-
-### 3. 精确定位
-
-语义检索得到候选后，用 `rg` 精确缩小范围：
+Example shell probes:
 
 ```bash
-rg -n "CameraCfg|TiledCamera|sensor" source_dir
-rg -n "register|registry|class .*Cfg" source_dir
+tree target_dir -L 3 -a -I '.git|__pycache__|.venv|node_modules|dist|build|logs|outputs|.cocoindex_code'
+fd 'reward|manager|cfg' target_dir
+rg -n "RewardManager|RewTerm|RewardsCfg" target_dir
 ```
 
-优先读：
+## Subagent Delegation
 
-- 入口文件和注册点。
-- 目标类/函数定义。
-- 调用方和被调用方各一层。
-- 与目标最相似的已有实现。
+Keep delegation separate from the default loop. Use it when many independent branches would consume the main context.
 
-### 4. 回收 subagent
+- Give each subagent one narrow path scope and one concrete question.
+- Ask for paths, line references, uncertainty, and decisive files to read.
+- Do not paste subagent output as the final answer.
+- The main agent must still read decisive files before making implementation claims.
 
-从 `lab-explore` 回来后：
+## Output
 
-- 不照抄完整输出。
-- 抽取会影响实现的事实。
-- 主 agent 精读关键路径，确认 line-level 证据。
-- 若发现新分支，再追加小范围委派。
+Keep results decision-oriented:
 
-## 输出格式
+- Conclusion: how the local code works.
+- Evidence: paths, lines, symbols, config keys, or call chains.
+- Reusable pattern: closest existing implementation.
+- Implementation impact: likely files/interfaces/configs to change.
+- Uncertainty: what was not inspected and why it does not block the current decision.
 
-输出应简洁，优先包含：
+## Avoid
 
-- 结论：当前代码库实际如何工作。
-- 证据：绝对路径 + 行号 + 符号名。
-- 可复用模板：最像的已有实现在哪里。
-- 实现影响：下一步应该改哪些入口/接口。
-- 不确定性：哪些分支没有读，为什么暂时不影响。
-
-## 反模式
-
-- 只用 `rg` 关键词硬找，错过语义相近的实现。
-- 只看 subagent 摘要，主 agent 不读关键文件。
-- 把外部 API 行为当成本地事实；外部行为应交给 `external-research`。
-- 调研输出变成架构巡礼，而不是回答当前任务需要的问题。
+- Binding this skill to one semantic-search provider.
+- Workspace-wide semantic queries when a narrower path is available.
+- Treating retrieval or subagent summaries as proof.
+- Dumping huge directory trees without depth limits/excludes.
+- Writing a broad architecture tour instead of answering the task.

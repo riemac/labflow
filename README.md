@@ -5,7 +5,7 @@ Stage-Driven Development Codex-native scientific research coding skill toolbox.
 labflow provides reusable skills for research-heavy coding work in Codex:
 
 - Stage-driven discussion hooks for lightweight idea refinement and goal clarification.
-- Local codebase research with semantic search, `rg`, key-file reads, and read-heavy subagent delegation.
+- Local codebase research with replaceable semantic/code-RAG retrieval, `tree`/`fd`/`rg`, key-file reads, and read-heavy subagent delegation.
 - External research over official docs, upstream source, papers, and version-specific evidence.
 - Deep research reports for complex cross-source feasibility and architecture questions.
 - First-principles research brainstorming with method cards, assumptions, counterexamples, and minimal validation probes.
@@ -13,7 +13,7 @@ labflow provides reusable skills for research-heavy coding work in Codex:
 - Git task flow for task boundaries, commits, history review, and GitHub publishing mechanics.
 - Scientific annotation, PDF reading, Obsidian CLI operations, and self-update.
 - Background agents for read-heavy local exploration and external research.
-- MCP configuration for `pdf-reader` and `augmentcode`.
+- MCP configuration for `pdf-reader`.
 
 The old GitHub Copilot plugin version is preserved on the `copilot-legacy` branch. The `main` branch targets Codex only.
 
@@ -43,10 +43,9 @@ codex plugin add labflow@riemac
 
 For local directory marketplaces, refresh both the marketplace source and the installed plugin cache. A plain marketplace `add` may only report that the marketplace already exists.
 
-External library/API docs are handled by ctx7 CLI skills, not an MCP server. The configured MCP servers use local commands:
+External library/API docs are handled by ctx7 CLI skills, not an MCP server. The configured MCP server uses a local command:
 
 - `npx @sylphx/pdf-reader-mcp`
-- `auggie --mcp --mcp-auto-workspace`
 
 ## Stage-Driven Development
 

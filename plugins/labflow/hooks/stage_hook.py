@@ -217,9 +217,9 @@ def stage_context(state: dict[str, Any]) -> str:
         lines.append("guidance:")
         lines.append("- Stay in idea-refine discussion; do not implement unless the user exits or asks.")
         lines.append(
-            "- Prefer short explanation + request_user_input for high-impact ambiguities; batch independent questions when useful."
+            "- Prefer concise explanation + request_user_input for high-impact ambiguities; batch independent questions when useful."
         )
-        lines.append("- Long systematic answers are for requested summaries, planning, or evidence consolidation.")
+        lines.append("- Comprehensive systematic answers are for requested summaries, planning, or evidence consolidation.")
         append_problem_guidance(lines, state)
         lines.append("- Update problem/idea state only when discussion state materially changes.")
     elif stage == "stage-design-scaffold":
