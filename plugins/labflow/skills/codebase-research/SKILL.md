@@ -10,6 +10,7 @@ Aim to quickly identify the files and code paths that matter for the current tas
 Use max parallelism aggressively: split the task into independent branches, then run semantic retrieval, shell probes, and obvious file reads in parallel. Do not wait for one search to finish before launching other independent searches.
 
 1. **Semantic retrieval**: use the current local semantic/code-RAG tool as a thin, replaceable entry point. Query one concept at a time. Always scope to the narrowest defensible repo/subproject/module path; re-scope deeper as evidence appears. Follow the active tool's own skill/docs for query style.
+  > now the semantic tool is ccc, refer to ccc skill when needed
 2. **Shell narrowing**: use `tree` for structure, `fd` for file discovery (`fdfind` alias; prefer over plain `find`), and `rg` for symbols/config keys/strings (prefer over plain `grep`). Use depth limits and excludes for caches, dependencies, generated files, logs, outputs, and data when useful.
 3. **Read key files**: verify behavior in entry points, definitions, registration sites, one caller/callee layer, similar implementations, and relevant tests/examples. If key paths are already known, read directly; do not force semantic search.
 
