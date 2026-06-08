@@ -2,3 +2,6 @@
 __pycache__/
 *.py[cod]
 plugins/labflow/benchmark/results
+labflow.code-workspace
+# CocoIndex Code (ccc)
+/.cocoindex_code/

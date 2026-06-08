@@ -123,3 +123,18 @@ r"""TODO: xx算子设计草稿。
 你应将其视为高优先级局部任务说明，并结合所在文件、类、函数、字段和 pipeline 上下文理解它，而不是孤立地当作普通 TODO。
 
 </distributed-prompting>
+
+<tools>
+本机常用 CLI 工具：
+
+- `fd` — 快速文件发现
+- `rg` — ripgrep 精确字符串搜索
+- `tree` — 目录结构预览
+- `gh` — GitHub CLI（release、issue、PR、仓库操作）
+- `uv` — Python 包和项目管理
+- `npm` / `npx` — Node.js 包管理
+- `hf` — Hugging Face CLI（模型、数据集）
+- `ctx7` — 库/API 文档查询
+- `jq` — shell 管道中处理 JSON
+- `ccc` — 代码库语义索引（cocoindex-code）
+</tools>

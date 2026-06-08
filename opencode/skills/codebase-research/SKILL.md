@@ -1,6 +1,6 @@
 ---
 name: codebase-research
-description: "Use when Codex needs to inspect a local repository before answering or editing: trace architecture, locate symbols, follow call chains/data flow, find similar implementations, inspect config registration paths, or decide which files to read/change. Use path-scoped local semantic retrieval, parallel shell probes, key-file reads, and subagent prefetch. Not for external docs, papers, or third-party API research."
+description: "Use when you need to inspect a local repository before answering or editing: trace architecture, locate symbols, follow call chains/data flow, find similar implementations, inspect config registration paths, or decide which files to read/change. Use path-scoped local semantic retrieval, parallel shell probes, key-file reads, and subagent prefetch. Not for external docs, papers, or third-party API research."
 ---
 
 ## Default Loop
@@ -24,7 +24,7 @@ rg -n "RewardManager|RewTerm|RewardsCfg" target_dir
 
 ## Subagent Delegation
 
-Keep delegation separate from the default loop. Use it as prefetch: if unfamiliar subsystems, cross-module chains, or multiple candidates are likely to consume main context, launch scoped subagents early while the main agent continues local search/read work.
+Keep delegation separate from the default loop. Use it as prefetch: if unfamiliar subsystems, cross-module chains, or multiple candidates are likely to consume main context, launch scoped subagents (the built-in `explore` subagent) early while the main agent continues local search/read work.
 
 - Prefer narrow scopes, but allow one subagent to cover several related modules when the question is inherently cross-module; split independent branches into parallel subagents.
 - Ask for useful paths, line references, likely entry points, and remaining uncertainty.

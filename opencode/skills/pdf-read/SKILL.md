@@ -5,11 +5,11 @@ description: PDF document reading skill. Use when reading local or remote PDF fi
 
 # PDF Reading
 
-Attached PDFs are handled by the host's own harness — skip this skill. Use it
+Attached PDFs are handled by opencode's own harness — skip this skill. Use it
 when you have a **local path or remote URL** and need to read the PDF yourself.
 
 The primary tool is the `pdf-reader` MCP server. It reads pages, extracts
-metadata, and — critically — returns **embedded images** that the host feeds
+metadata, and — critically — returns **embedded images** that opencode feeds
 straight into context so you see figures, not just text.
 
 > MCP URL fetch may fail behind a proxy. If a remote URL fails, download the PDF
@@ -26,7 +26,7 @@ straight into context so you see figures, not just text.
 | `include_full_text` | Extract text |
 | `include_images` | Extract embedded images (requires `pages`) |
 
-### Read a paper
+### Read a paper (no upload needed)
 
 ```
 # Confirm metadata and page count.
@@ -47,7 +47,7 @@ mcp_pdf-reader_read_pdf(
 ### Read figures (not just text)
 
 Add `include_images: true` with `pages`. The tool returns page text and
-embedded images together.
+embedded images together; opencode passes images straight into context.
 
 ```
 mcp_pdf-reader_read_pdf(
