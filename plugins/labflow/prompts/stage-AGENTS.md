@@ -120,3 +120,18 @@ r"""TODO: draft for an operator design.
 treat it as high-priority local task context and interpret it with the surrounding file, class, function, field, and pipeline.
 
 </distributed-prompting>
+
+<tools>
+Common CLI tools available in this machine:
+
+- `fd` — fast file discovery
+- `rg` — ripgrep for exact string search
+- `tree` — directory structure preview
+- `gh` — GitHub CLI (releases, issues, PRs, repos)
+- `uv` — Python package and project manager
+- `npm` / `npx` — Node.js package management
+- `hf` — Hugging Face CLI (models, datasets)
+- `ctx7` — library/API documentation lookup
+- `jq` — JSON processing in shell pipelines
+- `ccc` — codebase semantic index (cocoindex-code)
+</tools>
