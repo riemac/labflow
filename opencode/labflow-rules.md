@@ -84,6 +84,8 @@ Common CLI tools available in this machine:
 - `hf` — Hugging Face CLI (models, datasets)
 - `ctx7` — library/API documentation lookup
 - `jq` — JSON processing in shell pipelines
-- `ccc` — codebase semantic index (cocoindex-code)
+- `ccc` — codebase semantic index/search (cocoindex-code)
+- `ruff` — Python linter and formatter
+- `pyright` — Python type checker
 
 </tools>

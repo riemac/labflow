@@ -2,8 +2,18 @@
 description: Research develop stage — refine ideas and engineering questions, challenge assumptions, then externalize mature design into distributed scaffolds (TODOs, docstrings, interface shells). Switch here for nonlinear R&D discussion and design scaffolding; switch back to build for full implementation and to plan for read-only planning.
 mode: primary
 permission:
+  read: allow
   edit: allow
-  bash: ask
+  glob: allow
+  grep: allow
+  list: allow
+  bash: allow
+  task: allow
+  todowrite: allow
+  webfetch: allow
+  websearch: allow
+  skill: allow
+  question: allow
 ---
 
 # Research Develop Stage

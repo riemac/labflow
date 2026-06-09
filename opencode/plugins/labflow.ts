@@ -15,7 +15,20 @@ export default async () => ({
         description:
           "Research develop stage — refine ideas and engineering questions, challenge assumptions, then externalize mature design into distributed scaffolds (TODOs, docstrings, interface shells). Switch here for nonlinear R&D discussion; switch back to build for implementation.",
         prompt: "{file:" + ASSETS + "/agents/labflow-develop.md}",
-        permission: { edit: "allow", bash: "ask" },
+        permission: {
+          read: "allow",
+          edit: "allow",
+          glob: "allow",
+          grep: "allow",
+          list: "allow",
+          bash: "ask",
+          task: "allow",
+          todowrite: "allow",
+          webfetch: "allow",
+          websearch: "allow",
+          skill: "allow",
+          question: "allow",
+        },
       },
       vision: {
         mode: "subagent",
