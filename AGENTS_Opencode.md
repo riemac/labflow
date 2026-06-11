@@ -6,17 +6,22 @@ git hygiene) live in the thin entry [AGENTS.md](AGENTS.md); read that first.
 
 ## Product shape
 
-The integration is a single **opencode plugin** loaded via `file://` URL from
-the repo. The plugin's `config` hook injects rules, the primary agent, and
-skill paths — no files are copied into `~/.config/opencode/`. `install.sh` is a
-first-time setup helper (adds the plugin line to `opencode.json`).
+The integration is centered on a single **opencode plugin** loaded via
+`file://` URL from the repo. The plugin's `config` hook injects rules, the
+primary agent, and skill paths. Slash commands that OpenCode must discover
+before plugin config hooks run are symlinked into `~/.config/opencode/commands`
+by `install.sh`.
 
 OpenCode surfaces (all under `opencode/`):
 
 ```text
 opencode/
 ├── plugins/
-│   └── labflow.ts            # plugin entry: config hook injects everything
+│   └── labflow.ts            # plugin entry: config hook injects rules/agents/skills
+├── commands/
+│   └── imagegen.md           # /imagegen command, symlinked by install.sh
+├── scripts/
+│   └── imagegen.mjs          # OpenAI-compatible Images API CLI backend
 ├── labflow-rules.md          # global cross-agent rules
 ├── agents/
 │   └── labflow-develop.md    # the single primary "develop" stage agent
@@ -31,6 +36,11 @@ with space (enable/disable) — no need to edit config files after setup.
 distributed-prompting rules; it applies to every agent (build, plan,
 labflow-develop) because the plugin pushes it into `cfg.instructions`, which is
 additive and never shadows the user's own `AGENTS.md` or `~/.claude/CLAUDE.md`.
+
+`/imagegen` is a symlinked command file that instructs the agent to call
+`opencode/scripts/imagegen.mjs`. The script uses the user's configured
+OpenAI-compatible provider for research discussion diagrams and lab-meeting
+illustrations.
 
 ## Stages as agents
 

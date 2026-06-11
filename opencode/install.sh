@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # First-time setup: add the labflow plugin reference to opencode.json.
-# The plugin loads all assets (agent, skills, rules) directly from the repo —
-# no files are copied into ~/.config/opencode/.
+# The plugin loads agent, skills, and rules directly from the repo. Slash
+# commands are symlinked into ~/.config/opencode/commands for native discovery.
 #
 # opencode loads config once at startup and does not hot-reload.
 # After running this, quit and restart opencode.
@@ -13,6 +13,9 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}"
 CONFIG_FILE="$CONFIG_DIR/opencode.json"
 PLUGIN_ENTRY="file://$SRC/plugins/labflow.ts"
+COMMAND_DIR="$CONFIG_DIR/commands"
+IMAGEGEN_COMMAND_SRC="$SRC/commands/imagegen.md"
+IMAGEGEN_COMMAND_DST="$COMMAND_DIR/imagegen.md"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
   printf 'No config file found at %s. Creating minimal config.\n' "$CONFIG_FILE"
@@ -45,6 +48,9 @@ with open('$CONFIG_FILE', 'w') as f:
   fi
 fi
 
+mkdir -p "$COMMAND_DIR"
+ln -sfn "$IMAGEGEN_COMMAND_SRC" "$IMAGEGEN_COMMAND_DST"
+
 cat <<EOF
 
 Done.
@@ -52,7 +58,8 @@ Done.
 The labflow plugin is now registered. It injects:
   - labflow-rules.md (global cross-agent instructions)
   - labflow-develop agent (toggle with Tab in the TUI)
-  - 10 ability skills
+  - bundled ability skills
+  - /imagegen command (symlinked to $IMAGEGEN_COMMAND_DST)
 
 Quit and restart opencode for changes to take effect.
 To disable, remove "$PLUGIN_ENTRY" from the "plugin" array,
