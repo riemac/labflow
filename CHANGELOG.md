@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 - 2026-06-14
+
+- Added `labflow-plan`, a read-only OpenCode primary agent that adapts Codex Plan Mode into an explore-first, question-driven workflow ending in a `<proposed_plan>` block.
+- Updated OpenCode integration docs and install messaging to route structured planning through `labflow-plan`, implementation through `build`, and nonlinear R&D/scaffolding through `labflow-develop`.
+
 ## 0.5.1 - 2026-06-14
 
 - Tightened `codebase-research` so agents must load/read the `ccc` skill before semantic code retrieval, and synchronized the Codex/OpenCode English and Chinese skill copies around `ccc` as the active local semantic search tool.

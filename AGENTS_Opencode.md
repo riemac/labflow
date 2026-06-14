@@ -24,7 +24,8 @@ opencode/
 │   └── imagegen.mjs          # OpenAI-compatible Images API CLI backend
 ├── labflow-rules.md          # global cross-agent rules
 ├── agents/
-│   └── labflow-develop.md    # the single primary "develop" stage agent
+│   ├── labflow-develop.md    # primary develop stage: R&D refine + scaffold
+│   └── labflow-plan.md       # primary read-only structured planning stage
 ├── skills/                   # adapted ability skills (de-Codex'd copies)
 └── install.sh                # first-time setup: adds plugin line to opencode.json
 ```
@@ -34,8 +35,9 @@ with space (enable/disable) — no need to edit config files after setup.
 
 `labflow-rules.md` carries the persona, feedback-and-discussion, and
 distributed-prompting rules; it applies to every agent (build, plan,
-labflow-develop) because the plugin pushes it into `cfg.instructions`, which is
-additive and never shadows the user's own `AGENTS.md` or `~/.claude/CLAUDE.md`.
+labflow-develop, labflow-plan) because the plugin pushes it into
+`cfg.instructions`, which is additive and never shadows the user's own
+`AGENTS.md` or `~/.claude/CLAUDE.md`.
 
 `/imagegen` is a symlinked command file that instructs the agent to call
 `opencode/scripts/imagegen.mjs`. The script uses the user's configured
@@ -48,10 +50,13 @@ OpenCode has no hook-driven stage runtime. Instead:
 
 - The **current agent is the stage**. The TUI shows the active agent name, so
   "which stage am I in" is answered natively — no HUD.
-- `labflow-develop` is the single primary agent merging idea-refine + design-
-  scaffold + engineering-question discussion. Switch into it (Tab) to enter the
-  develop stage; switch back to **build** for implementation, **plan** for
-  read-only planning.
+- `labflow-develop` is the primary agent merging idea-refine + design-scaffold
+  + engineering-question discussion. Switch into it (Tab) for the develop stage.
+- `labflow-plan` is the primary read-only structured planning agent. It adapts
+  Codex Plan Mode semantics to OpenCode tools and emits a final
+  `<proposed_plan>` block.
+- Switch back to **build** for implementation, **labflow-plan** for structured
+  planning, or **labflow-develop** for nonlinear R&D/scaffold work.
 - No per-prompt context injection: same-session history already carries the
   problem anchor, so there is no `UserPromptSubmit` equivalent.
 - No state-persistence plugin: cross-session recall is left to the user.

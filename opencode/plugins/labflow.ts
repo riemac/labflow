@@ -13,7 +13,7 @@ export default async () => ({
       "labflow-develop": {
         mode: "primary",
         description:
-          "Research develop stage — refine ideas and engineering questions, challenge assumptions, then externalize mature design into distributed scaffolds (TODOs, docstrings, interface shells). Switch here for nonlinear R&D discussion; switch back to build for implementation.",
+          "Research develop stage — refine ideas and engineering questions, challenge assumptions, then externalize mature design into distributed scaffolds (TODOs, docstrings, interface shells). Switch here for nonlinear R&D discussion; switch back to build for implementation, or to labflow-plan for read-only structured planning.",
         prompt: "{file:" + ASSETS + "/agents/labflow-develop.md}",
         permission: {
           read: "allow",
@@ -22,6 +22,26 @@ export default async () => ({
           grep: "allow",
           list: "allow",
           bash: "ask",
+          task: "allow",
+          todowrite: "allow",
+          webfetch: "allow",
+          websearch: "allow",
+          skill: "allow",
+          question: "allow",
+        },
+      },
+      "labflow-plan": {
+        mode: "primary",
+        description:
+          "Read-only structured planning agent (Codex-style). Explore first, clarify intent, then produce a decision-complete <proposed_plan>. Cannot edit code. Plan here; implement in build; scaffold R&D intent in labflow-develop.",
+        prompt: "{file:" + ASSETS + "/agents/labflow-plan.md}",
+        permission: {
+          read: "allow",
+          edit: "deny",
+          glob: "allow",
+          grep: "allow",
+          list: "allow",
+          bash: "allow",
           task: "allow",
           todowrite: "allow",
           webfetch: "allow",

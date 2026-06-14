@@ -57,11 +57,12 @@ Done.
 
 The labflow plugin is now registered. It injects:
   - labflow-rules.md (global cross-agent instructions)
-  - labflow-develop agent (toggle with Tab in the TUI)
+  - labflow-develop agent (R&D discussion + design scaffolding)
+  - labflow-plan agent (read-only Codex-style planning, outputs <proposed_plan>)
   - bundled ability skills
   - /imagegen command (symlinked to $IMAGEGEN_COMMAND_DST)
 
-Quit and restart opencode for changes to take effect.
+Toggle between agents with Tab. Quit and restart opencode for changes to take effect.
 To disable, remove "$PLUGIN_ENTRY" from the "plugin" array,
 or toggle the plugin in the opencode Plugin panel (space).
 EOF
