@@ -4,6 +4,7 @@
 
 - Added `labflow-plan`, a read-only OpenCode primary agent that adapts Codex Plan Mode into an explore-first, question-driven workflow ending in a `<proposed_plan>` block.
 - Updated OpenCode integration docs and install messaging to route structured planning through `labflow-plan`, implementation through `build`, and nonlinear R&D/scaffolding through `labflow-develop`.
+- Documented the `self-update` evidence path for checking OpenCode configuration and internals via ctx7 first, then GitHub source for the installed version.
 
 ## 0.5.1 - 2026-06-14
 
