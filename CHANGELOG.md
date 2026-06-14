@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 - 2026-06-14
+
+- Tightened `codebase-research` so agents must load/read the `ccc` skill before semantic code retrieval, and synchronized the Codex/OpenCode English and Chinese skill copies around `ccc` as the active local semantic search tool.
+
 ## 0.5.0 - 2026-06-08
 
 - Added OpenCode integration: plugin-based architecture with `labflow.ts` config hook injecting global rules, primary agent (`labflow-develop` merges idea-refine + design-scaffold), `vision` subagent, and 10 adapted ability skills.
