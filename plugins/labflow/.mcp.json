@@ -6,6 +6,10 @@
       "args": [
         "@sylphx/pdf-reader-mcp"
       ]
+    },
+    "deepwiki": {
+      "type": "http",
+      "url": "https://mcp.deepwiki.com/mcp"
     }
   }
 }

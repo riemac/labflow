@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 - 2026-06-25
+
+- Bundled DeepWiki as a labflow Codex MCP server for public GitHub repository code maps, source location, and implementation explanations.
+- Updated Codex and OpenCode `external-research` routing to use DeepWiki before lower-level GitHub/source tooling when the task is public repository structure or source understanding.
+
 ## 0.6.0 - 2026-06-14
 
 - Added `labflow-plan`, a read-only OpenCode primary agent that adapts Codex Plan Mode into an explore-first, question-driven workflow ending in a `<proposed_plan>` block.

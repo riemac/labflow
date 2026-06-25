@@ -1,6 +1,6 @@
 ---
 name: external-research
-description: 外部资料调研编排技能。用于第三方库/API、官方文档、上游源码、版本迁移、论文/PDF、GitHub release/issue/PR，以及高噪音/低信噪比的深度外部调研。默认优先 ctx7 CLI / find-docs；gh CLI 仅在需要 GitHub 证据时辅助；高噪音调研强烈委派 lab-research。不要用于本地代码库架构或符号调研。
+description: 外部资料调研编排技能。用于第三方库/API、官方文档、公开 GitHub 仓库代码理解、上游源码、版本迁移、论文/PDF、GitHub release/issue/PR，以及高噪音/低信噪比的深度外部调研。默认优先 ctx7 CLI / find-docs；公开 GitHub 仓库结构/源码解释优先 DeepWiki MCP；gh CLI 仅在需要 GitHub 证据时辅助；高噪音调研强烈委派 lab-research。不要用于本地代码库架构或符号调研。
 ---
 
 # External Research
@@ -10,11 +10,12 @@ description: 外部资料调研编排技能。用于第三方库/API、官方文
 ## Default Route
 
 - 库/API/官方文档/配置项/迁移说明：必须先使用 `find-docs` skill / ctx7 CLI。不要因为目标库托管在 GitHub，就先用 `gh` 查 repo 或源码。
+- 公开 GitHub 仓库的代码地图、源码定位、跨文件机制解释：优先使用 DeepWiki MCP（`read_wiki_structure`、`read_wiki_contents`、`ask_question`）。DeepWiki 适合快速定位相关源码和理解实现，但不替代完整源码读取、精确行号、官方文档、issue/PR/release 证据；这些场景再补本地源码、GitHub raw、`gh` 或官方文档。私有仓库不要用 DeepWiki，改用本地源码或已授权的数据源。
 - 只有问题本身需要 GitHub 证据时，才直接使用 `gh` CLI：release/tag 日期、issue/PR/discussion、上游源码实现、commit 差异、仓库元信息、npm/release 状态核对。
 - 论文、技术报告、PDF spec、远程 PDF：使用 `pdf-read` / pdf-reader。
 - ctx7 不覆盖、官方站点不在 GitHub、或需要横向资料时，再用 web search/browser。
 
-判断顺序：先问“这是文档/API 用法问题吗？”如果是，ctx7 先行；再问“答案是否依赖 GitHub 事实或源码实现？”如果是，再补 `gh`。不要为了形式上的交叉验证而扩大工具面。
+判断顺序：先问“这是文档/API 用法问题吗？”如果是，ctx7 先行；再问“这是公开 GitHub 仓库的结构/源码理解吗？”如果是，DeepWiki 先行；再问“答案是否依赖 GitHub 事实或可审计源码证据？”如果是，再补 `gh` / raw source。不要为了形式上的交叉验证而扩大工具面。
 
 ## Bootstrap
 
