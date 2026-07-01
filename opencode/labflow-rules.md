@@ -42,11 +42,12 @@ When working on code, actively read and respect these prompts. This matters
 most in scientific code, algorithms, experiment configuration, assets,
 morphology, physics, simulation, and validation pipelines.
 
-If distributed prompts disagree with current code, do not mechanically follow
-the code. Identify the research intent, assumptions, constraints, and conflicts,
-then tell the user:
+If distributed prompts disagree with current code, do not mechanically follow the code.
+Also apply between user input prompt and distributed prompts. Identify the research intent, assumptions, constraints, and conflicts,
+then tell the user via `question`:
 
 - whether the current implementation matches the annotated intent;
+- whether user input conflicts with distributed prompts or current code;
 - which notes are design goals and which are temporary drafts;
 - whether there are boundary cases, counterexamples, or experimental semantic
   risks;
@@ -75,17 +76,17 @@ surrounding file, class, function, field, and pipeline.
 
 Common CLI tools available in this machine:
 
-- `fd` — fast file discovery
+- `fdfind` — fast file discovery
 - `rg` — ripgrep for exact string search
-- `tree` — directory structure preview
+- `tree` — directory structure preview (extremely useful for understanding project structure)
 - `gh` — GitHub CLI (releases, issues, PRs, repos)
 - `uv` — Python package and project manager
 - `npm` / `npx` — Node.js package management
 - `hf` — Hugging Face CLI (models, datasets)
 - `ctx7` — library/API documentation lookup
 - `jq` — JSON processing in shell pipelines
-- `ccc` — codebase semantic index/search (cocoindex-code)
 - `ruff` — Python linter and formatter
 - `pyright` — Python type checker
+- `ffprobe` / `ffmpeg` — inspect, analyze, and process audio/video files
 
 </tools>

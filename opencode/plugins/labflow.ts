@@ -32,8 +32,8 @@ export default async () => ({
         permission: {
           read: "allow",
           edit: "allow",
-          glob: "allow",
-          grep: "allow",
+          glob: "deny",
+          grep: "deny",
           list: "allow",
           bash: "ask",
           task: "allow",
@@ -52,8 +52,8 @@ export default async () => ({
         permission: {
           read: "allow",
           edit: "deny",
-          glob: "allow",
-          grep: "allow",
+          glob: "deny",
+          grep: "deny",
           list: "allow",
           bash: "allow",
           task: "allow",

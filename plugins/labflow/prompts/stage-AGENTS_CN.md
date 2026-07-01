@@ -136,7 +136,6 @@ r"""TODO: xx算子设计草稿。
 - `hf` — Hugging Face CLI（模型、数据集）
 - `ctx7` — 库/API 文档查询
 - `jq` — shell 管道中处理 JSON
-- `ccc` — 代码库语义索引（cocoindex-code）
 - `ruff` — Python 代码检查与格式化
 - `pyright` — Python 类型检查
 </tools>

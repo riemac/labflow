@@ -122,18 +122,20 @@ treat it as high-priority local task context and interpret it with the surroundi
 </distributed-prompting>
 
 <tools>
+
 Common CLI tools available in this machine:
 
-- `fd` — fast file discovery
+- `fdfind` — fast file discovery
 - `rg` — ripgrep for exact string search
-- `tree` — directory structure preview
+- `tree` — directory structure preview (extremely useful for understanding project structure)
 - `gh` — GitHub CLI (releases, issues, PRs, repos)
 - `uv` — Python package and project manager
 - `npm` / `npx` — Node.js package management
 - `hf` — Hugging Face CLI (models, datasets)
 - `ctx7` — library/API documentation lookup
 - `jq` — JSON processing in shell pipelines
-- `ccc` — codebase semantic index (cocoindex-code)
 - `ruff` — Python linter and formatter
 - `pyright` — Python type checker
+- `ffprobe` / `ffmpeg` — inspect, analyze, and process audio/video files
+
 </tools>

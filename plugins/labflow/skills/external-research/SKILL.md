@@ -1,50 +1,39 @@
 ---
 name: external-research
-description: 外部资料调研编排技能。用于第三方库/API、官方文档、公开 GitHub 仓库代码理解、上游源码、版本迁移、论文/PDF、GitHub release/issue/PR，以及高噪音/低信噪比的深度外部调研。默认优先 ctx7 CLI / find-docs；公开 GitHub 仓库结构/源码解释优先 DeepWiki MCP；gh CLI 仅在需要 GitHub 证据时辅助；高噪音调研强烈委派 lab-research。不要用于本地代码库架构或符号调研。
+description: External research orchestration skill. Use for third-party libraries/APIs, official docs, public GitHub repository code understanding, upstream source, version migrations, papers/PDFs, GitHub releases/issues/PRs, and high-noise/low-signal deep research. Default to ctx7 CLI / find-docs for docs and APIs; default to DeepWiki MCP for public GitHub repository structure/source explanations; use gh CLI only when GitHub-native evidence is needed; strongly delegate high-noise research to lab-research. Do not use for local codebase architecture or symbol research.
 ---
 
 # External Research
 
-本 skill 只做轻量编排，不复制 ctx7 文档查询说明。
+This skill is lightweight orchestration only.
 
 ## Default Route
 
-- 库/API/官方文档/配置项/迁移说明：必须先使用 `find-docs` skill / ctx7 CLI。不要因为目标库托管在 GitHub，就先用 `gh` 查 repo 或源码。
-- 公开 GitHub 仓库的代码地图、源码定位、跨文件机制解释：优先使用 DeepWiki MCP（`read_wiki_structure`、`read_wiki_contents`、`ask_question`）。DeepWiki 适合快速定位相关源码和理解实现，但不替代完整源码读取、精确行号、官方文档、issue/PR/release 证据；这些场景再补本地源码、GitHub raw、`gh` 或官方文档。私有仓库不要用 DeepWiki，改用本地源码或已授权的数据源。
-- 只有问题本身需要 GitHub 证据时，才直接使用 `gh` CLI：release/tag 日期、issue/PR/discussion、上游源码实现、commit 差异、仓库元信息、npm/release 状态核对。
-- 论文、技术报告、PDF spec、远程 PDF：使用 `pdf-read` / pdf-reader。
-- ctx7 不覆盖、官方站点不在 GitHub、或需要横向资料时，再用 web search/browser。
+- Library/API/official-doc/config/migration: use `find-docs` skill / ctx7 CLI. Do not jump to `gh` just because the target library is hosted on GitHub.
+- Public GitHub repository codemaps, source location, and cross-file implementation explanations: use DeepWiki MCP (`read_wiki_structure`, `read_wiki_contents`, `ask_question`) before `ctx7`. DeepWiki is good for quickly locating relevant source and understanding implementation shape, but it does not replace full source reads, exact line evidence, official docs, or issue/PR/release evidence; add local source, GitHub raw, `gh`, or official docs for those cases. Do not use DeepWiki for private repositories; use local source or an authorized data source instead.
+- Only use `gh` CLI when the question itself needs GitHub evidence: release/tag dates, issues/PRs/discussions, upstream source implementation, commit diffs, repo metadata, or npm/release status checks.
+- Papers, technical reports, PDF specs, remote PDFs: use `pdf-read` / pdf-reader.
+- ctx7 does not cover it, the official site is not on GitHub, or cross-source material is needed: then use web search/browser.
 
-判断顺序：先问“这是文档/API 用法问题吗？”如果是，ctx7 先行；再问“这是公开 GitHub 仓库的结构/源码理解吗？”如果是，DeepWiki 先行；再问“答案是否依赖 GitHub 事实或可审计源码证据？”如果是，再补 `gh` / raw source。不要为了形式上的交叉验证而扩大工具面。
-
-## Bootstrap
-
-如果需要 ctx7 但本机没有 `ctx7` 命令，先运行 helper：
-
-```bash
-bash <plugin-root>/skills/external-research/scripts/ctx7_bootstrap.sh status --json
-bash <plugin-root>/skills/external-research/scripts/ctx7_bootstrap.sh ensure --yes
-```
-
-`ensure` 只负责安装/配置 `ctx7`、`find-docs`、`context7-cli`；不要把它当查询接口。
+Decision order: first ask "Is this a docs/API usage question?" If yes, use ctx7 first. Then ask "Is this public GitHub repository structure/source understanding?" If yes, use DeepWiki first. Then ask "Does the answer depend on GitHub facts or auditable source evidence?" If yes, add `gh` / raw source. Do not expand the tool surface just for formal completeness.
 
 ## Delegate
 
-遇到高噪音、低信噪比、需要多跳搜索的外部调研时，强烈建议并行委派 `lab-research`。核心目的不是“能力不足”，而是让 subagent 吸收检索噪音，避免主 agent 的上下文被长网页、issue 串、半相关结果和无效文档污染。
+For high-noise, low-signal, multi-hop external research, strongly consider delegating to `lab-research` in parallel. The point is not "lack of ability"; it is to absorb retrieval noise in the subagent context so the main agent does not carry long webpages, issue threads, partial hits, and dead-end docs.
 
-典型信号：
+Typical signals:
 
-- 单次 ctx7 / web / gh 查询大概率不能直接回答。
-- 搜索结果很多，但真正有效信息只占很小比例。
-- 需要翻多个 issue、PR、discussion、release note 或长文档才能找到关键事实。
-- 调研方向之间相对独立，可以并行拆给多个 subagent 预取。
-- 主 agent 后续还要实现或设计，不应把大量检索噪音带进主上下文。
+- A single ctx7 / DeepWiki / web / gh query is unlikely to answer directly.
+- Many search results exist, but very little decisive evidence.
+- Multiple issues, PRs, discussions, release notes, or long docs must be scanned to find the key fact.
+- Research directions are independent enough to split across parallel subagents.
+- The main agent still needs to implement or design afterward and should not carry retrieval noise.
 
-委派时优先轻量模型，例如 `gpt-5.4-mini`，除非任务本身需要深推理。
+Prefer a lightweight model for delegation, such as `gpt-5.4-mini`, unless the task itself needs deep reasoning.
 
 ## Keep It Small
 
-- 保留会影响实现的事实、来源 URL/repo path、版本号/发布日期和关键不确定性。
-- 把大范围检索、反复试错和无效材料留在 subagent 上下文里。
-- 不大段搬运资料。
-- 不为了“完整调研”强行使用所有工具。
+- Keep only implementation-relevant facts: decisive source, URL/repo path, version/date, and key uncertainty.
+- Leave broad retrieval, trial-and-error, and dead ends in the subagent context.
+- Do not dump raw documents.
+- Do not force every tool just for "completeness."

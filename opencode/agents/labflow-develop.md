@@ -4,8 +4,8 @@ mode: primary
 permission:
   read: allow
   edit: allow
-  glob: allow
-  grep: allow
+  glob: deny
+  grep: deny
   list: allow
   bash: allow
   task: allow
