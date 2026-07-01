@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 - 2026-07-01
+
+- Added `labflow-paper`, an OpenCode primary agent for research paper preparation, writing guidance, claim/evidence alignment, reviewer-style critique, polishing, and submission readiness.
+- Registered `labflow-paper` in the OpenCode plugin and updated install messaging so the paper agent appears alongside `labflow-develop` and `labflow-plan` after restart.
+- Switched OpenCode agent prompt loading to explicit startup-time file reads so plugin-registered agents receive their full prompt bodies reliably.
+- Refreshed OpenCode guidance around Plan Mode, distributed prompting conflicts, tool availability, codebase research, external research routing, and annotation cleanup.
+- Removed the legacy `plugins/labflow/benchmark/test_rag.md` RAG benchmark note from the active tracked surface.
+
 ## 0.6.1 - 2026-06-25
 
 - Bundled DeepWiki as a labflow Codex MCP server for public GitHub repository code maps, source location, and implementation explanations.
