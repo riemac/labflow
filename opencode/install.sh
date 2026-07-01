@@ -59,6 +59,7 @@ The labflow plugin is now registered. It injects:
   - labflow-rules.md (global cross-agent instructions)
   - labflow-develop agent (R&D discussion + design scaffolding)
   - labflow-plan agent (read-only Codex-style planning, outputs <proposed_plan>)
+  - labflow-paper agent (paper preparation, writing guidance, review, and submission readiness)
   - bundled ability skills
   - /imagegen command (symlinked to $IMAGEGEN_COMMAND_DST)
 
