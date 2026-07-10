@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0 - 2026-07-10
+
+- Added the OpenCode-only `literature-forensics` skill for research-question framing, prior-art verification, citation snowballing, evidence grading, novelty-boundary analysis, and durable human-first research dossiers.
+- Added a local Python CLI that searches and reconciles arXiv, OpenAlex, Semantic Scholar, and Crossref metadata; maintains a concurrent SQLite evidence cache; traverses bounded citation graphs; downloads verified PDFs; exports BibTeX; and persists resumable worker state.
+- Added the hidden `literature-worker` subagent for bounded topic-lane research while keeping the primary agent responsible for key-paper verification, visual evidence, synthesis, and scientific claims.
+- Upgraded the bilingual `pdf-read` guidance to the pdf-reader MCP v3 evidence workflow with document maps, targeted search, page rendering, region crops, optional OCR, and visual source verification.
+
 ## 0.8.0 - 2026-07-10
 
 - Replaced the legacy `/imagegen` command with a plugin-registered `imagegen` tool that returns structured output directly to OpenCode agents.

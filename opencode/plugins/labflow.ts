@@ -191,6 +191,27 @@ export default async () => ({
           question: "allow",
         },
       },
+      "literature-worker": {
+        mode: "subagent",
+        hidden: true,
+        description:
+          "Focused literature-forensics worker for one bounded prior-art topic lane. Searches and screens scholarly evidence, locates primary-source text and figures, and writes only assigned dossier artifacts.",
+        prompt: readAgentPrompt("literature-worker"),
+        permission: {
+          read: "allow",
+          edit: "allow",
+          glob: "deny",
+          grep: "deny",
+          list: "allow",
+          bash: "allow",
+          task: "deny",
+          todowrite: "deny",
+          webfetch: "allow",
+          websearch: "allow",
+          skill: "allow",
+          question: "deny",
+        },
+      },
     }
 
     cfg.skills = { paths: [...(cfg.skills?.paths ?? []), ASSETS + "/skills"] }

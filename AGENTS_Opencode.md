@@ -25,7 +25,9 @@ opencode/
 ├── labflow-rules.md          # global cross-agent rules
 ├── agents/
 │   ├── labflow-develop.md    # primary develop stage: R&D refine + scaffold
-│   └── labflow-plan.md       # primary read-only structured planning stage
+│   ├── labflow-plan.md       # primary read-only structured planning stage
+│   ├── labflow-paper.md      # primary paper preparation and evidence alignment
+│   └── literature-worker.md  # hidden prior-art evidence worker
 ├── skills/                   # adapted ability skills (de-Codex'd copies)
 └── install.sh                # first-time setup: adds plugin line to opencode.json
 ```
@@ -48,6 +50,11 @@ variables, with fallback to the user's configured OpenAI-compatible provider.
 Keep API keys out of tracked files; use `labflow.local.json` or env for secrets.
 The old `/imagegen` slash command is intentionally not installed; `install.sh`
 only removes the legacy symlink when it points back into this repo.
+
+`literature-forensics` is an OpenCode-only ability skill backed by a local Python
+CLI and the hidden `literature-worker` subagent. The primary agent remains the
+research lead; workers own bounded topic artifacts, while the primary persists
+resumable task IDs in each project's ignored dossier state.
 
 ## Stages as agents
 

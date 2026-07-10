@@ -77,6 +77,7 @@ The labflow plugin is now registered. It injects:
   - labflow-develop agent (R&D discussion + design scaffolding)
   - labflow-plan agent (read-only Codex-style planning, outputs <proposed_plan>)
   - labflow-paper agent (paper preparation, writing guidance, review, and submission readiness)
+  - literature-worker subagent (bounded prior-art search and evidence artifacts)
   - bundled ability skills
   - imagegen custom tool backed by opencode/scripts/imagegen.mjs
 

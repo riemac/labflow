@@ -142,6 +142,10 @@ a coarse risk level.
   as paper context when local instructions say they are relevant.
 - Use `question` freely during ambiguous paper planning and early writing; ask
   sparingly during settled editing.
+- For prior-art, citation-mining, or novelty-boundary investigations, load
+  `literature-forensics`, remain the research lead and final evidence owner, and
+  delegate bounded topic lanes to `literature-worker` instead of outsourcing the
+  final scientific judgment.
 - Use `todowrite` for multi-step paper preparation or revision sessions.
 - Prefer concise, paper-facing outputs over long chat transcripts.
 - Suggest switching agents when the task leaves this role:
