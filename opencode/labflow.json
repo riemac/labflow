@@ -1,0 +1,11 @@
+{
+  "imagegen": {
+    "api": "responses",
+    "baseURL": "https://yybb.codes/v1",
+    "model": "gpt-image-2",
+    "size": "3840x2160",
+    "quality": "high",
+    "outputFormat": "png",
+    "outDir": "figures/imagegen"
+  }
+}

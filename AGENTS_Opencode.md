@@ -8,20 +8,20 @@ git hygiene) live in the thin entry [AGENTS.md](AGENTS.md); read that first.
 
 The integration is centered on a single **opencode plugin** loaded via
 `file://` URL from the repo. The plugin's `config` hook injects rules, the
-primary agent, and skill paths. Slash commands that OpenCode must discover
-before plugin config hooks run are symlinked into `~/.config/opencode/commands`
-by `install.sh`.
+primary agent, and skill paths; the same plugin also registers labflow custom
+tools.
 
 OpenCode surfaces (all under `opencode/`):
 
 ```text
 opencode/
 ├── plugins/
-│   └── labflow.ts            # plugin entry: config hook injects rules/agents/skills
-├── commands/
-│   └── imagegen.md           # /imagegen command, symlinked by install.sh
+│   └── labflow.ts            # plugin entry: injects rules/agents/skills/tools
 ├── scripts/
 │   └── imagegen.mjs          # OpenAI-compatible Images API CLI backend
+├── labflow.json              # repo-local Image API defaults, no secrets
+├── labflow.example.json      # example ignored labflow.local.json with API key
+├── package.json              # plugin runtime dependencies such as @opencode-ai/plugin
 ├── labflow-rules.md          # global cross-agent rules
 ├── agents/
 │   ├── labflow-develop.md    # primary develop stage: R&D refine + scaffold
@@ -39,10 +39,15 @@ labflow-develop, labflow-plan) because the plugin pushes it into
 `cfg.instructions`, which is additive and never shadows the user's own
 `AGENTS.md` or `~/.claude/CLAUDE.md`.
 
-`/imagegen` is a symlinked command file that instructs the agent to call
-`opencode/scripts/imagegen.mjs`. The script uses the user's configured
-OpenAI-compatible provider for research discussion diagrams and lab-meeting
-illustrations.
+`imagegen` is a custom tool registered by the plugin and normally reached via
+the bundled `imagegen` skill. The tool calls `opencode/scripts/imagegen.mjs`,
+which uses an independent OpenAI-compatible image generation profile from repo-local
+`opencode/labflow.json`, ignored `opencode/labflow.local.json`, optional
+`~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment
+variables, with fallback to the user's configured OpenAI-compatible provider.
+Keep API keys out of tracked files; use `labflow.local.json` or env for secrets.
+The old `/imagegen` slash command is intentionally not installed; `install.sh`
+only removes the legacy symlink when it points back into this repo.
 
 ## Stages as agents
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 - 2026-07-10
+
+- Replaced the legacy `/imagegen` command with a plugin-registered `imagegen` tool that returns structured output directly to OpenCode agents.
+- Added independent, layered image-generation configuration with Images API and Responses API support, local secret overrides, environment overrides, and safe workspace-relative output paths.
+- Added plugin dependency installation and legacy command cleanup to the OpenCode installer, and removed the redundant vision-only subagent now that the active model stack handles images natively.
+
 ## 0.7.0 - 2026-07-01
 
 - Added `labflow-paper`, an OpenCode primary agent for research paper preparation, writing guidance, claim/evidence alignment, reviewer-style critique, polishing, and submission readiness.

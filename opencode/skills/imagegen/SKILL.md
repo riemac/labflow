@@ -1,17 +1,17 @@
 ---
 name: imagegen
-description: Use when the user explicitly asks to generate an explanatory image, concept diagram, architecture sketch, scientific visual, lab-meeting illustration, or raster bitmap asset via the labflow imagegen CLI or /imagegen command. Especially useful when terminal text or LaTeX would be less clear than a visual explanation. Do not use for deterministic SVG/Mermaid/code-native diagrams unless the user wants a generated bitmap.
+description: Use when the user explicitly asks to generate an explanatory image, concept diagram, architecture sketch, scientific visual, lab-meeting illustration, or raster bitmap asset through the labflow imagegen custom tool. Especially useful when terminal text or LaTeX would be less clear than a visual explanation. Do not use for deterministic SVG/Mermaid/code-native diagrams unless the user wants a generated bitmap.
 ---
 
 # Imagegen
 
-Generate concise explanatory raster images for research discussion, design communication, and lab-meeting visuals through the labflow imagegen CLI.
+Generate concise explanatory raster images for research discussion, design communication, and lab-meeting visuals through the labflow `imagegen` custom tool.
 
-This skill is intentionally narrower than Codex's built-in `imagegen`: OpenCode has no hosted image tool here, so generation goes through `node /home/hac/labflow/opencode/scripts/imagegen.mjs`, which reads the configured OpenAI-compatible Images API from `provider.openai.options` in opencode config.
+This skill is intentionally narrower than Codex's built-in `imagegen`: OpenCode has no hosted image tool here, so generation goes through labflow's custom tool, backed by `node /home/hac/labflow/opencode/scripts/imagegen.mjs`. The CLI reads an independent image generation profile from repo-local `opencode/labflow.json`, optional ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables, with legacy fallback to `provider.openai.options`. The profile can use either OpenAI-style `images` API or `responses` API.
 
 ## When To Use
 
-- The user runs `/imagegen ...` or explicitly asks for a generated image.
+- The user explicitly asks for a generated image.
 - A concept, architecture, mechanism, or experiment design would be clearer as a picture than as terminal text.
 - The user needs an intuitive lab-meeting figure, slide visual, conceptual schematic, or teaching diagram.
 - The output should be a raster asset (`png`, `jpg`, `webp`), not a deterministic source diagram.
@@ -41,13 +41,14 @@ This skill is intentionally narrower than Codex's built-in `imagegen`: OpenCode 
    - key labels;
    - color coding;
    - constraints and things to avoid.
-4. Run the labflow imagegen CLI once by default.
+4. Call the `imagegen` custom tool once by default.
 5. Use defaults unless there is a reason to change them:
    - `model`: `gpt-image-2` unless configured otherwise;
    - `size`: `3840x2160` for 4K landscape explanatory diagrams;
    - `quality`: `high` for the default discussion/slide figure, `medium` for faster normal use, `low` for quick drafts;
-   - `output_dir`: `figures/imagegen`.
-6. After generation, report:
+   - `outDir`: `figures/imagegen`.
+6. If you need to inspect or reason about the generated image, read the output path returned by the tool so OpenCode attaches it as an image.
+7. After generation, report:
    - saved path;
    - final prompt;
    - model, size, and quality;
@@ -67,16 +68,18 @@ Style: crisp vector-like educational illustration, high contrast, white or very 
 Avoid: dense paragraphs, exact long equations, decorative stock-photo elements, watermark, unreadable tiny text.
 ```
 
-## CLI Guidance
+## Tool Guidance
 
-- Run `node /home/hac/labflow/opencode/scripts/imagegen.mjs generate --prompt "<final prompt>"` from the current workspace.
-- Use `--size 3840x2160` by default for high-resolution slide-ready conceptual diagrams.
-- Use `--size 2048x1152` only when speed matters but a landscape slide aspect ratio is still desired.
-- Use `--size 1024x1024` for quick square drafts.
-- Use `--quality high` by default for discussion figures; downgrade to `medium` or `low` only when speed matters.
-- Use `--out <path>` when the user gives a stable asset path; otherwise let the CLI create a timestamped filename under `figures/imagegen`.
-- Optional environment defaults: `OPENCODE_IMAGEGEN_MODEL`, `OPENCODE_IMAGEGEN_SIZE`, `OPENCODE_IMAGEGEN_QUALITY`, and `OPENCODE_IMAGEGEN_OUT_DIR`.
-- Use `--dry-run` only for validation or debugging; it does not generate an image.
+- Call the `imagegen` tool with a final prompt. Do not route through `/imagegen`; labflow no longer installs that slash command.
+- Set `size` to `3840x2160` by default for high-resolution slide-ready conceptual diagrams.
+- Use `2048x1152` only when speed matters but a landscape slide aspect ratio is still desired.
+- Use `1024x1024` for quick square drafts.
+- Set `quality` to `high` by default for discussion figures; downgrade to `medium` or `low` only when speed matters.
+- Set `out` when the user gives a stable asset path; otherwise let the tool create a timestamped filename under `figures/imagegen`.
+- Portable defaults live in repo-local `opencode/labflow.json` under `imagegen`.
+- Machine-local secrets or overrides belong in ignored `opencode/labflow.local.json`; do not put API keys in tracked files.
+- Optional machine-wide overrides can live in `~/.config/opencode/labflow.json`, and environment overrides can use `OPENCODE_IMAGEGEN_*`.
+- If the tool fails because configuration is missing, ask for an Image API key/base URL rather than guessing from the chat provider.
 
 ## Output Style
 
