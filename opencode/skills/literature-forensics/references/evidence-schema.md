@@ -21,7 +21,14 @@
 Worker and lead depths are independent. Visual review uses `pending`, `located`,
 or `verified`.
 
-## Topic Frontmatter
+## Human Topic Report
+
+Human-facing `topics/<topic>.md` files are coordinator-owned reports, not worker
+ledgers. They should contain the current answer, taxonomy, core works,
+conflicting evidence, relation to the user's research, unresolved questions,
+and recommended source locations in the dossier language.
+
+## Audit Lane Frontmatter
 
 ```yaml
 ---
@@ -34,7 +41,7 @@ confidence: medium
 ---
 ```
 
-Recommended body:
+Recommended audit body:
 
 ```text
 # <Topic>
@@ -50,7 +57,10 @@ Recommended body:
 ## Recommended Next Search
 ```
 
-## Paper Frontmatter
+Audit lane notes live under `.research/audit/lanes/`, not the human-facing
+`topics/` directory.
+
+## Audit Paper Frontmatter
 
 ```yaml
 ---
@@ -87,7 +97,8 @@ Recommended body:
 ## Open Questions
 ```
 
-The reading map must distinguish PDF page index from printed page number and
+Audit paper cards live under `.research/audit/papers/`. The reading map must
+distinguish PDF page index from printed page number and
 identify references, appendix, relevant sections, figures, captions, and bbox
 when available.
 

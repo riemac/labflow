@@ -6,24 +6,28 @@ import * as path from "path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { tool } from "@opencode-ai/plugin"
+import { parse as parseYaml } from "yaml"
 
 const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..") // opencode/ root
 const IMAGEGEN_SCRIPT = path.join(ASSETS, "scripts", "imagegen.mjs")
 const NODE_BIN = process.env.LABFLOW_IMAGEGEN_NODE || "node"
 const execFileAsync = promisify(execFile)
 
-// 为什么这里手动 readFileSync，而不是用 OpenCode 的 `{file:...}` 语法？
-//   `{file:...}` 的替换发生在 OpenCode *解析静态 opencode.json 的阶段*。
-//   而 plugin 的 config() 钩子在解析完成之后才运行，此时再写
-//   `prompt: "{file:/abs/path.md}"` 已经错过了替换时机——字符串会被原样
-//   当作系统提示词发给模型，agent 因此完全读不到自己的定义（表现为
-//   "agent 不知道自己是谁"）。
-//   所以在 plugin 里必须自己把文件内容读进来，直接赋值给 prompt 字段。
-// 注意：这是启动期同步读取；若某个 agent 定义文件缺失会导致插件加载失败、
-//   进而 OpenCode 启动失败——这是有意为之的 fail-fast，避免静默退化成
-//   "空 prompt agent"。
-const readAgentPrompt = (name: string): string =>
-  fs.readFileSync(path.join(ASSETS, "agents", name + ".md"), "utf-8")
+// Agent files are the single source of truth for both configuration and prompt.
+// OpenCode cannot expand `{file:...}` values added by a late config hook, so the
+// plugin parses the conventional Markdown frontmatter itself during startup.
+// Invalid or missing definitions fail fast instead of silently inheriting the
+// primary agent model or sending YAML configuration to the model as prose.
+function readAgentDefinition(name: string): Record<string, unknown> {
+  const source = fs.readFileSync(path.join(ASSETS, "agents", name + ".md"), "utf-8")
+  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/)
+  if (!match) throw new Error(`Agent definition has no valid frontmatter: ${name}`)
+  const metadata = parseYaml(match[1])
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    throw new Error(`Agent frontmatter is not a mapping: ${name}`)
+  }
+  return { ...(metadata as Record<string, unknown>), prompt: match[2].trimStart() }
+}
 
 const imagegenTool = tool({
   description:
@@ -129,89 +133,10 @@ export default async () => ({
 
     cfg.agent = {
       ...cfg.agent,
-      "labflow-develop": {
-        mode: "primary",
-        description:
-          "Research develop stage — refine ideas and engineering questions, challenge assumptions, then externalize mature design into distributed scaffolds (TODOs, docstrings, interface shells). Switch here for nonlinear R&D discussion; switch back to build for implementation, or to labflow-plan for read-only structured planning.",
-        prompt: readAgentPrompt("labflow-develop"),
-        permission: {
-          read: "allow",
-          edit: "allow",
-          glob: "deny",
-          grep: "deny",
-          list: "allow",
-          bash: "ask",
-          task: "allow",
-          todowrite: "allow",
-          webfetch: "allow",
-          websearch: "allow",
-          skill: "allow",
-          question: "allow",
-        },
-      },
-      "labflow-plan": {
-        mode: "primary",
-        color: "info",
-        description:
-          "Read-only structured planning agent (Codex-style). Explore first, clarify intent, then produce a decision-complete <proposed_plan>. Cannot edit code. Plan here; implement in build; scaffold R&D intent in labflow-develop.",
-        prompt: readAgentPrompt("labflow-plan"),
-        permission: {
-          read: "allow",
-          edit: "deny",
-          glob: "deny",
-          grep: "deny",
-          list: "allow",
-          bash: "allow",
-          task: "allow",
-          todowrite: "allow",
-          webfetch: "allow",
-          websearch: "allow",
-          skill: "allow",
-          question: "allow",
-        },
-      },
-      "labflow-paper": {
-        mode: "primary",
-        color: "secondary",
-        description:
-          "Research paper assistant — supports paper preparation, writing guidance, evidence alignment, reviewer-style critique, polishing, and submission readiness. Use as the main agent in LaTeX/paper projects; use labflow-plan for read-only plans, labflow-develop for R&D scaffolding, and build for code implementation.",
-        prompt: readAgentPrompt("labflow-paper"),
-        permission: {
-          read: "allow",
-          edit: "allow",
-          glob: "deny",
-          grep: "deny",
-          list: "allow",
-          bash: "ask",
-          task: "allow",
-          todowrite: "allow",
-          webfetch: "allow",
-          websearch: "allow",
-          skill: "allow",
-          question: "allow",
-        },
-      },
-      "literature-worker": {
-        mode: "subagent",
-        hidden: true,
-        description:
-          "Focused literature-forensics worker for one bounded prior-art topic lane. Searches and screens scholarly evidence, locates primary-source text and figures, and writes only assigned dossier artifacts.",
-        prompt: readAgentPrompt("literature-worker"),
-        permission: {
-          read: "allow",
-          edit: "allow",
-          glob: "deny",
-          grep: "deny",
-          list: "allow",
-          bash: "allow",
-          task: "deny",
-          todowrite: "deny",
-          webfetch: "allow",
-          websearch: "allow",
-          skill: "allow",
-          question: "deny",
-        },
-      },
+      "labflow-develop": readAgentDefinition("labflow-develop"),
+      "labflow-plan": readAgentDefinition("labflow-plan"),
+      "labflow-paper": readAgentDefinition("labflow-paper"),
+      "literature-worker": readAgentDefinition("literature-worker"),
     }
 
     cfg.skills = { paths: [...(cfg.skills?.paths ?? []), ASSETS + "/skills"] }

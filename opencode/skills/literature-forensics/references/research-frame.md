@@ -39,10 +39,11 @@ brief for every worker.
 
 ## Budget And Stop Rule
 
-- Metadata candidates per lane:
-- Abstract screens per lane:
-- Targeted/full reads per lane:
-- Citation depth per round: one hop by default.
+- Worker profile: `fast`, `normal`, or `deep`.
+- Maximum newly admitted papers:
+- Maximum unique primary papers opened:
+- Citation behavior is fixed by the profile: none for `fast`, at most one hop
+  from initial seeds for `normal`, and no broad discovery for `deep`.
 - Stop when:
 
 ## Clarification Prompts
@@ -57,3 +58,4 @@ Ask only questions that alter the investigation. Useful prompts include:
 - Is an implementation-level failure mode sufficient, or must the work contain
   formal analysis?
 - Which local notes and paper directories are explicitly in scope?
+- Which language should all human-facing reports and worker returns use?

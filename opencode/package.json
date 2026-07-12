@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@opencode-ai/plugin": "1.17.12"
+    "@opencode-ai/plugin": "1.17.12",
+    "yaml": "2.9.0"
   }
 }

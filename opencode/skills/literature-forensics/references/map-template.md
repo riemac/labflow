@@ -55,7 +55,7 @@ flowchart TD
 | Node | Artifact | Class | Evidence depth | Meaning |
 |---|---|---|---|---|
 | T100 | [topic](topics/example.md) | close | targeted | ... |
-| P110 | [paper](papers/example.md) | exact | lead targeted | ... |
+| P110 | [topic evidence](topics/example.md#core-works) | exact | lead targeted | ... |
 
 ## Evidence Diagnosis
 
@@ -71,5 +71,5 @@ flowchart TD
 - State the search cutoff for every absence-based inference.
 ```
 
-Store a complete machine citation graph under `.state/`; never auto-overwrite the
-curated map with it.
+Store raw graph and audit evidence under `.research/`; never auto-overwrite the
+curated human map with machine output.
