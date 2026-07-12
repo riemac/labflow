@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.0 - 2026-07-12
+
+- Decoupled scholarly retrieval from the `literature-forensics` skill: the skill now consumes the independently installed `litnav` CLI and retains only a standard-library research-directory helper.
+- Split literature dossiers into researcher-facing `overview.md`, curated `MAP.md`, and complete `topics/*.md` reports versus hidden `.research/` audit, PDF, bibliography, and task state.
+- Added explicit `fast`, `normal`, and `deep` literature-worker profiles with research-language propagation and bounded new-paper/primary-read limits.
+- Fixed plugin agent loading so YAML frontmatter configures model, variant, permissions, and prompt separately; `literature-worker` now resolves to `gmn/gpt-5.6-terra` with `xhigh` reasoning.
+
 ## 0.9.0 - 2026-07-10
 
 - Added the OpenCode-only `literature-forensics` skill for research-question framing, prior-art verification, citation snowballing, evidence grading, novelty-boundary analysis, and durable human-first research dossiers.
