@@ -74,6 +74,9 @@ litnav doctor --json
 
 ## 4. 渐进式委派 Worker
 
+Worker assignment 遵循全局 **Background-First Prefetch** 协议。以下规则针对文献
+取证进一步收紧续接条件和所有权边界。
+
 每个 assignment 只处理一个 lane 和一个 profile。阅读 `references/worker-contract.md`，并显式传递：
 
 ```yaml

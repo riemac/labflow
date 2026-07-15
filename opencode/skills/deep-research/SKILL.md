@@ -14,7 +14,7 @@ Run a focused investigation and produce a concise, evidence-backed report. This 
 - Separate **facts with evidence** from **inferences** and **recommendations**.
 - Prefer primary sources: local code, official docs, upstream source, papers, release notes, issues/PRs when they are the point of evidence.
 - Cite every non-obvious factual claim with footnotes or inline source references.
-- Keep noise out of the main context: delegate high-noise branches to the built-in `explore` (local code) or `scout` (external docs) subagents, then synthesize only durable facts.
+- Keep noise out of the main context: follow the global **Background-First Prefetch** protocol when delegating high-noise branches to the built-in `explore` (local code) or `scout` (external docs) subagents, then synthesize only durable facts.
 - Stop early if evidence is insufficient for a confident conclusion; state the uncertainty rather than filling gaps with speculation.
 
 ## Workflow
@@ -28,7 +28,7 @@ Run a focused investigation and produce a concise, evidence-backed report. This 
    - For local code: use codebase semantic retrieval first when locations are unknown, then read key files and line-level evidence.
    - For external libraries/APIs: use `find-docs` / ctx7 first; use `gh` or web only when docs are insufficient or GitHub evidence is specifically needed.
    - For papers/PDFs: use `pdf-read` and cite page/section or extracted path when possible.
-   - For broad/noisy branches: delegate read-heavy work, but the main agent must verify any claim that drives the conclusion.
+   - For broad/noisy branches: delegate read-heavy work; treat returned evidence as high-signal prefetch, but verify any claim that drives the conclusion.
 
 3. **Synthesize**
    - Start with the answer and conditions.

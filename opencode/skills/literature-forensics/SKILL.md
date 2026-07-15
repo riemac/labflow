@@ -117,6 +117,10 @@ context use. Do not expose routine CLI mechanics to the user.
 
 ## 4. Delegate Progressive Worker Assignments
 
+Worker assignments follow the global **Background-First Prefetch** protocol.
+The rules below intentionally narrow its continuation and ownership boundaries
+for literature forensics.
+
 Use `literature-worker` for one bounded lane and one profile per assignment.
 Read `references/worker-contract.md`. Every prompt should explicitly provide:
 

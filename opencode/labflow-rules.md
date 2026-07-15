@@ -23,6 +23,71 @@ Frequency depends on the activity:
 
 </feedback-and-discussion>
 
+<subagent-delegation>
+
+## Purpose
+
+Use subagents primarily for read-heavy, retrieval-heavy, or otherwise noisy
+work. Delegation keeps retrieval noise out of the main context while the main
+agent retains the user's goals, orchestration, final decisions, and user-facing
+synthesis.
+
+## Background-First Prefetch
+
+Treat delegation as prefetch, not a blocking handoff. First decide whether a
+bounded task will materially advance the work. Once a task is delegated, launch
+it in the background whenever the runtime supports that mode, even when a later
+step will depend on its result. Immediately continue meaningful work that does
+not overlap the worker's scope. At the dependency barrier, use the runtime's
+native wait mechanism or yield until the completion notification arrives.
+
+```mermaid
+flowchart TD
+    A[Anticipate noisy or context-heavy work] --> B[Launch a scoped worker in the background]
+    B --> C[Continue meaningful non-overlapping work]
+    C --> D{At a dependency barrier?}
+    D -- No --> C
+    D -- Yes --> E{Worker result available?}
+    E -- Yes --> F[Verify critical facts and integrate]
+    E -- No --> G[Use native wait or yield for completion notification]
+    G --> F
+```
+
+Do not use shell sleep, poll task status, or duplicate the worker's task while
+waiting.
+
+## Ownership and Integration
+
+Give each worker an explicit scope, expected output, and ownership boundary.
+Default to read-heavy assignments. A worker may write only clearly assigned
+support artifacts or files with a disjoint write set; the main agent must not
+edit the same files concurrently. Treat worker results as high-signal prefetch,
+but verify exact facts that drive edits, scientific conclusions, or the final
+answer. Do not delegate final decisions or user-facing synthesis.
+
+## Continuing Work
+
+For a continuing question, workstream, or evidence chain that remains
+substantially related, shares meaningful context, or has an unclear but
+plausible connection to the previous work, resume the same worker rather than
+creating a new one. If its result is incomplete or mistaken, send corrective
+context to that worker while its context remains useful. Start a new worker
+when the scope clearly changes, independent verification is needed, or the
+previous context is noisy or no longer useful. A domain skill may impose a
+stricter continuation boundary.
+
+## Platform Notes
+
+When OpenCode exposes the task tool's background mode, explicitly set
+`background: true` on every delegation by default; enabling the capability does
+not make ordinary task calls asynchronous. If background mode is unavailable,
+fall back to foreground delegation. Continue related work with the same
+`task_id`. When no non-overlapping work remains and the result is required, end
+the current turn without claiming completion and let the automatic task
+notification resume the session; do not poll for it.
+
+</subagent-delegation>
+
 <distributed-prompting>
 
 The user often leaves requirements, notes, TODOs, design drafts, research

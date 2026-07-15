@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.2 - 2026-07-15
+
+- Added cross-platform Background-First Prefetch and subagent-continuity guidance: launch delegated work asynchronously when available, continue non-overlapping main-agent work, wait only at dependency barriers, reuse related workers, keep write ownership disjoint, and verify critical facts before final synthesis.
+
+## 0.10.1 - 2026-07-13
+
+- Added OpenCode and Codex subagent-continuity guidance: use workers primarily for read-heavy work, resume the same bounded evidence chain when useful, and keep implementation, user context, and final synthesis with the primary agent.
+
 ## 0.10.0 - 2026-07-12
 
 - Decoupled scholarly retrieval from the `literature-forensics` skill: the skill now consumes the independently installed `litnav` CLI and retains only a standard-library research-directory helper.

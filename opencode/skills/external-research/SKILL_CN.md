@@ -19,14 +19,17 @@ description: 外部资料调研编排技能。用于第三方库/API、官方文
 
 ## Delegate
 
-遇到高噪音、低信噪比、需要多跳搜索的外部调研时，强烈建议并行委派内置 `scout` subagent。核心目的是让 subagent 吸收检索噪音，避免主 agent 的上下文被长网页、issue 串、半相关结果和无效文档污染。
+遇到高噪音、低信噪比、需要多跳搜索的外部调研时，强烈建议委派内置 `scout`
+subagent。worker 生命周期遵循全局 **Background-First Prefetch** 协议；本节只规定
+外部调研特有的触发信号和输出。worker 负责吸收长网页、issue 串、半相关结果和
+无效文档，避免污染主 agent 上下文。
 
 典型信号：
 
 - 单次 ctx7 / DeepWiki / web / gh 查询大概率不能直接回答。
 - 搜索结果很多，但真正有效信息只占很小比例。
 - 需要翻多个 issue、PR、discussion、release note 或长文档才能找到关键事实。
-- 调研方向之间相对独立，可以并行拆给多个 subagent 预取。
+- 调研方向之间相对独立，可以拆给多个 subagent 预取。
 - 主 agent 后续还要实现或设计，不应把大量检索噪音带进主上下文。
 
 ## Keep It Small

@@ -22,11 +22,14 @@ rg -n "RewardManager|RewTerm|RewardsCfg" target_dir
 
 ## Subagent Delegation
 
-Keep delegation separate from the default loop. Use it as prefetch: if unfamiliar subsystems, cross-module chains, or multiple candidates are likely to consume main context, launch scoped subagents (the built-in `explore` subagent) early while the main agent continues local search/read work.
+Follow the global **Background-First Prefetch** protocol when delegating. This
+section only defines codebase-specific triggers and outputs: use the built-in
+`explore` subagent for unfamiliar subsystems, cross-module chains, or multiple
+candidates likely to consume the main context.
 
-- Prefer narrow scopes, but allow one subagent to cover several related modules when the question is inherently cross-module; split independent branches into parallel subagents.
+- Prefer focused scopes, but allow one subagent to cover several related modules when the question is inherently cross-module.
 - Ask for useful paths, line references, likely entry points, and remaining uncertainty.
-- Reuse subagent findings as trusted prefetch; read extra files only where the next answer or edit depends on exact code details.
+- Treat findings as high-signal prefetch; verify exact code details that drive the next answer or edit.
 
 ## Avoid
 

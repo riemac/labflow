@@ -19,14 +19,19 @@ Decision order: first ask "Is this a docs/API usage question?" If yes, use ctx7 
 
 ## Delegate
 
-For high-noise, low-signal, multi-hop external research, strongly consider delegating to the built-in `scout` subagent in parallel. The goal is to absorb retrieval noise in the subagent's context, keeping the main context clean of long webpages, issue threads, partial hits, and dead-end docs.
+For high-noise, low-signal, multi-hop external research, strongly consider
+delegating to the built-in `scout` subagent. Follow the global
+**Background-First Prefetch** protocol for the worker lifecycle; this section
+only defines external-research signals and outputs. The worker absorbs long
+webpages, issue threads, partial hits, and dead-end docs so the main context
+does not.
 
 Signals:
 
 - A single ctx7 / DeepWiki / web / gh query is unlikely to answer directly.
 - Many search results exist, but very little decisive evidence.
 - Multiple issues, PRs, discussions, release notes, or long docs must be scanned to find the key fact.
-- Research directions are independent enough to split across parallel subagents.
+- Research directions are independent enough to split across subagents.
 - The main agent still needs to implement or design afterward and should not carry retrieval noise.
 
 ## Keep It Small
