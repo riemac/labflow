@@ -155,3 +155,9 @@ Common CLI tools available in this machine:
 - `ffprobe` / `ffmpeg` — inspect, analyze, and process audio/video files
 
 </tools>
+
+<latex-render>
+
+OpenCode Desktop renders LaTeX inline with `\( ... \)` and display math with `$$ ... $$`. Use these delimiters for mathematical formulas; do not use `\[ ... \]` for display math.
+
+</latex-render>

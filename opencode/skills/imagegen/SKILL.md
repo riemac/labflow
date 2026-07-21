@@ -7,7 +7,7 @@ description: Use when the user explicitly asks to generate an explanatory image,
 
 Generate concise explanatory raster images for research discussion, design communication, and lab-meeting visuals through the labflow `imagegen` custom tool.
 
-This skill is intentionally narrower than Codex's built-in `imagegen`: OpenCode has no hosted image tool here, so generation goes through labflow's custom tool, backed by `node /home/hac/labflow/opencode/scripts/imagegen.mjs`. The CLI reads an independent image generation profile from repo-local `opencode/labflow.json`, optional ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables, with legacy fallback to `provider.openai.options`. The profile can use either OpenAI-style `images` API or `responses` API.
+This skill is intentionally narrower than Codex's built-in `imagegen`: OpenCode has no hosted image tool here, so generation goes through labflow's custom tool, backed by `node /home/hac/labflow/opencode/scripts/imagegen.mjs`. The CLI reads an independent image generation profile from repo-local `opencode/labflow.json`, optional ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables. The profile can reuse any configured OpenCode provider and use either OpenAI-style `images` API or `responses` API.
 
 ## When To Use
 
@@ -43,7 +43,7 @@ This skill is intentionally narrower than Codex's built-in `imagegen`: OpenCode 
    - constraints and things to avoid.
 4. Call the `imagegen` custom tool once by default.
 5. Use defaults unless there is a reason to change them:
-   - `model`: `gpt-image-2` unless configured otherwise;
+   - `provider` and `model`: use the configured profile; the bundled default is `routin-plan` with `gpt-5.6-sol`;
    - `size`: `3840x2160` for 4K landscape explanatory diagrams;
    - `quality`: `high` for the default discussion/slide figure, `medium` for faster normal use, `low` for quick drafts;
    - `outDir`: `figures/imagegen`.
@@ -77,6 +77,7 @@ Avoid: dense paragraphs, exact long equations, decorative stock-photo elements, 
 - Set `quality` to `high` by default for discussion figures; downgrade to `medium` or `low` only when speed matters.
 - Set `out` when the user gives a stable asset path; otherwise let the tool create a timestamped filename under `figures/imagegen`.
 - Portable defaults live in repo-local `opencode/labflow.json` under `imagegen`.
+- Prefer reusing a configured OpenCode provider via `imagegen.provider`; do not duplicate its API key.
 - Machine-local secrets or overrides belong in ignored `opencode/labflow.local.json`; do not put API keys in tracked files.
 - Optional machine-wide overrides can live in `~/.config/opencode/labflow.json`, and environment overrides can use `OPENCODE_IMAGEGEN_*`.
 - If the tool fails because configuration is missing, ask for an Image API key/base URL rather than guessing from the chat provider.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.3 - 2026-07-21
+
+- Let image-generation profiles reuse any configured OpenCode provider, with `routin-plan/gpt-5.6-sol` as the bundled Responses API default.
+- Refactored `labflow-develop` into a compact nonlinear research-dialogue agent for intent framing, method critique, mathematical explanation, adaptive visualization, and zero-symbol design scaffolds.
+- Added a build-only per-turn agent marker so same-session switches do not remain constrained by a previously active primary agent's mode prompt.
+- Added OpenCode Desktop LaTeX delimiter guidance, highlighted `labflow-plan` in the agent UI, and tightened parallel codebase-research guidance.
+- Corrected file-based plugin update guidance, aligned cross-agent handoffs with the broader Develop role, and standardized Markdown prose as one physical line per paragraph.
+
 ## 0.10.2 - 2026-07-15
 
 - Added cross-platform Background-First Prefetch and subagent-continuity guidance: launch delegated work asynchronously when available, continue non-overlapping main-agent work, wait only at dependency barriers, reuse related workers, keep write ownership disjoint, and verify critical facts before final synthesis.

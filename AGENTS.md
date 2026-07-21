@@ -12,7 +12,7 @@ two companion files — **read the one matching what you are editing**:
   under `plugins/labflow/` (`.codex-plugin/`, `hooks/`, `.mcp.json`, `agents/`,
   `prompts/`, `skills/`), stage runtime, marketplace, plugin reload.
 - **[AGENTS_Opencode.md](AGENTS_Opencode.md)** — editing the OpenCode
-  integration: surfaces under `opencode/` (rules file, primary agent, skills),
+  integration: surfaces under `opencode/` (rules file, primary agents, skills),
   `install.sh` deployment, plugin system, and the de-Codex mapping.
 
 Most skills under `plugins/labflow/skills/` are shared source; the OpenCode
@@ -40,6 +40,11 @@ boundary.
 - Keep paired files semantically synchronized, not mechanically translated.
 - Bundled skill paths such as `scripts/foo.py` or `references/bar.md` are
   relative to the skill directory, not the shell cwd.
+
+### Markdown source style
+
+- Write each complete prose paragraph as one physical line in Markdown files; let Obsidian, VS Code, and renderers handle visual wrapping.
+- Do not hard-wrap prose to a fixed column width. Keep deliberate line breaks for headings, paragraph boundaries, lists, blockquotes, tables, code fences, formulas, frontmatter, and XML-style semantic containers.
 
 ### Ability vs stage
 

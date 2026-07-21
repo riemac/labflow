@@ -8,3 +8,6 @@ labflow.code-workspace
 opencode/node_modules/
 opencode/labflow.local.json
 opencode/.secrets/
+figures/*
+.opencode/*
+opencode/.opencode/*

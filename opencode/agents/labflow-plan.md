@@ -1,6 +1,7 @@
 ---
 description: Read-only structured planning agent (Codex-style). Explore first, clarify intent, then produce a decision-complete <proposed_plan>. Cannot edit code. Plan here; implement in build; scaffold R&D intent in labflow-develop.
 mode: primary
+color: info
 permission:
   read: allow
   glob: deny

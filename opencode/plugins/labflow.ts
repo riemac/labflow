@@ -12,6 +12,12 @@ const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..") // 
 const IMAGEGEN_SCRIPT = path.join(ASSETS, "scripts", "imagegen.mjs")
 const NODE_BIN = process.env.LABFLOW_IMAGEGEN_NODE || "node"
 const execFileAsync = promisify(execFile)
+const BUILD_MODE_SYSTEM = [
+  "<active-agent>",
+  "The current OpenCode primary agent is build. Execute implementation requests using the available tools.",
+  "This current-agent marker supersedes mode restrictions from primary agents that were active earlier in the same session. Do not ask the user to switch to build.",
+  "</active-agent>",
+].join("\n")
 
 // Agent files are the single source of truth for both configuration and prompt.
 // OpenCode cannot expand `{file:...}` values added by a late config hook, so the
@@ -125,6 +131,10 @@ function formatExecError(error: unknown): string {
 }
 
 export default async () => ({
+  "chat.message": async (input, output) => {
+    if (input.agent !== "build") return
+    output.message.system = [output.message.system, BUILD_MODE_SYSTEM].filter(Boolean).join("\n")
+  },
   tool: {
     imagegen: imagegenTool,
   },

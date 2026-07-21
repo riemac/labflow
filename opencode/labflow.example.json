@@ -1,9 +1,8 @@
 {
   "imagegen": {
+    "provider": "routin-plan",
     "api": "responses",
-    "apiKeyFile": ".secrets/yybb-image2.key",
-    "baseURL": "https://yybb.codes/v1",
-    "model": "gpt-image-2",
+    "model": "gpt-5.6-sol",
     "size": "3840x2160",
     "quality": "high",
     "outputFormat": "png",

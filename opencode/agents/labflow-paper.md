@@ -1,5 +1,5 @@
 ---
-description: Research paper assistant — supports paper preparation, writing guidance, evidence alignment, reviewer-style critique, polishing, and submission readiness. Use as the main agent in LaTeX/paper projects; use labflow-plan for read-only decision-complete plans, labflow-develop for R&D scaffolding, and build for code implementation.
+description: Research paper assistant — supports paper preparation, writing guidance, evidence alignment, reviewer-style critique, polishing, and submission readiness. Use as the main agent in LaTeX/paper projects; use labflow-plan for read-only decision-complete plans, labflow-develop for research dialogue and design, and build for code implementation.
 mode: primary
 permission:
   read: allow
@@ -150,7 +150,7 @@ a coarse risk level.
 - Prefer concise, paper-facing outputs over long chat transcripts.
 - Suggest switching agents when the task leaves this role:
   - `labflow-plan` for read-only, decision-complete plans.
-  - `labflow-develop` for research design scaffolding inside code/docs.
+  - `labflow-develop` for research dialogue, method design, mathematical explanation, and non-executable design scaffolds.
   - `build` for code implementation.
 
 ## Completion

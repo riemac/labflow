@@ -6,10 +6,7 @@ git hygiene) live in the thin entry [AGENTS.md](AGENTS.md); read that first.
 
 ## Product shape
 
-The integration is centered on a single **opencode plugin** loaded via
-`file://` URL from the repo. The plugin's `config` hook injects rules, the
-primary agent, and skill paths; the same plugin also registers labflow custom
-tools.
+The integration is centered on a single **opencode plugin** loaded via `file://` URL from the repo. The plugin's `config` hook injects rules, primary agents, and skill paths; the same plugin also registers labflow custom tools.
 
 OpenCode surfaces (all under `opencode/`):
 
@@ -20,11 +17,11 @@ opencode/
 ├── scripts/
 │   └── imagegen.mjs          # OpenAI-compatible Images API CLI backend
 ├── labflow.json              # repo-local Image API defaults, no secrets
-├── labflow.example.json      # example ignored labflow.local.json with API key
+├── labflow.example.json      # example portable imagegen provider profile
 ├── package.json              # plugin runtime dependencies such as @opencode-ai/plugin
 ├── labflow-rules.md          # global cross-agent rules
 ├── agents/
-│   ├── labflow-develop.md    # primary develop stage: R&D refine + scaffold
+│   ├── labflow-develop.md    # primary develop stage: research dialogue + scaffold
 │   ├── labflow-plan.md       # primary read-only structured planning stage
 │   ├── labflow-paper.md      # primary paper preparation and evidence alignment
 │   └── literature-worker.md  # hidden prior-art evidence worker
@@ -48,6 +45,7 @@ which uses an independent OpenAI-compatible image generation profile from repo-l
 `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment
 variables, with fallback to the user's configured OpenAI-compatible provider.
 Keep API keys out of tracked files; use `labflow.local.json` or env for secrets.
+The bundled profile reuses `provider.routin-plan` with the Responses API, so it does not duplicate the provider key.
 The old `/imagegen` slash command is intentionally not installed; `install.sh`
 only removes the legacy symlink when it points back into this repo.
 
@@ -62,15 +60,13 @@ OpenCode has no hook-driven stage runtime. Instead:
 
 - The **current agent is the stage**. The TUI shows the active agent name, so
   "which stage am I in" is answered natively — no HUD.
-- `labflow-develop` is the primary agent merging idea-refine + design-scaffold
-  + engineering-question discussion. Switch into it (Tab) for the develop stage.
+- `labflow-develop` is the nonlinear research-dialogue agent for intent capture, problem framing, idea critique, method design, mathematical explanation, and non-executable design scaffolds. Switch into it (Tab) for the develop stage.
 - `labflow-plan` is the primary read-only structured planning agent. It adapts
   Codex Plan Mode semantics to OpenCode tools and emits a final
   `<proposed_plan>` block.
 - Switch back to **build** for implementation, **labflow-plan** for structured
   planning, or **labflow-develop** for nonlinear R&D/scaffold work.
-- No per-prompt context injection: same-session history already carries the
-  problem anchor, so there is no `UserPromptSubmit` equivalent.
+- Same-session history carries the research problem anchor, so there is no research-state `UserPromptSubmit` equivalent. A build-only per-turn marker disambiguates the current agent if a prior primary-agent mode prompt lingers after an in-session switch.
 - No state-persistence plugin: cross-session recall is left to the user.
 
 ## De-Codex mapping
@@ -80,11 +76,12 @@ When adapting a shared skill from `plugins/labflow/skills/` into
 
 | Codex | OpenCode |
 |---|---|
-| `$labflow:stage-*` entry / `stage-control pass` | switch primary agent (Tab) |
+| `$labflow:stage-*` entry | switch primary agent (Tab) |
+| `stage-control pass` | no port; continue or choose an explicit agent handoff |
 | `request_user_input` | `question` tool |
 | `lab-explore` / `lab-research` subagents | built-in `explore` / `scout` subagents |
 | stage state under `.codex/labflow-stage/` | none (agent + conversation) |
-| reload codex plugin | rerun `install.sh` + restart opencode |
+| reload codex plugin | restart opencode; rerun `install.sh` only for registration/dependencies |
 | `.mcp.json` manifest | `mcp` field in `opencode.json` |
 | `ctx7 setup --codex` | `ctx7 setup --universal` (or `--opencode`) |
 
@@ -115,14 +112,14 @@ python3 /home/hac/.codex/skills/.system/skill-creator/scripts/quick_validate.py 
 python3 -m json.tool ~/.config/opencode/opencode.json >/dev/null
 ```
 
-5. **Restart opencode** — running sessions keep the already-loaded config.
+5. Rerun `opencode/install.sh` only when plugin registration, package dependencies, or installer behavior changed. Agent, skill, and rule source is read directly from this repo through the `file://` plugin.
+6. **Restart opencode** — running sessions keep the already-loaded config.
 
 ## OpenCode-specific anti-patterns
 
 - Writing labflow rules into the user's `~/.config/opencode/AGENTS.md` (it
   shadows `~/.claude/CLAUDE.md`); use the additive `instructions` field instead.
-- Re-creating a HUD or per-prompt injection; the agent name already shows the
-  stage.
+- Re-creating a HUD or injecting research state per prompt; the agent name and the narrow build-mode marker already disambiguate the active stage.
 - Forcing a state-persistence plugin via compaction hooks unless a proven need
   appears.
 - Leaving Codex-isms (`$labflow:`, `request_user_input`, `.codex/`) in adapted

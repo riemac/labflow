@@ -41,20 +41,26 @@ async function main() {
     readOpencodeConfig(configDir),
   ])
   const imagegenConfig = labflowConfig?.imagegen ?? {}
-  const openaiOptions = opencodeConfig?.provider?.openai?.options ?? {}
+  const provider = firstString(
+    flags.provider,
+    process.env.OPENCODE_IMAGEGEN_PROVIDER,
+    resolveConfigString(imagegenConfig.provider),
+    "openai",
+  )
+  const providerOptions = opencodeConfig?.provider?.[provider]?.options ?? {}
   const apiKey = firstString(
     flags["api-key"] ||
       process.env.OPENCODE_IMAGEGEN_API_KEY ||
       resolveConfigString(imagegenConfig.apiKey) ||
       resolveConfigFile(imagegenConfig.apiKeyFile ?? imagegenConfig.api_key_file) ||
-      resolveConfigString(openaiOptions.apiKey) ||
+      resolveConfigString(providerOptions.apiKey) ||
       process.env.OPENAI_API_KEY,
   )
   const baseURL = firstString(
     flags["base-url"] ||
       process.env.OPENCODE_IMAGEGEN_BASE_URL ||
       resolveConfigString(imagegenConfig.baseURL ?? imagegenConfig.baseUrl) ||
-      resolveConfigString(openaiOptions.baseURL) ||
+      resolveConfigString(providerOptions.baseURL) ||
       process.env.OPENAI_BASE_URL ||
       "https://api.openai.com/v1",
   )
@@ -128,6 +134,7 @@ async function main() {
     printResult({
       ok: true,
       dry_run: true,
+      provider,
       api,
       endpoint: apiEndpoint(baseURL, api),
       payload,
@@ -138,7 +145,7 @@ async function main() {
 
   if (!apiKey) {
     throw new Error(
-      "missing API key: set OPENCODE_IMAGEGEN_API_KEY, imagegen.apiKey in ~/.config/opencode/labflow.json, OPENAI_API_KEY, or provider.openai.options.apiKey in ~/.config/opencode/opencode.json",
+      `missing API key for provider ${provider}: configure provider.${provider}.options.apiKey, imagegen.apiKey/apiKeyFile, or OPENCODE_IMAGEGEN_API_KEY`,
     )
   }
 
@@ -150,6 +157,7 @@ async function main() {
   printResult({
     ok: true,
     dry_run: false,
+    provider,
     api,
     model,
     size,
@@ -598,6 +606,7 @@ function printHelp() {
   node imagegen.mjs generate --prompt-stdin [options]
 
 Options:
+  --provider PROVIDER       OpenCode provider ID. Fallback: openai
   --api API                 images | responses. Fallback: images
   --model MODEL             Fallback: ${FALLBACK_MODEL}
   --size SIZE               Fallback: ${FALLBACK_SIZE}
@@ -612,8 +621,9 @@ Options:
 Config:
   Reads imagegen defaults from opencode/labflow.json, ~/.config/opencode/labflow.json,
   opencode/labflow.local.json, then OPENCODE_IMAGEGEN_CONFIG.
-  Environment overrides: OPENCODE_IMAGEGEN_API_KEY, OPENCODE_IMAGEGEN_BASE_URL,
-  OPENCODE_IMAGEGEN_API, OPENCODE_IMAGEGEN_MODEL, OPENCODE_IMAGEGEN_SIZE, OPENCODE_IMAGEGEN_QUALITY,
+  Environment overrides: OPENCODE_IMAGEGEN_PROVIDER, OPENCODE_IMAGEGEN_API_KEY,
+  OPENCODE_IMAGEGEN_BASE_URL, OPENCODE_IMAGEGEN_API, OPENCODE_IMAGEGEN_MODEL,
+  OPENCODE_IMAGEGEN_SIZE, OPENCODE_IMAGEGEN_QUALITY,
   OPENCODE_IMAGEGEN_OUTPUT_FORMAT, OPENCODE_IMAGEGEN_OUT_DIR, OPENCODE_IMAGEGEN_N.
   Secrets can also be loaded from imagegen.apiKeyFile, resolved relative to opencode/.
 `)
