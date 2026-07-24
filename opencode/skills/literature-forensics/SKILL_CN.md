@@ -83,23 +83,22 @@ Worker assignment 遵循全局 **Background-First Prefetch** 协议。以下规�
 profile: fast | normal | deep
 language: <research language>
 limits:
-  max_new_papers: <integer>
-  max_primary_reads: <integer>
+  max_full_papers: <integer>
 ```
 
-| Profile | 新论文 | 正文阅读 | 行为 |
-| --- | ---: | ---: | --- |
-| `fast` | 10 | 0 | 搜索、provider recommendations、标题和摘要粗筛；禁止正文和 citation snowball。 |
-| `normal` | 8 | 5 | 补搜、选择性原文页核验，以及从初始 seeds 出发最多一跳引用扩展。 |
-| `deep` | 0 | 3 | 不做广泛发现，只深入分析明确指定的核心论文。 |
+| Profile | 完整 PDF 论文 | 行为 |
+| --- | ---: | --- |
+| `fast` | 0 | 搜索、provider recommendations、标题和摘要粗筛，并核验关键页；禁止完整 PDF 阅读和 citation snowball。 |
+| `normal` | 3 | 补搜、targeted pages 核验、完整阅读最强候选 PDF，以及从初始 seeds 出发最多一跳引用扩展。 |
+| `deep` | 5 | 不做广泛发现，只完整阅读明确指定的核心论文 PDF。 |
 
-`max_new_papers` 只统计本次新纳入的去重论文；已有 dossier 论文和用户 seeds 不计。`max_primary_reads` 统计本次打开原始正文的唯一论文，包括已有论文。摘要不设独立预算，因为 candidate limit 已自然约束。
+`max_full_papers` 只统计本次 assignment 中首次达到 worker `full` 阅读深度的唯一论文。计数前必须下载并验证 PDF，完整阅读论文主体，核对 method、experiments/results、limitations/discussion 和与该 lane 相关的全部 appendix；缺失或不可用的部分要明确记录，并将 paper audit card 的 `review.worker` 标为 `full`。仅下载或打开 PDF 不算。标题、metadata、摘要、citation edge 和 targeted page check 都只是未计数的候选证据；可以单独追踪，但不得纳入“已调研、已阅读或已审阅论文”的数量。Discovery 由 lane、scope 和收益递减停止规则约束，不再用候选论文预算约束。
 
-一次 assignment 不得自行从 fast 升到 normal/deep。同一 lane 和证据链才续接 task ID；换题、独立复核或 session 噪音过多时新建 worker。
+一次 assignment 不得自行从 fast 升到 normal/deep。同一 lane 和证据链的后续工作默认续接同一 task ID，包括 coordinator 明确批准后，从 fast/normal 候选发现切换到新的 deep assignment 进行完整 PDF 阅读。切换 profile 需要新的显式 assignment，但不需要更换 worker task；换题、独立复核或 session 噪音过多时才新建 worker。
 
 ## 5. 渐进阅读原始证据
 
-阅读层次为：metadata/title、abstract、normal 的 targeted pages、deep 的问题驱动正文/appendix/figure/limitation 分析。使用 `pdf-read` 定位页码、正文证据、图、caption 和 crop。Worker 阅读不能替代 lead 对 exact、核心 analogue、反证和 paper-facing claim 的核验。
+阅读层次为：metadata/title、abstract、fast/normal 的 targeted pages，以及 normal/deep 对选定论文的完整 PDF 阅读。前三层都只是未计数候选证据；只有完整阅读主体，并核对相关 appendix、figures、method、experiments/results 和 limitations 后才计数。使用 `pdf-read` 定位页码、正文证据、图、caption 和 crop。Worker 阅读不能替代 lead 对 exact、核心 analogue、反证和 paper-facing claim 的核验。
 
 ## 6. 综合人类报告
 
@@ -120,6 +119,7 @@ Worker 只写 `.research/audit/lanes/` 和分配给它的 `.research/audit/paper
 - 不生成泛泛的 40–50 篇论文列表。
 - 不把引用量、名气或关键词重合当成相关性。
 - claim 需要原文时，不只读摘要。
+- 不把只看过摘要或 targeted pages 的候选计入“已调研、已阅读或已审阅论文”。
 - worker 不写可见报告或 manuscript。
 - worker 不得自动跑完所有阅读深度。
 - 人类目录不保存 task state 或 raw audit ledger。

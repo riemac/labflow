@@ -49,33 +49,25 @@ The coordinator should explicitly pass:
 profile: fast | normal | deep
 language: <research language>
 limits:
-  max_new_papers: <non-negative integer>
-  max_primary_reads: <non-negative integer>
+  max_full_papers: <non-negative integer>
 ```
 
 Defaults are:
 
-- `fast`: `max_new_papers=10`, `max_primary_reads=0`;
-- `normal`: `max_new_papers=8`, `max_primary_reads=5`;
-- `deep`: `max_new_papers=0`, `max_primary_reads=3`.
+- `fast`: `max_full_papers=0`;
+- `normal`: `max_full_papers=3`;
+- `deep`: `max_full_papers=5`.
 
-`max_new_papers` counts newly admitted deduplicated works only. Existing audit
-papers and user-provided seeds do not count. `max_primary_reads` counts unique
-primary papers whose body you open in this assignment, including existing
-papers. Abstracts do not have a separate budget.
+`max_full_papers` counts only unique papers newly completed at `review.worker: full` during this assignment. Before counting one paper, download and verify its PDF; read the complete main body; check the method, experiments and results, limitations or discussion, and every appendix relevant to the lane; and record any missing or unavailable section. Downloading or opening a PDF is not enough. Titles, metadata, abstracts, citation edges, and targeted page checks are uncounted candidate evidence and must never be included in a count described as papers researched, read, or reviewed. Candidate discovery has no paper-count budget; the bounded lane, scope, and diminishing-return stop rule control it.
 
 Profile behavior is mandatory:
 
-- `fast`: use Litnav search and provider recommendations; inspect metadata,
-  titles, and candidate abstracts; never open paper bodies or traverse citation
-  graphs.
-- `normal`: allow supplemental search, targeted primary pages, and at most one
-  citation hop from the initial seed set.
-- `deep`: do no broad discovery; deeply analyze only the explicitly named core
-  papers, including relevant main text, appendix, figures, and limitations.
+- `fast`: use Litnav search and provider recommendations; inspect metadata, titles, candidate abstracts, and targeted key pages; never complete a full-PDF read or traverse citation graphs.
+- `normal`: allow supplemental search, targeted primary pages, complete PDF reading of the strongest selected candidates, and at most one citation hop from the initial seed set.
+- `deep`: do no broad discovery; completely read only the explicitly named core PDFs, including the full main body and relevant appendices, figures, method, experiments, results, and limitations.
 
 Never upgrade the profile yourself. Stop discovery after two consecutive search
-facets produce no new high-relevance candidate, even when paper limits remain.
+facets produce no new high-relevance candidate. When the coordinator resumes this task for the same lane and evidence chain, preserve prior context; a new explicit assignment may change the profile, including from discovery to deep full-PDF reading.
 
 ## Work Contract
 
@@ -120,6 +112,8 @@ it would be convenient. Return proposed central changes to the coordinator.
 
 - An abstract supports relevance screening, not detailed mechanism claims.
 - A citation edge supports discovery, not scientific similarity.
+- A targeted page check remains candidate evidence and does not count as a researched paper.
+- Mark `review.worker: full` only after satisfying the complete-PDF criteria above.
 - A worker full read does not count as lead verification.
 - Figure interpretation must combine the rendered figure/crop, caption, axes or
   legend, and nearby prose.

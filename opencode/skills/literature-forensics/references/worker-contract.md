@@ -14,8 +14,7 @@ decision_connection: <why this lane matters>
 profile: fast | normal | deep
 language: <research output language>
 limits:
-  max_new_papers: <non-negative integer>
-  max_primary_reads: <non-negative integer>
+  max_full_papers: <non-negative integer>
 
 scope:
   include: <settings, mechanisms, and work types>
@@ -30,16 +29,11 @@ write_targets:
 
 ## Profiles
 
-- `fast`: search and provider recommendations; inspect title, metadata, and all
-  candidate abstracts; never open paper bodies or traverse citation graphs.
-- `normal`: supplemental search, selected primary-source pages, and no more than
-  one citation hop from the initial seed set.
-- `deep`: no broad discovery; deeply analyze only explicitly named core papers.
+- `fast`: search and provider recommendations; inspect title, metadata, candidate abstracts, and targeted key pages; never complete a full-PDF read or traverse citation graphs.
+- `normal`: supplemental search, selected primary-source pages, complete PDF reading of the strongest selected candidates, and no more than one citation hop from the initial seed set.
+- `deep`: no broad discovery; completely read only explicitly named core-paper PDFs.
 
-Defaults are `fast: 10/0`, `normal: 8/5`, and `deep: 0/3` for
-`max_new_papers/max_primary_reads`. A task must not promote itself to another
-profile. Two consecutive searches without a new high-relevance candidate end
-the discovery phase.
+`max_full_papers` defaults are `fast: 0`, `normal: 3`, and `deep: 5`. It counts only unique papers newly completed at `review.worker: full`: the PDF must be downloaded and verified, the complete main body read, and the method, experiments/results, limitations/discussion, and all lane-relevant appendices checked. Downloading or opening a PDF does not count. Titles, metadata, abstracts, citation edges, and targeted page checks are uncounted candidate evidence and never contribute to a researched/read/reviewed paper count. A task must not promote itself within an assignment. Resume the same task for the same lane and evidence chain; the coordinator may issue a new assignment with a different profile, including a transition from discovery to deep full-PDF reading. Two consecutive searches without a new high-relevance candidate end the discovery phase.
 
 ## Return
 

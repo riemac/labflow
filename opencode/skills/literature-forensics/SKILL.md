@@ -128,26 +128,20 @@ Read `references/worker-contract.md`. Every prompt should explicitly provide:
 profile: fast | normal | deep
 language: <research language>
 limits:
-  max_new_papers: <integer>
-  max_primary_reads: <integer>
+  max_full_papers: <integer>
 ```
 
 Profile defaults:
 
-| Profile | New papers | Primary reads | Behavior |
-| --- | ---: | ---: | --- |
-| `fast` | 10 | 0 | Search, provider recommendations, title/abstract screening; no paper body or citation snowball. |
-| `normal` | 8 | 5 | Supplemental search, selected primary pages, and at most one citation hop from initial seeds. |
-| `deep` | 0 | 3 | No broad discovery; deep analysis of explicitly named core papers. |
+| Profile | Full-PDF papers | Behavior |
+| --- | ---: | --- |
+| `fast` | 0 | Search, provider recommendations, title/abstract screening, and targeted key-page checks; no complete PDF reading or citation snowball. |
+| `normal` | 3 | Supplemental search, targeted checks, complete PDF reading of the strongest selected candidates, and at most one citation hop from initial seeds. |
+| `deep` | 5 | No broad discovery; complete PDF analysis of explicitly named core papers. |
 
-`max_new_papers` counts only newly admitted deduplicated papers; existing dossier
-papers and user seeds do not count. `max_primary_reads` counts unique primary
-papers opened during this assignment, including existing papers. Abstracts have
-no separate budget because candidate limits already bound them.
+`max_full_papers` counts only unique papers newly completed at the `full` worker reading depth during this assignment. A counted paper must have a downloaded, verified PDF; the worker must read the complete main body, check the method, experiments and results, limitations or discussion, and every appendix relevant to the lane; record missing or unavailable sections explicitly; and set the paper audit card's `review.worker` to `full`. Downloading or opening a PDF is not enough. Titles, metadata, abstracts, citation edges, and targeted page checks are uncounted candidate evidence. They may be tracked separately, but never included in a count described as papers researched, read, or reviewed. Discovery remains bounded by the lane, scope, and diminishing-return stop rule rather than a candidate-paper budget.
 
-Do not let one assignment upgrade itself from fast to normal or deep. Resume a
-task ID only for the same lane and evidence chain. Start fresh when the topic
-changes, independent verification is needed, or the previous session is noisy.
+Do not let one assignment upgrade itself from fast to normal or deep. For follow-up work in the same lane and evidence chain, resume the same task ID by default, including a coordinator-approved transition from fast or normal discovery to a new deep assignment for full-PDF reading. A profile change requires a new explicit assignment, not a new worker task. Start fresh when the topic changes, independent verification is needed, or the previous session is noisy.
 
 ## 5. Read Primary Evidence Progressively
 
@@ -155,9 +149,8 @@ Use this evidence ladder:
 
 1. metadata and title;
 2. abstract relevance screen;
-3. targeted primary-source pages for a normal assignment;
-4. question-driven main-body, appendix, figure, and limitation analysis for a
-   deep assignment.
+3. targeted primary-source pages for a fast or normal assignment, still treated as uncounted candidate evidence;
+4. complete, question-driven PDF reading of selected papers for a normal or deep assignment, covering the full main body plus relevant appendices, figures, method, experiments, results, and limitations.
 
 Use `pdf-read` for page maps, text evidence, figures, captions, and crops.
 Worker reading does not replace lead verification for exact matches, strongest
@@ -195,6 +188,7 @@ only when they affect confidence.
 - Do not generate a generic list of 40-50 papers.
 - Do not mistake citation count, fame, or shared keywords for relevance.
 - Do not infer method details from an abstract when primary text is required.
+- Do not count abstract-screened candidates or targeted page checks as researched, read, or reviewed papers.
 - Do not let workers write visible reports or manuscript prose.
 - Do not let a worker autonomously progress through all reading depths.
 - Do not store task state or raw audit ledgers in the human-facing directory.

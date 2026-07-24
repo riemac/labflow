@@ -15,11 +15,13 @@
 
 - `metadata`: bibliographic fields only.
 - `abstract`: abstract screened for relevance.
-- `targeted`: exact primary-source sections/pages checked.
-- `full`: the whole paper read closely.
+- `targeted`: exact primary-source sections/pages checked; still uncounted candidate evidence.
+- `full`: a downloaded, verified PDF whose complete main body was read and whose method, experiments/results, limitations/discussion, and all question-relevant appendices were checked. Missing or unavailable sections are recorded explicitly.
 
 Worker and lead depths are independent. Visual review uses `pending`, `located`,
 or `verified`.
+
+Only unique papers at worker `full` depth count as papers researched, read, or reviewed. Metadata, abstracts, citation edges, targeted checks, and PDF downloads without complete reading do not count.
 
 ## Human Topic Report
 

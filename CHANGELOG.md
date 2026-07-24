@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.5 - 2026-07-24
+
+- Count only unique papers with a downloaded, verified PDF read at `full` depth, including the main body, method, experiments/results, limitations/discussion, and relevant appendices; title, metadata, abstract, citation, and targeted-page evidence remains uncounted.
+- Replace paper-discovery and primary-read budgets with `max_full_papers`, defaulting to `fast: 0`, `normal: 3`, and `deep: 5`; allow fast targeted key-page checks and resume the same task ID across explicit profile assignments in one evidence chain.
+
 ## 0.10.4 - 2026-07-22
 
 - Added bounded Responses API reference-image editing for up to four local PNG/JPEG/WebP inputs, including explicit current-message OpenCode image attachments, worktree-safe input snapshots, reference lineage, and request-versus-actual size metadata.

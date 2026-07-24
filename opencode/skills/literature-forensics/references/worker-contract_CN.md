@@ -12,8 +12,7 @@ decision_connection: <该 lane 为什么影响主决策>
 profile: fast | normal | deep
 language: <research 输出语言>
 limits:
-  max_new_papers: <非负整数>
-  max_primary_reads: <非负整数>
+  max_full_papers: <非负整数>
 
 scope:
   include: <纳入的 setting、机制和工作类型>
@@ -28,11 +27,11 @@ write_targets:
 
 ## Profiles
 
-- `fast`：搜索和 provider recommendations；读取候选标题、metadata 和摘要；禁止打开正文和遍历引用图。
-- `normal`：允许补搜、选择性原文页核验，并从初始 seeds 出发最多扩展一跳引用。
-- `deep`：不做广泛发现，只深入分析任务明确指定的核心论文。
+- `fast`：搜索和 provider recommendations；读取候选标题、metadata、摘要和 targeted key pages；禁止完整 PDF 阅读和遍历引用图。
+- `normal`：允许补搜、选择性原文页核验、完整阅读最强候选 PDF，并从初始 seeds 出发最多扩展一跳引用。
+- `deep`：不做广泛发现，只完整阅读任务明确指定的核心论文 PDF。
 
-`max_new_papers/max_primary_reads` 默认分别为：`fast: 10/0`、`normal: 8/5`、`deep: 0/3`。一次任务不得自行升级 profile。连续两次搜索没有新增高相关候选即结束 discovery。
+`max_full_papers` 默认值为 `fast: 0`、`normal: 3`、`deep: 5`。它只统计本次 assignment 中首次达到 `review.worker: full` 的唯一论文：必须下载并验证 PDF、完整阅读主体，并核对 method、experiments/results、limitations/discussion 和与 lane 相关的全部 appendix。仅下载或打开 PDF 不算。标题、metadata、摘要、citation edge 和 targeted page check 都只是未计数候选证据，绝不能纳入“已调研、已阅读或已审阅论文”的数量。一次 assignment 不得自行升级 profile；同一 lane 和证据链应续接同一 task，coordinator 可以另发显式 assignment 切换 profile，包括从候选发现转入 deep 完整 PDF 阅读。连续两次搜索没有新增高相关候选即结束 discovery。
 
 ## 返回
 
