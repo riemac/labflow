@@ -13,6 +13,9 @@ const FALLBACK_QUALITY = "high"
 const FALLBACK_FORMAT = "png"
 const FALLBACK_OUT_DIR = "figures/imagegen"
 const MAX_VARIANTS = 4
+const MAX_INPUT_IMAGES = 4
+const MAX_INPUT_IMAGE_BYTES = 20 * 1024 * 1024
+const MAX_TOTAL_INPUT_IMAGE_BYTES = 50 * 1024 * 1024
 
 const VALID_APIS = new Set(["images", "responses"])
 const VALID_QUALITIES = new Set(["low", "medium", "high", "auto"])
@@ -106,6 +109,7 @@ async function main() {
     resolveConfigString(imagegenConfig.outDir ?? imagegenConfig.out_dir),
     FALLBACK_OUT_DIR,
   )
+  const inputImages = await readInputImages(flags["input-image"])
 
   if (!VALID_APIS.has(api)) {
     throw new Error("--api must be one of images or responses")
@@ -115,6 +119,9 @@ async function main() {
   }
   if (!VALID_FORMATS.has(outputFormat)) {
     throw new Error("--output-format must be one of png, jpeg, jpg, or webp")
+  }
+  if (inputImages.length > 0 && api !== "responses") {
+    throw new Error("input images require --api responses")
   }
 
   const outputPaths = await plannedOutputPaths({
@@ -127,7 +134,7 @@ async function main() {
   })
 
   const payload = api === "responses"
-    ? responsesPayload({ model, prompt, size, quality, outputFormat })
+    ? responsesPayload({ model, prompt, size, quality, outputFormat, inputImages })
     : imagesPayload({ model, prompt, count, size, quality, outputFormat })
 
   if (flags["dry-run"]) {
@@ -137,7 +144,10 @@ async function main() {
       provider,
       api,
       endpoint: apiEndpoint(baseURL, api),
-      payload,
+      generation_mode: inputImages.length > 0 ? "edit" : "generate",
+      input_image_count: inputImages.length,
+      payload: redactImageData(payload),
+      input_images: inputImages.map(inputImageSummary),
       outputs: outputPaths.map(relativeToCwd),
     })
     return
@@ -150,8 +160,8 @@ async function main() {
   }
 
   await fs.mkdir(path.dirname(outputPaths[0]), { recursive: true })
-  const { written, revisedPrompt, responseID } = api === "responses"
-    ? await generateResponsesImages({ apiKey, baseURL, model, prompt, size, quality, outputFormat, outputPaths })
+  const generation = api === "responses"
+    ? await generateResponsesImages({ apiKey, baseURL, model, prompt, size, quality, outputFormat, inputImages, outputPaths })
     : await generateImages({ apiKey, baseURL, payload, outputPaths })
 
   printResult({
@@ -163,10 +173,16 @@ async function main() {
     size,
     quality,
     output_format: outputFormat,
-    outputs: written,
-    revised_prompt: revisedPrompt,
-    response_id: responseID,
-    prompt,
+    generation_mode: inputImages.length > 0 ? "edit" : "generate",
+    input_image_count: inputImages.length,
+    outputs: generation.written,
+    revised_prompt: generation.revisedPrompt,
+    response_id: generation.responseID,
+    image_generation_call_id: generation.imageGenerationCallID,
+      actual_size: generation.actualSize,
+      action: generation.action,
+      input_images: inputImages.map(inputImageSummary),
+      prompt,
   })
 }
 
@@ -181,18 +197,33 @@ function imagesPayload({ model, prompt, count, size, quality, outputFormat }) {
   }
 }
 
-function responsesPayload({ model, prompt, size, quality, outputFormat }) {
+function responsesPayload({ model, prompt, size, quality, outputFormat, inputImages = [] }) {
+  const imageGenerationTool = {
+    type: "image_generation",
+    size,
+    quality,
+    output_format: outputFormat,
+  }
+  if (inputImages.length > 0) imageGenerationTool.action = "edit"
+
   return {
     model,
-    input: prompt,
-    tools: [
-      {
-        type: "image_generation",
-        size,
-        quality,
-        format: outputFormat,
-      },
-    ],
+    input: inputImages.length > 0
+      ? [
+          {
+            role: "user",
+            content: [
+              { type: "input_text", text: prompt },
+              ...inputImages.map((image) => ({
+                type: "input_image",
+                image_url: image.dataURL,
+                detail: "high",
+              })),
+            ],
+          },
+        ]
+      : prompt,
+    tools: [imageGenerationTool],
   }
 }
 
@@ -212,10 +243,13 @@ async function generateImages({ apiKey, baseURL, payload, outputPaths }) {
   return { written, revisedPrompt: result.data?.[0]?.revised_prompt }
 }
 
-async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, quality, outputFormat, outputPaths }) {
+async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, quality, outputFormat, inputImages, outputPaths }) {
   const written = []
   let revisedPrompt
   let responseID
+  let imageGenerationCallID
+  let actualSize
+  let action
   for (const outputPath of outputPaths) {
     const result = await postJson(apiEndpoint(baseURL, "responses"), apiKey, responsesPayload({
       model,
@@ -223,6 +257,7 @@ async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, q
       size,
       quality,
       outputFormat,
+      inputImages,
     }))
     const image = responseImages(result)[0]
     if (!image) {
@@ -233,8 +268,11 @@ async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, q
     written.push(relativeToCwd(outputPath))
     revisedPrompt ||= image.revised_prompt
     responseID ||= result.id
+    imageGenerationCallID ||= image.id
+    actualSize ||= image.size
+    action ||= image.action
   }
-  return { written, revisedPrompt, responseID }
+  return { written, revisedPrompt, responseID, imageGenerationCallID, actualSize, action }
 }
 
 async function postJson(endpoint, apiKey, payload) {
@@ -277,7 +315,11 @@ function parseArgs(argv) {
     if (!value || value.startsWith("--")) {
       throw new Error(`missing value for --${key}`)
     }
-    flags[key] = value
+    if (key === "input-image") {
+      flags[key] = [...(flags[key] ?? []), value]
+    } else {
+      flags[key] = value
+    }
     index += 1
   }
   return { command, flags }
@@ -295,6 +337,111 @@ async function readPrompt(flags) {
   const chunks = []
   for await (const chunk of process.stdin) chunks.push(chunk)
   return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8").trim()
+}
+
+async function readInputImages(rawSources) {
+  const sources = Array.isArray(rawSources) ? rawSources : rawSources ? [rawSources] : []
+  if (sources.length > MAX_INPUT_IMAGES) {
+    throw new Error(`provide at most ${MAX_INPUT_IMAGES} input images`)
+  }
+
+  const images = []
+  const budget = { bytes: 0 }
+  for (const source of sources) {
+    let filePath
+    let bytes
+    try {
+      filePath = await fs.realpath(path.resolve(process.cwd(), source))
+      bytes = await readBoundedFile(filePath, budget)
+    } catch (error) {
+      throw new Error(`could not read input image ${source}: ${error.message}`)
+    }
+    const mime = imageMimeType(bytes)
+    if (!mime) {
+      throw new Error(`unsupported input image format: ${source} (expected PNG, JPEG, or WebP)`)
+    }
+    images.push({
+      source: inputImageDisplayPath(filePath),
+      mime,
+      bytes: bytes.length,
+      dataURL: `data:${mime};base64,${bytes.toString("base64")}`,
+    })
+  }
+  return images
+}
+
+async function readBoundedFile(filePath, budget) {
+  const noFollow = fsSync.constants.O_NOFOLLOW ?? 0
+  const handle = await fs.open(filePath, fsSync.constants.O_RDONLY | noFollow)
+  try {
+    const stat = await handle.stat()
+    if (!stat.isFile()) throw new Error("not a regular file")
+    claimInputBytes(stat.size, budget)
+    const buffer = Buffer.alloc(stat.size)
+    let offset = 0
+    while (offset < buffer.length) {
+      const { bytesRead } = await handle.read(buffer, offset, buffer.length - offset, offset)
+      if (bytesRead === 0) break
+      offset += bytesRead
+    }
+    return buffer.subarray(0, offset)
+  } finally {
+    await handle.close()
+  }
+}
+
+function claimInputBytes(bytes, budget) {
+  if (bytes > MAX_INPUT_IMAGE_BYTES) {
+    throw new Error(`exceeds the ${formatMiB(MAX_INPUT_IMAGE_BYTES)} per-image limit`)
+  }
+  if (budget.bytes + bytes > MAX_TOTAL_INPUT_IMAGE_BYTES) {
+    throw new Error(`input images exceed the ${formatMiB(MAX_TOTAL_INPUT_IMAGE_BYTES)} total limit`)
+  }
+  budget.bytes += bytes
+}
+
+function formatMiB(bytes) {
+  return `${bytes / (1024 * 1024)} MiB`
+}
+
+function imageMimeType(bytes) {
+  if (bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    return "image/png"
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return "image/jpeg"
+  }
+  if (bytes.length >= 12 && bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP") {
+    return "image/webp"
+  }
+  return undefined
+}
+
+function inputImageDisplayPath(filePath) {
+  const relative = path.relative(process.cwd(), filePath)
+  return relative && !relative.startsWith("..") && !path.isAbsolute(relative)
+    ? relative
+    : path.basename(filePath)
+}
+
+function inputImageSummary(image) {
+  return {
+    source: image.source,
+    mime: image.mime,
+    bytes: image.bytes,
+  }
+}
+
+function redactImageData(value) {
+  if (Array.isArray(value)) return value.map(redactImageData)
+  if (isPlainObject(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactImageData(item)]))
+  }
+  if (typeof value === "string" && /^data:image\/(?:png|jpeg|webp);base64,/.test(value)) {
+    const comma = value.indexOf(",")
+    return `${value.slice(0, comma + 1)}<redacted>`
+  }
+  return value
 }
 
 async function readOpencodeConfig(configDir = opencodeConfigDir()) {
@@ -561,6 +708,9 @@ function responseImages(result) {
   return output
     .filter((item) => item?.type === "image_generation_call" && typeof item.result === "string")
     .map((item) => ({
+      id: item.id,
+      action: item.action,
+      status: item.status,
       b64_json: item.result,
       revised_prompt: item.revised_prompt,
       output_format: item.output_format,
@@ -608,6 +758,7 @@ function printHelp() {
 Options:
   --provider PROVIDER       OpenCode provider ID. Fallback: openai
   --api API                 images | responses. Fallback: images
+  --input-image PATH        PNG, JPEG, or WebP reference; repeat up to ${MAX_INPUT_IMAGES} times (Responses only)
   --model MODEL             Fallback: ${FALLBACK_MODEL}
   --size SIZE               Fallback: ${FALLBACK_SIZE}
   --quality QUALITY         low | medium | high | auto. Fallback: ${FALLBACK_QUALITY}
@@ -617,6 +768,9 @@ Options:
   --out-dir DIR             Workspace-relative output directory. Fallback: ${FALLBACK_OUT_DIR}
   --force                   Overwrite existing output files
   --dry-run                 Print payload and paths without calling the API
+
+Input limits:
+  ${formatMiB(MAX_INPUT_IMAGE_BYTES)} per image and ${formatMiB(MAX_TOTAL_INPUT_IMAGE_BYTES)} total before base64 encoding.
 
 Config:
   Reads imagegen defaults from opencode/labflow.json, ~/.config/opencode/labflow.json,

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.4 - 2026-07-22
+
+- Added bounded Responses API reference-image editing for up to four local PNG/JPEG/WebP inputs, including explicit current-message OpenCode image attachments, worktree-safe input snapshots, reference lineage, and request-versus-actual size metadata.
+- Extended the imagegen skill with upload editing, local-output iteration, fresh-regeneration branching, preserved iteration history, and at most two autonomous corrections for objective visual constraint failures.
+- Added deterministic CLI and mock-provider plugin tests for text-only generation, multi-image edit payloads, attachment lifecycle, API boundaries, output writing, and path safety.
+
 ## 0.10.3 - 2026-07-21
 
 - Let image-generation profiles reuse any configured OpenCode provider, with `routin-plan/gpt-5.6-sol` as the bundled Responses API default.

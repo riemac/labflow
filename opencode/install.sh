@@ -79,7 +79,7 @@ The labflow plugin is now registered. It injects:
   - labflow-paper agent (paper preparation, writing guidance, review, and submission readiness)
   - literature-worker subagent (bounded prior-art search and evidence artifacts)
   - bundled ability skills
-  - imagegen custom tool backed by opencode/scripts/imagegen.mjs
+  - imagegen generation/editing tool backed by opencode/scripts/imagegen.mjs
 
 Toggle between agents with Tab. Quit and restart opencode for changes to take effect.
 To disable, remove "$PLUGIN_ENTRY" from the "plugin" array,

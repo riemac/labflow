@@ -15,11 +15,13 @@ opencode/
 ├── plugins/
 │   └── labflow.ts            # plugin entry: injects rules/agents/skills/tools
 ├── scripts/
-│   └── imagegen.mjs          # OpenAI-compatible Images API CLI backend
+│   └── imagegen.mjs          # OpenAI-compatible image generation/editing CLI
 ├── labflow.json              # repo-local Image API defaults, no secrets
 ├── labflow.example.json      # example portable imagegen provider profile
 ├── package.json              # plugin runtime dependencies such as @opencode-ai/plugin
 ├── labflow-rules.md          # global cross-agent rules
+├── tests/
+│   └── imagegen.test.mjs     # deterministic CLI/plugin integration tests
 ├── agents/
 │   ├── labflow-develop.md    # primary develop stage: research dialogue + scaffold
 │   ├── labflow-plan.md       # primary read-only structured planning stage
@@ -38,14 +40,7 @@ labflow-develop, labflow-plan) because the plugin pushes it into
 `cfg.instructions`, which is additive and never shadows the user's own
 `AGENTS.md` or `~/.claude/CLAUDE.md`.
 
-`imagegen` is a custom tool registered by the plugin and normally reached via
-the bundled `imagegen` skill. The tool calls `opencode/scripts/imagegen.mjs`,
-which uses an independent OpenAI-compatible image generation profile from repo-local
-`opencode/labflow.json`, ignored `opencode/labflow.local.json`, optional
-`~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment
-variables, with fallback to the user's configured OpenAI-compatible provider.
-Keep API keys out of tracked files; use `labflow.local.json` or env for secrets.
-The bundled profile reuses `provider.routin-plan` with the Responses API, so it does not duplicate the provider key.
+`imagegen` is a custom tool registered by the plugin and normally reached via the bundled `imagegen` skill. The tool calls `opencode/scripts/imagegen.mjs`, which uses an independent OpenAI-compatible image generation profile from repo-local `opencode/labflow.json`, ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables, with fallback to the user's configured OpenAI-compatible provider. The Responses route accepts up to four PNG/JPEG/WebP workspace paths through `inputImages` and can explicitly consume images attached to the current user message through `useAttachedImages`; reference images make the request an edit, while omitted references preserve fresh text-only generation. Keep API keys out of tracked files; use `labflow.local.json` or env for secrets. The bundled profile reuses `provider.routin-plan` with the Responses API, so it does not duplicate the provider key.
 The old `/imagegen` slash command is intentionally not installed; `install.sh`
 only removes the legacy symlink when it points back into this repo.
 
@@ -96,7 +91,7 @@ OpenCode loads config/skills/agents/rules **once at startup** and does not
 hot-reload. Since the plugin serves everything from the repo via `file://`,
 updating means editing files in the repo and restarting opencode.
 
-1. Work on `/home/hac/labflow` (currently the `opencode` branch).
+1. Work on `/home/hac/labflow`.
 2. Edit under `opencode/`. Shared skill source lives in
    `plugins/labflow/skills/`; the OpenCode integration uses adapted copies in
    `opencode/skills/` — keep the de-Codex mapping applied.
@@ -105,6 +100,14 @@ updating means editing files in the repo and restarting opencode.
 ```bash
 python3 /home/hac/.codex/skills/.system/skill-creator/scripts/quick_validate.py opencode/skills/<skill-name>
 ```
+
+When changing `imagegen` or its plugin bridge, also run:
+
+```bash
+(cd opencode && npm test)
+```
+
+The imagegen plugin tests import the TypeScript plugin directly and therefore require Node.js 22.6 or newer, as declared in `opencode/package.json`.
 
 4. If `opencode.json` changed (e.g. `mcp`), validate it:
 

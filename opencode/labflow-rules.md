@@ -156,8 +156,14 @@ Common CLI tools available in this machine:
 
 </tools>
 
-<latex-render>
+<formatting>
 
-OpenCode Desktop renders LaTeX inline with `\( ... \)` and display math with `$$ ... $$`. Use these delimiters for mathematical formulas; do not use `\[ ... \]` for display math.
+## latex-render
 
-</latex-render>
+OpenCode Desktop output renders LaTeX inline with `\( ... \)` and display math with `$$ ... $$`. Use these delimiters for mathematical formulas; do not use `\[ ... \]` for display math.
+
+## markdown text
+
+When editing Markdown files, write complete paragraphs or single sentences on one line—there's no need to deliberately split lines. Obsidian, VS Code, and similar editors will render them correctly.
+
+</formatting>
