@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.6 - 2026-07-25
+
+- Let user-level OpenCode configuration override the bundled `literature-worker` agent definition, including provider and model selection, while retaining its portable defaults for all unspecified fields.
+
 ## 0.10.5 - 2026-07-24
 
 - Count only unique papers with a downloaded, verified PDF read at `full` depth, including the main body, method, experiments/results, limitations/discussion, and relevant appendices; title, metadata, abstract, citation, and targeted-page evidence remains uncounted.

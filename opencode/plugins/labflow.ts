@@ -401,7 +401,11 @@ export default async () => ({
       "labflow-develop": readAgentDefinition("labflow-develop"),
       "labflow-plan": readAgentDefinition("labflow-plan"),
       "labflow-paper": readAgentDefinition("labflow-paper"),
-      "literature-worker": readAgentDefinition("literature-worker"),
+      // Keep the bundled worker definition portable while allowing user config to select its provider/model.
+      "literature-worker": {
+        ...readAgentDefinition("literature-worker"),
+        ...cfg.agent?.["literature-worker"],
+      },
     }
 
     cfg.skills = { paths: [...(cfg.skills?.paths ?? []), ASSETS + "/skills"] }
