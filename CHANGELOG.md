@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.7 - 2026-07-27
+
+- Added explicit `useLatestAttachedImages` support for referring to the most recent image-bearing user message across turns without weakening the strict current-message semantics of `useAttachedImages`.
+- Documented current, latest-session, workspace-path, fresh-generation, and correction branches in the imagegen skill's XML/Mermaid workflow, with mutually exclusive one-shot attachment scopes.
+- Removed the asymmetric build-only per-turn system marker and restored native OpenCode agent-switching semantics; explicit user reminders or fresh sessions handle residual same-session confusion.
+- Strengthened Git Task Flow version closure so accepted VERSION/Changelog releases receive verified `v${VERSION}` tags, with explicit handling for legacy and skipped versions.
+
 ## 0.10.6 - 2026-07-25
 
 - Let user-level OpenCode configuration override the bundled `literature-worker` agent definition, including provider and model selection, while retaining its portable defaults for all unspecified fields.
@@ -30,6 +37,8 @@
 ## 0.10.1 - 2026-07-13
 
 - Added OpenCode and Codex subagent-continuity guidance: use workers primarily for read-heavy work, resume the same bounded evidence chain when useful, and keep implementation, user context, and final synthesis with the primary agent.
+
+> Historical tag note: `0.10.1` had no independent VERSION commit; its notes landed together with `0.10.2`, so no `v0.10.1` tag exists.
 
 ## 0.10.0 - 2026-07-12
 
