@@ -1,6 +1,6 @@
 ---
 name: git-task-flow
-description: "Git task-flow management skill for semantic implementation tasks: task-start anchors, checkpoint commits, diff review, history cleanup, final semantic commits, and lightweight SemVer/VERSION/CHANGELOG closure for repositories or self-contained subprojects."
+description: "Git task-flow management skill for semantic implementation tasks: task-start anchors, checkpoint commits, diff review, history cleanup, final semantic commits, and SemVer/VERSION/CHANGELOG/release-tag closure for repositories or self-contained subprojects."
 ---
 
 # Git Task Flow
@@ -57,6 +57,16 @@ For `0.x` research projects, breaking contract changes usually map to `minor` un
 - If a task bumps a subproject version and the repository also has a top-level version, prefer a repository `patch` bump unless project docs say otherwise or the user chooses not to.
 - A release tag should point to the commit that already contains the corresponding `VERSION` / `CHANGELOG` state.
 
+## Release Tag Closure
+
+- When a repository already uses release tags, every accepted release commit with a new `VERSION` and Changelog section must receive the corresponding `v${VERSION}` tag before version closure is complete.
+- Create the release tag only after the final semantic commit is validated; task/checkpoint tags never substitute for release tags.
+- Before creating a tag, verify that the name is absent locally and remotely, the target commit contains the expected version state, and the target is on the intended release history.
+- Follow the repository's existing lightweight-versus-annotated tag convention. Never move or replace an existing release tag without explicit user approval.
+- Push release tags only when the user explicitly authorizes remote publication, then verify the remote target after pushing.
+- For audited legacy releases that predate a VERSION file, a backfilled tag may point to the commit that finalized the corresponding Changelog release boundary; record this as a historical exception.
+- If no commit represents an exact version state, document the version as skipped instead of assigning a misleading tag or rewriting shared history.
+
 ## History Cleanup Principles
 
 - Treat commits as semantic boundaries, not a pure time log.
@@ -85,5 +95,5 @@ For `0.x` research projects, breaking contract changes usually map to `minor` un
 3. Before staging: review unstaged and staged diffs; keep unrelated changes out.
 4. Before final commit: decide the semantic commit boundary and whether history cleanup is needed.
 5. Version closure: judge `patch` / `minor` / `major`; auto-apply `patch`, ask for `minor` / `major`.
-6. Finalize: commit the accepted code/docs/version changes; create release tags only when the task is actually a release/version closure.
+6. Finalize: commit the accepted code/docs/version changes; for a true release/version closure, create and verify the matching release tag, then push it only with explicit user authorization.
 7. Report: summarize final commit(s), version changes, validation, and any unrelated worktree changes left untouched.

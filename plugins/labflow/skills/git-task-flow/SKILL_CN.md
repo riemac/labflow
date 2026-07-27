@@ -1,6 +1,6 @@
 ---
 name: git-task-flow
-description: Git 任务流管理技能。用于有语义产出的实现或文档任务：起始锚点、checkpoint commit、diff 核对、历史整理、最终语义提交，以及轻量 SemVer / VERSION / CHANGELOG 收尾。
+description: Git 任务流管理技能。用于有语义产出的实现或文档任务：起始锚点、checkpoint commit、diff 核对、历史整理、最终语义提交，以及 SemVer / VERSION / CHANGELOG / release tag 收尾。
 ---
 
 # Git Task Flow
@@ -57,6 +57,16 @@ SemVer 判断：
 - 如果任务 bump 了子项目版本，而仓库也有顶层版本，默认倾向仓库也做一次 `patch` bump，除非项目文档另有规定或用户选择不这么做。
 - release tag 应指向已经包含对应 `VERSION` / `CHANGELOG` 状态的 commit。
 
+## Release Tag 收尾
+
+- 仓库一旦采用 release tag，每个已验收、包含新 `VERSION` 与 Changelog 段的 release commit 都必须获得对应 `v${VERSION}` tag，版本收尾才算完成。
+- 只在最终语义提交验证通过后创建 release tag；`task/...` 与 checkpoint tag 不能代替 release tag。
+- 创建前核对本地和远端不存在同名 tag、目标 commit 包含预期版本状态，并且目标位于正确 release 历史上。
+- 沿用仓库已有的 lightweight/annotated tag 风格。未经用户明确批准，不移动或替换已有 release tag。
+- 只有用户明确授权远端发布时才 push release tag；push 后重新核对远端目标。
+- 对 VERSION 文件出现前、经过审计的历史 release，可将回填 tag 指向最终形成对应 Changelog release 边界的 commit，并明确记录这是历史例外。
+- 如果没有 commit 表示准确版本状态，记录该版本被跳过，不把 tag 错绑到其他树状态，也不改写共享历史。
+
 ## 历史整理原则
 
 - 把 commit 当作语义边界，而不是时间顺序日志。
@@ -85,5 +95,5 @@ SemVer 判断：
 3. staging 前：核对 unstaged / staged diff，排除无关改动。
 4. 最终提交前：判断语义提交边界，以及是否需要历史整理。
 5. 版本收尾：判断 `patch` / `minor` / `major`；`patch` 默认执行，`minor` / `major` 先问用户。
-6. 完成：提交已验收的代码、文档和版本变更；只有真正做 release/version 收尾时才创建 release tag。
+6. 完成：提交已验收的代码、文档和版本变更；真正做 release/version 收尾时创建并验证对应 release tag，只有用户明确授权时才 push。
 7. 汇报：总结最终提交、版本变化、验证结果，以及仍保留未动的无关工作区改动。
