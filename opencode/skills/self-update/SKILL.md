@@ -80,12 +80,13 @@ Commit 类型：`refactor:` 改进现有行为，`fix:` 修正错误，`feat:` �
 
 ### 同会话 primary-agent 切换
 
-如果 TUI/日志已显示 `build`，模型却仍服从先前 primary agent 的 mode 约束：
+如果 TUI/日志显示的当前 agent 与模型行为不一致：
 
 1. 用日志中的 `agent=...` 和 `opencode debug agent <name>` 分开确认运行态与 resolved agent 配置，不要仅凭模型自述判断当前 agent。
 2. 不要直接给 native `build` 配置短 `prompt`。在当前 OpenCode 实现中，一旦 `agent.prompt` 存在，它会替换 provider-specific 基础 prompt，而不是追加。
-3. 需要消歧时，在 plugin 的 `chat.message` hook 中仅对 `build` 追加 `output.message.system`，保留已有 system 内容，并明确当前 agent 优先于同会话旧 mode 约束。
-4. 用同一 session 先运行受限 agent、再运行 `build` 做闭环 smoke test；同时确认 `opencode debug agent build` 仍为 native、保留工具权限且没有自定义 `prompt`。
+3. 不要通过 `chat.message` 注入单向 per-turn agent marker；这类 marker 会进入同会话历史，在反向切换时与当前 agent prompt 冲突。
+4. 让 OpenCode 原生 agent 选择保持权威；若同会话历史仍使 build 困惑，让用户明确重申“现在按 build 实现”，或开启新 session。
+5. 回归测试应覆盖受限 agent → build 与 build → 受限 agent 两个方向，并确认 `opencode debug agent build` 仍为 native、保留工具权限且没有自定义 `prompt`。
 
 > 教训：曾因只信文档 + spec 文本，对 compaction 触发公式连错两次；最终靠 ctx7 拿
 > schema、gh 读 `session/compaction.ts` 的 `context − max(output, buffer)` 才定论。

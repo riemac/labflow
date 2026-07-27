@@ -17,13 +17,9 @@ const MAX_INPUT_IMAGES = 4
 const MAX_INPUT_IMAGE_BYTES = 20 * 1024 * 1024
 const MAX_TOTAL_INPUT_IMAGE_BYTES = 50 * 1024 * 1024
 const SUPPORTED_IMAGE_MIMES = new Set(["image/png", "image/jpeg", "image/webp"])
-const attachedImagesBySession = new Map<string, { images: Array<{ mime: string; url: string; filename?: string }> }>()
-const BUILD_MODE_SYSTEM = [
-  "<active-agent>",
-  "The current OpenCode primary agent is build. Execute implementation requests using the available tools.",
-  "This current-agent marker supersedes mode restrictions from primary agents that were active earlier in the same session. Do not ask the user to switch to build.",
-  "</active-agent>",
-].join("\n")
+type AttachedImageState = { images: Array<{ mime: string; url: string; filename?: string }> }
+const currentAttachedImagesBySession = new Map<string, AttachedImageState>()
+const latestAttachedImagesBySession = new Map<string, AttachedImageState>()
 
 // Agent files are the single source of truth for both configuration and prompt.
 // OpenCode cannot expand `{file:...}` values added by a late config hook, so the
@@ -43,7 +39,7 @@ function readAgentDefinition(name: string): Record<string, unknown> {
 
 const imagegenTool = tool({
   description:
-    "Generate or edit raster images through labflow's configured OpenAI-compatible image API. Accepts workspace image paths and explicitly selected images attached to the current user message.",
+    "Generate or edit raster images through labflow's configured OpenAI-compatible image API. Accepts workspace paths plus explicitly selected current-message or latest session attachments.",
   args: {
     prompt: tool.schema.string().min(1).describe("Final image prompt to send to the image model"),
     inputImages: tool.schema
@@ -55,6 +51,10 @@ const imagegenTool = tool({
       .boolean()
       .optional()
       .describe("Use image attachments from the current user message as references"),
+    useLatestAttachedImages: tool.schema
+      .boolean()
+      .optional()
+      .describe("Use images from the latest image-bearing user message in this session"),
     model: tool.schema.string().optional().describe("Image model override"),
     size: tool.schema.string().optional().describe("Image size such as 1024x1024 or 3840x2160"),
     quality: tool.schema.enum(["low", "medium", "high", "auto"]).optional().describe("Rendering quality"),
@@ -65,12 +65,22 @@ const imagegenTool = tool({
     force: tool.schema.boolean().optional().describe("Overwrite existing output files"),
   },
   async execute(args, context) {
-    const attachedState = args.useAttachedImages ? attachedImagesBySession.get(context.sessionID) : undefined
+    if (args.useAttachedImages && args.useLatestAttachedImages) {
+      throw new Error("imagegen failed: useAttachedImages and useLatestAttachedImages are mutually exclusive")
+    }
+    const attachedState = args.useAttachedImages
+      ? currentAttachedImagesBySession.get(context.sessionID)
+      : args.useLatestAttachedImages
+        ? latestAttachedImagesBySession.get(context.sessionID)
+        : undefined
     const attachedImages = attachedState ? [...attachedState.images] : []
     let temporaryInputs
     try {
       if (args.useAttachedImages && attachedImages.length === 0) {
         throw new Error("no supported image is attached to the current user message")
+      }
+      if (args.useLatestAttachedImages && attachedImages.length === 0) {
+        throw new Error("no retained image is available from the latest image-bearing user message")
       }
 
       const budget = { bytes: 0 }
@@ -116,9 +126,7 @@ const imagegenTool = tool({
     } catch (error) {
       throw new Error(`imagegen failed: ${formatExecError(error)}`)
     } finally {
-      if (attachedState && attachedImagesBySession.get(context.sessionID) === attachedState) {
-        attachedImagesBySession.delete(context.sessionID)
-      }
+      if (attachedState) consumeAttachedState(context.sessionID, attachedState)
       if (temporaryInputs?.directory) {
         await fs.promises.rm(temporaryInputs.directory, { recursive: true, force: true })
       }
@@ -360,10 +368,22 @@ function captureAttachedImages(sessionID, parts) {
     .map((part) => ({ mime: part.mime, url: part.url, filename: part.filename }))
     .filter((part, index, all) => all.findIndex((candidate) => candidate.url === part.url) === index)
   if (images.length > 0) {
-    attachedImagesBySession.set(sessionID, { images })
+    const state = { images }
+    currentAttachedImagesBySession.set(sessionID, state)
+    latestAttachedImagesBySession.set(sessionID, state)
   } else {
-    attachedImagesBySession.delete(sessionID)
+    currentAttachedImagesBySession.delete(sessionID)
   }
+}
+
+function consumeAttachedState(sessionID, state) {
+  if (currentAttachedImagesBySession.get(sessionID) === state) currentAttachedImagesBySession.delete(sessionID)
+  if (latestAttachedImagesBySession.get(sessionID) === state) latestAttachedImagesBySession.delete(sessionID)
+}
+
+function clearAttachedStates(sessionID) {
+  currentAttachedImagesBySession.delete(sessionID)
+  latestAttachedImagesBySession.delete(sessionID)
 }
 
 function formatExecError(error: unknown): string {
@@ -380,15 +400,14 @@ function formatExecError(error: unknown): string {
 
 export default async () => ({
   dispose: async () => {
-    attachedImagesBySession.clear()
+    currentAttachedImagesBySession.clear()
+    latestAttachedImagesBySession.clear()
   },
   event: async ({ event }) => {
-    if (event.type === "session.deleted") attachedImagesBySession.delete(event.properties.info.id)
+    if (event.type === "session.deleted") clearAttachedStates(event.properties.info.id)
   },
   "chat.message": async (input, output) => {
     captureAttachedImages(input.sessionID, output.parts)
-    if (input.agent !== "build") return
-    output.message.system = [output.message.system, BUILD_MODE_SYSTEM].filter(Boolean).join("\n")
   },
   tool: {
     imagegen: imagegenTool,

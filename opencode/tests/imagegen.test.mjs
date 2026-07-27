@@ -33,6 +33,18 @@ async function temporaryDirectory(t, prefix) {
   return directory
 }
 
+test("plugin preserves native agent system prompts", async (t) => {
+  const plugin = await import(`${new URL(`file://${PLUGIN_PATH}`).href}?native=${Date.now()}`)
+  const hooks = await plugin.default()
+  t.after(() => hooks.dispose())
+
+  for (const agent of ["build", "labflow-plan"]) {
+    const output = { message: { system: "existing system" }, parts: [] }
+    await hooks["chat.message"]({ sessionID: `native-${agent}`, agent }, output)
+    assert.equal(output.message.system, "existing system")
+  }
+})
+
 test("CLI preserves text-only Responses payloads", async (t) => {
   const cwd = await temporaryDirectory(t, "labflow-imagegen-fresh-")
   const result = JSON.parse(runImagegen(cwd, ["--prompt", "fresh image", "--dry-run"]))
@@ -279,7 +291,41 @@ test("plugin edits the current user attachment through the CLI", async (t) => {
     { ...concurrentContext, messageID: "concurrent-assistant-message-2" },
   )
   assert.match(newStateResult.output, /input_images: attached:new\.png/)
-  assert.equal(requests.length, 3)
+
+  const latestSessionID = "latest-attachment-session"
+  await hooks["chat.message"](
+    { sessionID: latestSessionID, agent: "labflow-develop" },
+    {
+      message: {},
+      parts: [{ type: "file", mime: "image/png", url: `data:image/png;base64,${PNG_BASE64}`, filename: "previous.png" }],
+    },
+  )
+  await hooks["chat.message"](
+    { sessionID: latestSessionID, agent: "labflow-develop" },
+    { message: {}, parts: [] },
+  )
+  const latestContext = { ...concurrentContext, sessionID: latestSessionID }
+  await assert.rejects(
+    hooks.tool.imagegen.execute({ prompt: "current only", useAttachedImages: true }, latestContext),
+    /no supported image is attached to the current user message/,
+  )
+  const latestResult = await hooks.tool.imagegen.execute(
+    { prompt: "use previous upload", useLatestAttachedImages: true, out: "latest-state.png" },
+    latestContext,
+  )
+  assert.match(latestResult.output, /input_images: attached:previous\.png/)
+  await assert.rejects(
+    hooks.tool.imagegen.execute({ prompt: "retry latest", useLatestAttachedImages: true }, latestContext),
+    /no retained image is available from the latest image-bearing user message/,
+  )
+  await assert.rejects(
+    hooks.tool.imagegen.execute(
+      { prompt: "ambiguous", useAttachedImages: true, useLatestAttachedImages: true },
+      latestContext,
+    ),
+    /mutually exclusive/,
+  )
+  assert.equal(requests.length, 4)
 })
 
 test("plugin clears stale attachments and rejects paths outside the worktree", async (t) => {
@@ -319,6 +365,10 @@ test("plugin clears stale attachments and rejects paths outside the worktree", a
   await assert.rejects(
     hooks.tool.imagegen.execute({ prompt: "edit", useAttachedImages: true }, context),
     /no supported image is attached to the current user message/,
+  )
+  await assert.rejects(
+    hooks.tool.imagegen.execute({ prompt: "edit", useLatestAttachedImages: true }, context),
+    /no retained image is available from the latest image-bearing user message/,
   )
 
   await hooks["chat.message"](

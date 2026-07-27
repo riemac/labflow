@@ -40,7 +40,7 @@ labflow-develop, labflow-plan) because the plugin pushes it into
 `cfg.instructions`, which is additive and never shadows the user's own
 `AGENTS.md` or `~/.claude/CLAUDE.md`.
 
-`imagegen` is a custom tool registered by the plugin and normally reached via the bundled `imagegen` skill. The tool calls `opencode/scripts/imagegen.mjs`, which uses an independent OpenAI-compatible image generation profile from repo-local `opencode/labflow.json`, ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables, with fallback to the user's configured OpenAI-compatible provider. The Responses route accepts up to four PNG/JPEG/WebP workspace paths through `inputImages` and can explicitly consume images attached to the current user message through `useAttachedImages`; reference images make the request an edit, while omitted references preserve fresh text-only generation. Keep API keys out of tracked files; use `labflow.local.json` or env for secrets. The bundled profile reuses `provider.routin-plan` with the Responses API, so it does not duplicate the provider key.
+`imagegen` is a custom tool registered by the plugin and normally reached via the bundled `imagegen` skill. The tool calls `opencode/scripts/imagegen.mjs`, which uses an independent OpenAI-compatible image generation profile from repo-local `opencode/labflow.json`, ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables, with fallback to the user's configured OpenAI-compatible provider. The Responses route accepts up to four PNG/JPEG/WebP workspace paths through `inputImages`, current-message uploads through `useAttachedImages`, or the session's most recent image-bearing user message through explicit `useLatestAttachedImages`; current/latest scopes are mutually exclusive and one-shot. Reference images make the request an edit, while omitted references preserve fresh text-only generation. Keep API keys out of tracked files; use `labflow.local.json` or env for secrets. The bundled profile reuses `provider.routin-plan` with the Responses API, so it does not duplicate the provider key.
 The old `/imagegen` slash command is intentionally not installed; `install.sh`
 only removes the legacy symlink when it points back into this repo.
 
@@ -61,7 +61,7 @@ OpenCode has no hook-driven stage runtime. Instead:
   `<proposed_plan>` block.
 - Switch back to **build** for implementation, **labflow-plan** for structured
   planning, or **labflow-develop** for nonlinear R&D/scaffold work.
-- Same-session history carries the research problem anchor, so there is no research-state `UserPromptSubmit` equivalent. A build-only per-turn marker disambiguates the current agent if a prior primary-agent mode prompt lingers after an in-session switch.
+- Same-session history carries the research problem anchor, so there is no research-state `UserPromptSubmit` equivalent. OpenCode's native agent selection and resolved prompt remain authoritative; no per-turn mode prompt is injected. If history confuses build, explicitly restate the implementation intent or start a fresh session.
 - No state-persistence plugin: cross-session recall is left to the user.
 
 ## De-Codex mapping
@@ -122,7 +122,7 @@ python3 -m json.tool ~/.config/opencode/opencode.json >/dev/null
 
 - Writing labflow rules into the user's `~/.config/opencode/AGENTS.md` (it
   shadows `~/.claude/CLAUDE.md`); use the additive `instructions` field instead.
-- Re-creating a HUD or injecting research state per prompt; the agent name and the narrow build-mode marker already disambiguate the active stage.
+- Re-creating a HUD or injecting research or agent-mode state per prompt; rely on the visible agent name and native resolved prompt.
 - Forcing a state-persistence plugin via compaction hooks unless a proven need
   appears.
 - Leaving Codex-isms (`$labflow:`, `request_user_input`, `.codex/`) in adapted

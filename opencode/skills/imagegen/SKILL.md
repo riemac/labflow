@@ -32,8 +32,10 @@ flowchart LR
     B --> F[Fresh text generation]
     B --> W[Workspace image path]
     B --> A[Current-message upload]
+    B --> L[Latest earlier upload]
     W --> E[Edit with text plus reference image]
     A --> E
+    L --> E
     F --> I[Read and inspect output]
     E --> I
     I --> Q{Objective constraint failure?}
@@ -69,7 +71,11 @@ Pass one or more paths in `inputImages` when a previous output or existing works
 
 ## Current-Message Upload
 
-Set `useAttachedImages: true` when the user attached images to the current OpenCode message and explicitly wants those images modified or used as references. Attachments from earlier user turns are intentionally unavailable; after the first edit, continue from the returned local output path.
+Set `useAttachedImages: true` when the user attached images to the current OpenCode message and explicitly wants those images modified or used as references. After the first edit, continue from the returned local output path.
+
+## Latest Earlier Upload
+
+Set `useLatestAttachedImages: true` only when the user explicitly refers to an image uploaded in an earlier turn, such as “the previous attachment” or “the image I just sent.” It selects the most recent image-bearing user message in the current session. Current and latest attachment options are mutually exclusive, and the selected attachment state is consumed after one tool attempt; continue subsequent iterations from the returned local output path.
 
 ## Correction Choice
 
@@ -132,8 +138,10 @@ Call the `imagegen` custom tool with the final prompt. Do not route through `/im
 ## References and Limits
 
 - `inputImages` accepts up to four PNG, JPEG, or WebP paths inside the current worktree.
-- `useAttachedImages: true` uses images attached to the current user message; use it only when the user wants those attachments included.
-- Local paths and current-message attachments can be combined, with a maximum of four reference images in total.
+- `useAttachedImages: true` uses images attached to the current user message.
+- `useLatestAttachedImages: true` uses the most recent image-bearing user message in the current session when the user explicitly refers to an earlier upload.
+- `useAttachedImages` and `useLatestAttachedImages` are mutually exclusive and consume the selected attachment state after one attempt.
+- Local paths and the selected attachment scope can be combined, with a maximum of four reference images in total.
 - Each reference image is limited to 20 MiB and all references together to 50 MiB before base64 encoding.
 - Image-input editing requires a Responses API profile. Masks, remote image URLs, and `previous_response_id` continuation are not supported.
 
