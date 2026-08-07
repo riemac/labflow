@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# First-time setup: add the labflow plugin reference to opencode.json.
-# The plugin loads agents, skills, rules, and custom tools directly from the repo.
+# Register labflow, manage its thin OpenCode bootstrap, and expose explicit
+# encrypted configuration migration/device-authorization workflows.
 #
 # opencode loads config once at startup and does not hot-reload.
 # After running this, quit and restart opencode.
@@ -10,14 +10,31 @@ set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}"
-CONFIG_FILE="$CONFIG_DIR/opencode.json"
 PLUGIN_ENTRY="file://$SRC/plugins/labflow.ts"
 PACKAGE_FILE="$SRC/package.json"
+CONFIG_MANAGER="$SRC/scripts/config-manager.mjs"
+ACTION="bootstrap"
 COMMAND_DIR="$CONFIG_DIR/commands"
 LEGACY_IMAGEGEN_COMMAND_SRC="$SRC/commands/imagegen.md"
 LEGACY_IMAGEGEN_COMMAND_DST="$COMMAND_DIR/imagegen.md"
 
-if [[ -f "$PACKAGE_FILE" ]]; then
+case "${1:-}" in
+  "") ACTION="bootstrap" ;;
+  --migrate-config) ACTION="migrate" ;;
+  --doctor) ACTION="doctor" ;;
+  --init-age) ACTION="init-age" ;;
+  --authorize-age-recipient)
+    ACTION="authorize-age"
+    [[ -n "${2:-}" ]] || { printf 'Missing age1... recipient.\n' >&2; exit 2; }
+    ;;
+  --help|-h)
+    printf 'Usage: %s [--migrate-config|--doctor|--init-age|--authorize-age-recipient age1...]\n' "$0"
+    exit 0
+    ;;
+  *) printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
+esac
+
+if [[ -f "$PACKAGE_FILE" && "$ACTION" == "bootstrap" ]]; then
   if command -v npm >/dev/null 2>&1; then
     printf 'Installing labflow opencode plugin dependencies...\n'
     npm --prefix "$SRC" install --omit=dev --ignore-scripts --loglevel=error >/dev/null
@@ -26,48 +43,37 @@ if [[ -f "$PACKAGE_FILE" ]]; then
   fi
 fi
 
-if [[ ! -f "$CONFIG_FILE" ]]; then
-  printf 'No config file found at %s. Creating minimal config.\n' "$CONFIG_FILE"
-  cat > "$CONFIG_FILE" <<EOF
-{
-  "\$schema": "https://opencode.ai/config.json",
-  "plugin": ["$PLUGIN_ENTRY"]
-}
-EOF
-  printf 'Config created. Add your provider/model config before starting.\n'
+if [[ "$ACTION" == "authorize-age" ]]; then
+  node "$CONFIG_MANAGER" "$ACTION" "$2"
 else
-  if grep -qF "$PLUGIN_ENTRY" "$CONFIG_FILE" 2>/dev/null; then
-    printf 'Plugin entry already present in %s\n' "$CONFIG_FILE"
-  else
-    printf 'Adding plugin entry to %s...\n' "$CONFIG_FILE"
-    python3 -c "
-import json, sys
-with open('$CONFIG_FILE') as f:
-    cfg = json.load(f)
-plugin = cfg.get('plugin', [])
-if isinstance(plugin, list):
-    plugin.append('$PLUGIN_ENTRY')
-    cfg['plugin'] = plugin
-else:
-    cfg['plugin'] = ['$PLUGIN_ENTRY']
-with open('$CONFIG_FILE', 'w') as f:
-    json.dump(cfg, f, indent=2)
-    f.write('\n')
-" && echo "Added."
+  node "$CONFIG_MANAGER" "$ACTION"
+fi
+
+if [[ "$ACTION" == "bootstrap" ]]; then
+  missing_security_tools=()
+  for command_name in sops age age-keygen; do
+    command -v "$command_name" >/dev/null 2>&1 || missing_security_tools+=("$command_name")
+  done
+  if (( ${#missing_security_tools[@]} > 0 )); then
+    printf 'Warning: encrypted config migration is unavailable; missing: %s\n' "${missing_security_tools[*]}"
+    printf 'Install from the official releases, then run %s --init-age and %s --migrate-config.\n' "$0" "$0"
+    printf '  https://github.com/getsops/sops/releases\n'
+    printf '  https://github.com/FiloSottile/age/releases\n'
   fi
 fi
 
-if [[ -L "$LEGACY_IMAGEGEN_COMMAND_DST" ]]; then
+if [[ "$ACTION" == "bootstrap" && -L "$LEGACY_IMAGEGEN_COMMAND_DST" ]]; then
   if [[ "$(readlink "$LEGACY_IMAGEGEN_COMMAND_DST")" == "$LEGACY_IMAGEGEN_COMMAND_SRC" ]]; then
     rm "$LEGACY_IMAGEGEN_COMMAND_DST"
     printf 'Removed legacy /imagegen command symlink from %s\n' "$LEGACY_IMAGEGEN_COMMAND_DST"
   else
     printf 'Leaving existing /imagegen command symlink untouched: %s\n' "$LEGACY_IMAGEGEN_COMMAND_DST"
   fi
-elif [[ -e "$LEGACY_IMAGEGEN_COMMAND_DST" ]]; then
+elif [[ "$ACTION" == "bootstrap" && -e "$LEGACY_IMAGEGEN_COMMAND_DST" ]]; then
   printf 'Leaving existing /imagegen command file untouched: %s\n' "$LEGACY_IMAGEGEN_COMMAND_DST"
 fi
 
+if [[ "$ACTION" == "bootstrap" ]]; then
 cat <<EOF
 
 Done.
@@ -85,3 +91,4 @@ Toggle between agents with Tab. Quit and restart opencode for changes to take ef
 To disable, remove "$PLUGIN_ENTRY" from the "plugin" array,
 or toggle the plugin in the opencode Plugin panel (space).
 EOF
+fi

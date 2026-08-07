@@ -1,0 +1,28 @@
+version: 1
+id: packy
+config:
+  npm: "@ai-sdk/openai-compatible"
+  name: Packy
+  options:
+    baseURL: https://www.packyapi.ai/v1
+    headerTimeout: 60000
+  models:
+    grok-4.5:
+      name: Grok 4.5
+      reasoning: true
+      tool_call: true
+      limit:
+        context: 500000
+        output: 64000
+      variants:
+        low:
+          reasoningEffort: low
+        medium:
+          reasoningEffort: medium
+        high:
+          reasoningEffort: high
+auth:
+  default:
+    secret: packy-grok
+    header: Authorization
+    prefix: "Bearer "

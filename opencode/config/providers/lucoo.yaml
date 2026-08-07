@@ -1,0 +1,207 @@
+version: 1
+id: lucoo
+config:
+  npm: "@ai-sdk/openai-compatible"
+  name: Lucoo
+  options:
+    baseURL: https://api.lucoo.net/v1
+    headerTimeout: 60000
+  models:
+    grok-4.5:
+      name: Grok 4.5
+      reasoning: true
+      tool_call: true
+      limit:
+        context: 500000
+        output: 64000
+      variants:
+        low:
+          reasoningEffort: low
+        medium:
+          reasoningEffort: medium
+        high:
+          reasoningEffort: high
+    gemini-3.6-flash:
+      name: Gemini 3.6 Flash
+      family: gemini-flash
+      release_date: 2026-07-21
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      limit:
+        context: 1048576
+        input: 1048576
+        output: 65536
+      variants:
+        minimal:
+          reasoningEffort: minimal
+        low:
+          reasoningEffort: low
+        medium:
+          reasoningEffort: medium
+        high:
+          reasoningEffort: high
+    gpt-5.6-sol:
+      name: GPT-5.6 Sol
+      family: gpt
+      release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 372000
+        input: 372000
+        output: 32000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+    gpt-5.6-terra:
+      name: GPT-5.6 Terra
+      family: gpt-mini
+      release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 372000
+        input: 372000
+        output: 64000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+    gpt-5.6-luna:
+      name: GPT-5.6 Luna
+      family: gpt-nano
+      release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 372000
+        input: 372000
+        output: 64000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+auth:
+  models:
+    gemini-3.6-flash:
+      secret: lucoo-gemini-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-sol:
+      secret: lucoo-gpt-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-terra:
+      secret: lucoo-gpt-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-luna:
+      secret: lucoo-gpt-authorization
+      header: Authorization
+      prefix: ""
+  default:
+    secret: lucoo-grok
+    header: Authorization
+    prefix: "Bearer "

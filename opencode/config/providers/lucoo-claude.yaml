@@ -1,0 +1,83 @@
+version: 1
+id: lucoo-claude
+config:
+  npm: "@ai-sdk/anthropic"
+  name: Lucoo Claude
+  options:
+    baseURL: https://api.lucoo.net/v1
+    headerTimeout: 60000
+  models:
+    claude-fable-5:
+      name: Claude Fable 5
+      family: claude-fable
+      release_date: 2026-06-07
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: false
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        thinking:
+          type: adaptive
+          display: summarized
+        effort: high
+      limit:
+        context: 1000000
+        output: 128000
+    claude-sonnet-5:
+      name: Claude Sonnet 5
+      family: claude-sonnet
+      release_date: 2026-06-29
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: false
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        thinking:
+          type: adaptive
+          display: summarized
+        effort: high
+      limit:
+        context: 1000000
+        output: 128000
+    claude-opus-4-8:
+      name: Claude Opus 4.8
+      family: claude-opus
+      release_date: 2026-05-28
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: false
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        thinking:
+          type: adaptive
+          display: summarized
+        effort: high
+      limit:
+        context: 1000000
+        output: 128000
+auth:
+  default:
+    secret: lucoo-claude
+    header: x-api-key
+    prefix: ""

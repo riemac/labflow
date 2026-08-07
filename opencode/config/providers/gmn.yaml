@@ -1,0 +1,143 @@
+version: 1
+id: gmn
+config:
+  npm: "@ai-sdk/openai"
+  name: GMN
+  options:
+    baseURL: https://gmn.chuangzuoli.com/v1
+    headerTimeout: 60000
+  models:
+    gpt-5.6-sol:
+      name: GPT-5.6 Sol
+      family: gpt
+      release_date: 2026-07-09
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 372000
+        input: 372000
+        output: 32000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+    gpt-5.6-terra:
+      name: GPT-5.6 Terra
+      family: gpt-mini
+      release_date: 2026-07-09
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 372000
+        input: 372000
+        output: 64000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+    gpt-5.6-luna:
+      name: GPT-5.6 Luna
+      family: gpt-nano
+      release_date: 2026-07-09
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 372000
+        input: 372000
+        output: 64000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+auth:
+  default:
+    secret: gmn
+    header: Authorization
+    prefix: "Bearer "

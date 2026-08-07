@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0 - 2026-08-07
+
+- Moved portable OpenCode defaults, third-party plugin declarations, eight relay providers, and twenty-five model definitions into tracked YAML loaded by the labflow plugin, while reducing the machine-local global config to a generated startup bootstrap.
+- Added explicit SOPS + per-device age migration, authorization, backup, idempotency, dependency checks, and doctor workflows; provider credentials now enter request-time secure fetch closures instead of resolved OpenCode config or diagnostic output.
+- Added named imagegen profiles and conservative ordered routes, including Lucoo and GMN `gpt-image-2` profiles, retry classification, ambiguous-timeout controls, redacted failures, and rollback-safe staged output commits.
+- Added deterministic config, migration, authentication, leakage, fallback, and plugin regression coverage, plus public-repository setup and new-device authorization documentation.
+
 ## 0.10.7 - 2026-07-27
 
 - Added explicit `useLatestAttachedImages` support for referring to the most recent image-bearing user message across turns without weakening the strict current-message semantics of `useAttachedImages`.

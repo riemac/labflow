@@ -64,18 +64,10 @@ Commit 类型：`refactor:` 改进现有行为，`fix:` 修正错误，`feat:` �
 
 ## 查证 opencode 官方配置 / 内部机制
 
-改 `opencode.json` 或排查 opencode 内部行为（compaction、context、schema 键名、
-触发阈值等）时，**不要只信官方网页文档**（opencode.ai/docs）——它经常不全、
-过时、或与本机版本不符。按以下顺序查证：
+改 `opencode.json` 或排查 opencode 内部行为（compaction、context、schema 键名、触发阈值等）时，**不要只信官方网页文档**（opencode.ai/docs）——它经常不全、过时、或与本机版本不符。按以下顺序查证：
 
-1. **ctx7 优先**：`ctx7 library opencode` → `ctx7 docs /anomalyco/opencode "<关键词>"`。
-   能挖到网页文档没有的 spec 级内容（如 `specs/v2/session.md`、`config.md`），
-   拿到准确的 schema 键名和机制线索。
-2. **gh 读真源码定地面真相**：`opencode --version` 拿版本号，再
-   `gh api "repos/anomalyco/opencode/git/trees/v<版本>?recursive=1"` 定位文件，
-   `gh api "repos/.../contents/<path>?ref=v<版本>"` 读对应 tag 的实际实现。
-   配置 schema 在 `packages/core/src/config/`，会话/压缩逻辑在
-   `packages/core/src/session/`。
+1. **ctx7 优先**：`ctx7 library opencode` → `ctx7 docs /anomalyco/opencode "<关键词>"`。它能提供 spec 级线索，但结果可能指向并存的 V2 core，而不是当前 CLI runtime。
+2. **gh 读真源码定地面真相**：`opencode --version` 拿版本号，再用 `gh api "repos/anomalyco/opencode/git/trees/v<版本>?recursive=1"` 定位文件、`gh api "repos/.../contents/<path>?ref=v<版本>"` 读取对应 tag。先确认当前 binary 实际使用 `packages/opencode/` 还是 `packages/core/`；同一 tag 可能同时包含两套 schema/runtime，不能凭目录名或最新 spec 猜测。
 3. 本机 `~/.opencode/bin/opencode` 是编译过的 ELF，读不到 JS 源码，必须走 GitHub。
 
 ### 同会话 primary-agent 切换
@@ -88,11 +80,7 @@ Commit 类型：`refactor:` 改进现有行为，`fix:` 修正错误，`feat:` �
 4. 让 OpenCode 原生 agent 选择保持权威；若同会话历史仍使 build 困惑，让用户明确重申“现在按 build 实现”，或开启新 session。
 5. 回归测试应覆盖受限 agent → build 与 build → 受限 agent 两个方向，并确认 `opencode debug agent build` 仍为 native、保留工具权限且没有自定义 `prompt`。
 
-> 教训：曾因只信文档 + spec 文本，对 compaction 触发公式连错两次；最终靠 ctx7 拿
-> schema、gh 读 `session/compaction.ts` 的 `context − max(output, buffer)` 才定论。
-> 配置键名一律以源码 schema 为准——如 compaction 只认
-> `auto / prune / keep.tokens / buffer`，常见的 `reserved / tail_turns` 是无效键，
-> 写了会被静默忽略。
+> 教训：OpenCode `v1.18.14` 同时包含 V2 `packages/core` 与当前 CLI `packages/opencode`。前者的 compaction 使用 `keep.tokens` / `buffer`，后者的公开 schema 与实际 runtime 使用 `tail_turns` / `preserve_recent_tokens` / `reserved`；`packages/opencode/src/session/compaction.ts` 和 `overflow.ts` 才是该版本 CLI 的地面真相。必须沿 binary 对应的调用链核实，不能把并存的新 schema 机械套到当前配置。
 
 ---
 

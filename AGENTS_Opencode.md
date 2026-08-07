@@ -15,20 +15,20 @@ opencode/
 ├── plugins/
 │   └── labflow.ts            # plugin entry: injects rules/agents/skills/tools
 ├── scripts/
-│   └── imagegen.mjs          # OpenAI-compatible image generation/editing CLI
-├── labflow.json              # repo-local Image API defaults, no secrets
-├── labflow.example.json      # example portable imagegen provider profile
+│   ├── config.mjs            # tracked YAML loader, SOPS store, secure provider fetch
+│   ├── config-manager.mjs    # bootstrap, migration, age authorization, doctor
+│   └── imagegen.mjs          # profiled OpenAI-compatible generation/editing CLI
+├── config/                   # tracked defaults, providers, plugins, imagegen routes, SOPS ciphertext
 ├── package.json              # plugin runtime dependencies such as @opencode-ai/plugin
 ├── labflow-rules.md          # global cross-agent rules
-├── tests/
-│   └── imagegen.test.mjs     # deterministic CLI/plugin integration tests
+├── tests/                    # config, migration, security, CLI, and plugin integration tests
 ├── agents/
 │   ├── labflow-develop.md    # primary develop stage: research dialogue + scaffold
 │   ├── labflow-plan.md       # primary read-only structured planning stage
 │   ├── labflow-paper.md      # primary paper preparation and evidence alignment
 │   └── literature-worker.md  # hidden prior-art evidence worker
 ├── skills/                   # adapted ability skills (de-Codex'd copies)
-└── install.sh                # first-time setup: adds plugin line to opencode.json
+└── install.sh                # bootstrap registration and explicit encrypted migration entry point
 ```
 
 The plugin appears in the opencode Plugin panel and can be toggled
@@ -40,7 +40,9 @@ labflow-develop, labflow-plan) because the plugin pushes it into
 `cfg.instructions`, which is additive and never shadows the user's own
 `AGENTS.md` or `~/.claude/CLAUDE.md`.
 
-`imagegen` is a custom tool registered by the plugin and normally reached via the bundled `imagegen` skill. The tool calls `opencode/scripts/imagegen.mjs`, which uses an independent OpenAI-compatible image generation profile from repo-local `opencode/labflow.json`, ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables, with fallback to the user's configured OpenAI-compatible provider. The Responses route accepts up to four PNG/JPEG/WebP workspace paths through `inputImages`, current-message uploads through `useAttachedImages`, or the session's most recent image-bearing user message through explicit `useLatestAttachedImages`; current/latest scopes are mutually exclusive and one-shot. Reference images make the request an edit, while omitted references preserve fresh text-only generation. Keep API keys out of tracked files; use `labflow.local.json` or env for secrets. The bundled profile reuses `provider.routin-plan` with the Responses API, so it does not duplicate the provider key.
+`imagegen` is a custom tool registered by the plugin and normally reached via the bundled `imagegen` skill. The tool calls `opencode/scripts/imagegen.mjs`, reads named profiles and ordered fallback routes from `opencode/config/imagegen.yaml`, and retains user-supplied legacy JSON, CLI flags, and `OPENCODE_IMAGEGEN_*` as compatibility/override surfaces. The bundled default is `lucoo-gpt-image-2`; the optional `preferred` route tries Lucoo then GMN only for explicitly retryable transport/provider failures. The Responses route accepts up to four PNG/JPEG/WebP workspace paths through `inputImages`, current-message uploads through `useAttachedImages`, or the session's most recent image-bearing user message through explicit `useLatestAttachedImages`; current/latest scopes are mutually exclusive and one-shot. Reference images make the request an edit, while omitted references preserve fresh text-only generation.
+
+Portable OpenCode defaults and providers live under `opencode/config/`. Provider authentication metadata names aliases in SOPS-encrypted `secrets.sops.yaml`; the plugin decrypts lazily and injects authentication through an in-memory custom `fetch`, so plaintext does not enter the resolved OpenCode config or `opencode debug config`. The generated global config is only a thin machine-local bootstrap for the clone's absolute `file://` plugin URL and third-party startup plugins. Each device has its own untracked age identity; only public recipients and ciphertext are committed.
 The old `/imagegen` slash command is intentionally not installed; `install.sh`
 only removes the legacy symlink when it points back into this repo.
 
@@ -115,7 +117,7 @@ The imagegen plugin tests import the TypeScript plugin directly and therefore re
 python3 -m json.tool ~/.config/opencode/opencode.json >/dev/null
 ```
 
-5. Rerun `opencode/install.sh` only when plugin registration, package dependencies, or installer behavior changed. Agent, skill, and rule source is read directly from this repo through the `file://` plugin.
+5. Rerun `opencode/install.sh` only when plugin registration, package dependencies, bootstrap declarations, or installer behavior changed. Use `--init-age` once per device, `--migrate-config` only for explicit global-config migration, `--authorize-age-recipient age1...` from an existing device, and `--doctor` after encrypted configuration changes. The installer reports missing SOPS/age commands but never installs system packages itself.
 6. **Restart opencode** — running sessions keep the already-loaded config.
 
 ## OpenCode-specific anti-patterns

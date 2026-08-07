@@ -6,6 +6,7 @@ import * as fsSync from "node:fs"
 import * as fs from "node:fs/promises"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
+import { readManagedConfig, SecretStore } from "./config.mjs"
 
 const FALLBACK_MODEL = "gpt-image-2"
 const FALLBACK_SIZE = "3840x2160"
@@ -16,6 +17,9 @@ const MAX_VARIANTS = 4
 const MAX_INPUT_IMAGES = 4
 const MAX_INPUT_IMAGE_BYTES = 20 * 1024 * 1024
 const MAX_TOTAL_INPUT_IMAGE_BYTES = 50 * 1024 * 1024
+const MAX_OUTPUT_IMAGE_BYTES = 50 * 1024 * 1024
+const MAX_ERROR_RESPONSE_BYTES = 1024 * 1024
+const MAX_JSON_OVERHEAD_BYTES = 1024 * 1024
 
 const VALID_APIS = new Set(["images", "responses"])
 const VALID_QUALITIES = new Set(["low", "medium", "high", "auto"])
@@ -37,92 +41,61 @@ async function main() {
     throw new Error(`unknown command: ${command}`)
   }
 
-  const prompt = await readPrompt(flags)
   const configDir = opencodeConfigDir()
-  const [labflowConfig, opencodeConfig] = await Promise.all([
+  const [managedConfig, labflowConfig, opencodeConfig] = await Promise.all([
+    readManagedConfig(),
     readLabflowConfig(configDir),
     readOpencodeConfig(configDir),
   ])
-  const imagegenConfig = labflowConfig?.imagegen ?? {}
-  const provider = firstString(
-    flags.provider,
-    process.env.OPENCODE_IMAGEGEN_PROVIDER,
-    resolveConfigString(imagegenConfig.provider),
-    "openai",
-  )
-  const providerOptions = opencodeConfig?.provider?.[provider]?.options ?? {}
-  const apiKey = firstString(
-    flags["api-key"] ||
-      process.env.OPENCODE_IMAGEGEN_API_KEY ||
-      resolveConfigString(imagegenConfig.apiKey) ||
-      resolveConfigFile(imagegenConfig.apiKeyFile ?? imagegenConfig.api_key_file) ||
-      resolveConfigString(providerOptions.apiKey) ||
-      process.env.OPENAI_API_KEY,
-  )
-  const baseURL = firstString(
-    flags["base-url"] ||
-      process.env.OPENCODE_IMAGEGEN_BASE_URL ||
-      resolveConfigString(imagegenConfig.baseURL ?? imagegenConfig.baseUrl) ||
-      resolveConfigString(providerOptions.baseURL) ||
-      process.env.OPENAI_BASE_URL ||
-      "https://api.openai.com/v1",
-  )
+  if (flags["list-profiles"]) {
+    printResult(profileListing(managedConfig.imagegen))
+    return
+  }
 
-  const model = firstString(
-    flags.model,
-    process.env.OPENCODE_IMAGEGEN_MODEL,
-    resolveConfigString(imagegenConfig.model),
-    FALLBACK_MODEL,
-  )
-  const api = firstString(
-    flags.api,
-    process.env.OPENCODE_IMAGEGEN_API,
-    resolveConfigString(imagegenConfig.api),
-    "images",
-  )
-  const size = firstString(
-    flags.size,
-    process.env.OPENCODE_IMAGEGEN_SIZE,
-    resolveConfigString(imagegenConfig.size),
-    FALLBACK_SIZE,
-  )
-  const quality = firstString(
-    flags.quality,
-    process.env.OPENCODE_IMAGEGEN_QUALITY,
-    resolveConfigString(imagegenConfig.quality),
-    FALLBACK_QUALITY,
-  )
-  const outputFormat = normalizeFormat(firstString(
-    flags["output-format"],
-    process.env.OPENCODE_IMAGEGEN_OUTPUT_FORMAT,
-    resolveConfigString(imagegenConfig.outputFormat ?? imagegenConfig.output_format),
-    FALLBACK_FORMAT,
-  ))
+  const prompt = await readPrompt(flags)
+  const imagegenConfig = labflowConfig?.imagegen ?? {}
+  const selection = selectProfiles(managedConfig.imagegen, flags)
+  const preferManagedDefaults = selection.explicit || Boolean(selection.route)
+  const attempts = selection.profiles.map((profile) => resolveGenerationConfig({
+    profile,
+    flags,
+    imagegenConfig,
+    managedConfig,
+    opencodeConfig,
+    route: Boolean(selection.route),
+    preferManagedDefaults,
+  }))
+  const primary = attempts[0]
+  if (attempts.some((attempt) => attempt.outputFormat !== primary.outputFormat)) {
+    throw new Error("all profiles in an imagegen route must use the same outputFormat")
+  }
+  const size = primary.size
+  const quality = primary.quality
+  const outputFormat = primary.outputFormat
   const count = parseCount(firstString(
     flags.n,
     process.env.OPENCODE_IMAGEGEN_N,
-    resolveConfigString(imagegenConfig.n),
+    ...(preferManagedDefaults
+      ? [resolveConfigString(primary.profile.n), resolveConfigString(imagegenConfig.n)]
+      : [resolveConfigString(imagegenConfig.n), resolveConfigString(primary.profile.n)]),
   ))
   const outDir = firstString(
     flags["out-dir"],
     process.env.OPENCODE_IMAGEGEN_OUT_DIR,
-    resolveConfigString(imagegenConfig.outDir ?? imagegenConfig.out_dir),
+    ...(preferManagedDefaults
+      ? [
+          resolveConfigString(primary.profile.outDir ?? primary.profile.out_dir),
+          resolveConfigString(imagegenConfig.outDir ?? imagegenConfig.out_dir),
+        ]
+      : [
+          resolveConfigString(imagegenConfig.outDir ?? imagegenConfig.out_dir),
+          resolveConfigString(primary.profile.outDir ?? primary.profile.out_dir),
+        ]),
     FALLBACK_OUT_DIR,
   )
   const inputImages = await readInputImages(flags["input-image"])
 
-  if (!VALID_APIS.has(api)) {
-    throw new Error("--api must be one of images or responses")
-  }
-  if (!VALID_QUALITIES.has(quality)) {
-    throw new Error("--quality must be one of low, medium, high, or auto")
-  }
-  if (!VALID_FORMATS.has(outputFormat)) {
-    throw new Error("--output-format must be one of png, jpeg, jpg, or webp")
-  }
-  if (inputImages.length > 0 && api !== "responses") {
-    throw new Error("input images require --api responses")
-  }
+  for (const attempt of attempts) validateGenerationConfig(attempt, inputImages)
 
   const outputPaths = await plannedOutputPaths({
     out: flags.out,
@@ -133,57 +106,343 @@ async function main() {
     force: Boolean(flags.force),
   })
 
-  const payload = api === "responses"
-    ? responsesPayload({ model, prompt, size, quality, outputFormat, inputImages })
-    : imagesPayload({ model, prompt, count, size, quality, outputFormat })
-
   if (flags["dry-run"]) {
+    const dryRunAttempts = attempts.map((attempt) => ({
+      profile: attempt.profileName,
+      provider: attempt.provider,
+      api: attempt.api,
+      endpoint: apiEndpoint(attempt.baseURL, attempt.api),
+      payload: redactImageData(buildPayload(attempt, { prompt, count, inputImages })),
+    }))
     printResult({
       ok: true,
       dry_run: true,
-      provider,
-      api,
-      endpoint: apiEndpoint(baseURL, api),
+      profile: primary.profileName,
+      route: selection.routeName,
+      provider: primary.provider,
+      api: primary.api,
+      endpoint: dryRunAttempts[0].endpoint,
       generation_mode: inputImages.length > 0 ? "edit" : "generate",
       input_image_count: inputImages.length,
-      payload: redactImageData(payload),
+      payload: dryRunAttempts[0].payload,
+      attempts: dryRunAttempts,
       input_images: inputImages.map(inputImageSummary),
       outputs: outputPaths.map(relativeToCwd),
     })
     return
   }
 
-  if (!apiKey) {
-    throw new Error(
-      `missing API key for provider ${provider}: configure provider.${provider}.options.apiKey, imagegen.apiKey/apiKeyFile, or OPENCODE_IMAGEGEN_API_KEY`,
-    )
+  const secretStore = new SecretStore({ secretPath: path.join(managedConfig.configDir, "secrets.sops.yaml") })
+  let generation
+  let used
+  const failedProfiles = []
+  try {
+    for (let index = 0; index < attempts.length; index += 1) {
+      const attempt = attempts[index]
+      try {
+        generation = await generateAtomically({
+          attempt,
+          prompt,
+          count,
+          inputImages,
+          outputPaths,
+          secretStore,
+          force: Boolean(flags.force),
+        })
+        used = attempt
+        break
+      } catch (error) {
+        failedProfiles.push({ profile: attempt.profileName, error: safeErrorMessage(error) })
+        if (index + 1 >= attempts.length || !isRetryableFailure(error, selection.route)) throw error
+      }
+    }
+  } finally {
+    secretStore.dispose()
   }
-
-  await fs.mkdir(path.dirname(outputPaths[0]), { recursive: true })
-  const generation = api === "responses"
-    ? await generateResponsesImages({ apiKey, baseURL, model, prompt, size, quality, outputFormat, inputImages, outputPaths })
-    : await generateImages({ apiKey, baseURL, payload, outputPaths })
+  if (!generation || !used) throw new Error("all imagegen profiles failed")
 
   printResult({
     ok: true,
     dry_run: false,
-    provider,
-    api,
-    model,
-    size,
-    quality,
-    output_format: outputFormat,
+    profile: used.profileName,
+    route: selection.routeName,
+    attempted_profiles: [...failedProfiles.map((item) => item.profile), used.profileName].filter(Boolean),
+    failed_profiles: failedProfiles,
+    provider: used.provider,
+    api: used.api,
+    model: used.model,
+    size: used.size,
+    quality: used.quality,
+    output_format: used.outputFormat,
     generation_mode: inputImages.length > 0 ? "edit" : "generate",
     input_image_count: inputImages.length,
     outputs: generation.written,
     revised_prompt: generation.revisedPrompt,
     response_id: generation.responseID,
     image_generation_call_id: generation.imageGenerationCallID,
-      actual_size: generation.actualSize,
-      action: generation.action,
-      input_images: inputImages.map(inputImageSummary),
-      prompt,
+    actual_size: generation.actualSize,
+    action: generation.action,
+    input_images: inputImages.map(inputImageSummary),
+    prompt,
   })
+}
+
+function selectProfiles(imagegen, flags) {
+  const profileName = firstString(flags.profile, process.env.OPENCODE_IMAGEGEN_PROFILE)
+  const routeName = firstString(flags.route, process.env.OPENCODE_IMAGEGEN_ROUTE)
+  if (profileName && routeName) throw new Error("--profile and --route are mutually exclusive")
+  const profiles = isPlainObject(imagegen.profiles) ? imagegen.profiles : {}
+
+  if (routeName) {
+    rejectRouteOverrides(flags)
+    const route = imagegen.routes?.[routeName]
+    if (!isPlainObject(route) || !Array.isArray(route.profiles) || route.profiles.length === 0) {
+      throw new Error(`unknown or empty imagegen route: ${routeName}`)
+    }
+    return {
+      explicit: true,
+      route,
+      routeName,
+      profiles: route.profiles.map((name) => namedProfile(profiles, name)),
+    }
+  }
+
+  const selectedName = profileName ?? imagegen.defaultProfile
+  if (selectedName) {
+    return {
+      explicit: Boolean(profileName),
+      route: undefined,
+      routeName: undefined,
+      profiles: [namedProfile(profiles, selectedName)],
+    }
+  }
+  return { explicit: false, route: undefined, routeName: undefined, profiles: [{ name: undefined, config: {} }] }
+}
+
+function namedProfile(profiles, name) {
+  if (typeof name !== "string" || !isPlainObject(profiles[name])) throw new Error(`unknown imagegen profile: ${name}`)
+  return { name, config: profiles[name] }
+}
+
+function rejectRouteOverrides(flags) {
+  const conflictingFlags = ["provider", "api", "api-key", "base-url", "model"].filter((name) => flags[name] !== undefined)
+  const conflictingEnvironment = [
+    "OPENCODE_IMAGEGEN_PROVIDER",
+    "OPENCODE_IMAGEGEN_API",
+    "OPENCODE_IMAGEGEN_API_KEY",
+    "OPENCODE_IMAGEGEN_BASE_URL",
+    "OPENCODE_IMAGEGEN_MODEL",
+  ].filter((name) => process.env[name])
+  if (conflictingFlags.length > 0 || conflictingEnvironment.length > 0) {
+    throw new Error("--route cannot be combined with provider, API, base URL, API key, or model overrides")
+  }
+}
+
+function resolveGenerationConfig({ profile, flags, imagegenConfig, managedConfig, opencodeConfig, route, preferManagedDefaults }) {
+  const direct = route ? {} : flags
+  const environment = route ? {} : process.env
+  const ordered = (managedValue, legacyValue) => preferManagedDefaults
+    ? [resolveConfigString(managedValue), resolveConfigString(legacyValue)]
+    : [resolveConfigString(legacyValue), resolveConfigString(managedValue)]
+  const provider = firstString(
+    direct.provider,
+    environment.OPENCODE_IMAGEGEN_PROVIDER,
+    ...ordered(profile.config.provider, imagegenConfig.provider),
+    "openai",
+  )
+  const managedProvider = managedConfig.providers[provider] ?? {}
+  const managedProviderOptions = managedProvider.config?.options ?? {}
+  const nativeProviderOptions = opencodeConfig?.provider?.[provider]?.options ?? {}
+  const model = firstString(
+    direct.model,
+    environment.OPENCODE_IMAGEGEN_MODEL,
+    ...ordered(profile.config.model, imagegenConfig.model),
+    FALLBACK_MODEL,
+  )
+  const binding = managedProvider.auth?.models?.[model] ?? managedProvider.auth?.default
+  const directCredentialSelection = firstString(
+    direct.provider,
+    environment.OPENCODE_IMAGEGEN_PROVIDER,
+    direct.model,
+    environment.OPENCODE_IMAGEGEN_MODEL,
+    direct.api,
+    environment.OPENCODE_IMAGEGEN_API,
+    direct["base-url"],
+    environment.OPENCODE_IMAGEGEN_BASE_URL,
+  )
+  const legacyCredentialSelection = !preferManagedDefaults && firstString(
+    imagegenConfig.provider,
+    imagegenConfig.model,
+    imagegenConfig.api,
+    imagegenConfig.baseURL ?? imagegenConfig.baseUrl,
+    imagegenConfig.apiKey,
+    imagegenConfig.apiKeyFile ?? imagegenConfig.api_key_file,
+  )
+  const useProfileSecret = Boolean(profile.name) && !directCredentialSelection && !legacyCredentialSelection
+  const allowProviderCredentialFallback = !useProfileSecret && !binding
+
+  return {
+    profile: profile.config,
+    profileName: profile.name,
+    provider,
+    api: firstString(
+      direct.api,
+      environment.OPENCODE_IMAGEGEN_API,
+      ...ordered(profile.config.api, imagegenConfig.api),
+      "images",
+    ),
+    apiKey: route ? undefined : firstString(
+      direct["api-key"],
+      environment.OPENCODE_IMAGEGEN_API_KEY,
+      ...(!preferManagedDefaults ? [
+          resolveConfigString(imagegenConfig.apiKey),
+          resolveConfigFile(imagegenConfig.apiKeyFile ?? imagegenConfig.api_key_file),
+        ] : []),
+      ...(allowProviderCredentialFallback ? [
+          resolveConfigString(nativeProviderOptions.apiKey),
+          process.env.OPENAI_API_KEY,
+        ] : []),
+    ),
+    secretAlias: firstString(useProfileSecret ? profile.config.secret : undefined, binding?.secret),
+    baseURL: firstString(
+      direct["base-url"],
+      environment.OPENCODE_IMAGEGEN_BASE_URL,
+      ...ordered(profile.config.baseURL ?? profile.config.baseUrl, imagegenConfig.baseURL ?? imagegenConfig.baseUrl),
+      resolveConfigString(nativeProviderOptions.baseURL),
+      resolveConfigString(managedProviderOptions.baseURL),
+      process.env.OPENAI_BASE_URL,
+      "https://api.openai.com/v1",
+    ),
+    model,
+    size: firstString(
+      flags.size,
+      process.env.OPENCODE_IMAGEGEN_SIZE,
+      ...ordered(profile.config.size, imagegenConfig.size),
+      FALLBACK_SIZE,
+    ),
+    quality: firstString(
+      flags.quality,
+      process.env.OPENCODE_IMAGEGEN_QUALITY,
+      ...ordered(profile.config.quality, imagegenConfig.quality),
+      FALLBACK_QUALITY,
+    ),
+    outputFormat: normalizeFormat(firstString(
+      flags["output-format"],
+      process.env.OPENCODE_IMAGEGEN_OUTPUT_FORMAT,
+      ...ordered(
+        profile.config.outputFormat ?? profile.config.output_format,
+        imagegenConfig.outputFormat ?? imagegenConfig.output_format,
+      ),
+      FALLBACK_FORMAT,
+    )),
+    timeoutMs: parseTimeout(firstString(...ordered(profile.config.timeoutMs, imagegenConfig.timeoutMs))),
+  }
+}
+
+function validateGenerationConfig(config, inputImages) {
+  if (!VALID_APIS.has(config.api)) throw new Error("--api must be one of images or responses")
+  if (!VALID_QUALITIES.has(config.quality)) throw new Error("--quality must be one of low, medium, high, or auto")
+  if (!VALID_FORMATS.has(config.outputFormat)) throw new Error("--output-format must be one of png, jpeg, jpg, or webp")
+  if (inputImages.length > 0 && config.api !== "responses") throw new Error("input images require --api responses")
+}
+
+function buildPayload(config, { prompt, count, inputImages }) {
+  return config.api === "responses"
+    ? responsesPayload({ model: config.model, prompt, size: config.size, quality: config.quality, outputFormat: config.outputFormat, inputImages })
+    : imagesPayload({ model: config.model, prompt, count, size: config.size, quality: config.quality, outputFormat: config.outputFormat })
+}
+
+async function generateAtomically({ attempt, prompt, count, inputImages, outputPaths, secretStore, force }) {
+  const apiKey = attempt.apiKey ?? (attempt.secretAlias ? await secretStore.get(attempt.secretAlias) : undefined)
+  if (!apiKey) {
+    throw new Error(`missing API key for provider ${attempt.provider}: configure a managed secret alias or OPENCODE_IMAGEGEN_API_KEY`)
+  }
+  await fs.mkdir(path.dirname(outputPaths[0]), { recursive: true })
+  await assertSafeOutputPaths(outputPaths)
+  const stagingDir = await fs.mkdtemp(path.join(path.dirname(outputPaths[0]), ".labflow-imagegen-"))
+  const stagingPaths = outputPaths.map((outputPath) => path.join(stagingDir, path.basename(outputPath)))
+  try {
+    const payload = buildPayload(attempt, { prompt, count, inputImages })
+    const generation = attempt.api === "responses"
+      ? await generateResponsesImages({
+          apiKey,
+          baseURL: attempt.baseURL,
+          model: attempt.model,
+          prompt,
+          size: attempt.size,
+          quality: attempt.quality,
+          outputFormat: attempt.outputFormat,
+          inputImages,
+          outputPaths: stagingPaths,
+          timeoutMs: attempt.timeoutMs,
+        })
+      : await generateImages({
+          apiKey,
+          baseURL: attempt.baseURL,
+          payload,
+          outputPaths: stagingPaths,
+          timeoutMs: attempt.timeoutMs,
+        })
+    if (generation.written.length !== outputPaths.length) throw new Error("API returned fewer images than requested")
+    await commitStagedOutputs(stagingPaths, outputPaths, stagingDir, force)
+    return { ...generation, written: outputPaths.map(relativeToCwd) }
+  } catch (error) {
+    if (error instanceof Error && apiKey && error.message.includes(apiKey)) {
+      const redacted = new Error(error.message.replaceAll(apiKey, "<redacted>"), { cause: error })
+      redacted.retryable = error.retryable
+      redacted.ambiguousTimeout = error.ambiguousTimeout
+      throw redacted
+    }
+    throw error
+  } finally {
+    await fs.rm(stagingDir, { recursive: true, force: true })
+  }
+}
+
+async function commitStagedOutputs(stagingPaths, outputPaths, stagingDir, force) {
+  const backups = []
+  const committed = []
+  try {
+    await assertSafeOutputPaths(outputPaths)
+    for (let index = 0; index < outputPaths.length; index += 1) {
+      const outputPath = outputPaths[index]
+      if (await exists(outputPath)) {
+        if (!force) throw new Error(`output already exists: ${relativeToCwd(outputPath)} (use --force to overwrite)`)
+        const backupPath = path.join(stagingDir, `.backup-${index}-${path.basename(outputPath)}`)
+        await fs.rename(outputPath, backupPath)
+        backups.push({ outputPath, backupPath })
+      }
+      await fs.rename(stagingPaths[index], outputPath)
+      committed.push(outputPath)
+    }
+  } catch (error) {
+    for (const outputPath of committed.reverse()) await fs.rm(outputPath, { force: true })
+    for (const { outputPath, backupPath } of backups.reverse()) {
+      if (await exists(backupPath)) await fs.rename(backupPath, outputPath)
+    }
+    throw error
+  }
+}
+
+function isRetryableFailure(error, route) {
+  if (!route) return false
+  if (error?.ambiguousTimeout) return route.fallbackOnAmbiguousTimeout === true
+  return error?.retryable === true
+}
+
+function safeErrorMessage(error) {
+  return error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500)
+}
+
+function profileListing(imagegen) {
+  const profiles = isPlainObject(imagegen.profiles) ? imagegen.profiles : {}
+  const routes = isPlainObject(imagegen.routes) ? imagegen.routes : {}
+  return {
+    ok: true,
+    default_profile: imagegen.defaultProfile,
+    profiles: Object.keys(profiles).sort(),
+    routes: Object.fromEntries(Object.entries(routes).map(([name, route]) => [name, route.profiles ?? []])),
+  }
 }
 
 function imagesPayload({ model, prompt, count, size, quality, outputFormat }) {
@@ -227,8 +486,8 @@ function responsesPayload({ model, prompt, size, quality, outputFormat, inputIma
   }
 }
 
-async function generateImages({ apiKey, baseURL, payload, outputPaths }) {
-  const result = await postJson(apiEndpoint(baseURL, "images"), apiKey, payload)
+async function generateImages({ apiKey, baseURL, payload, outputPaths, timeoutMs }) {
+  const result = await postJson(apiEndpoint(baseURL, "images"), apiKey, payload, timeoutMs, apiResponseLimit(outputPaths.length))
   const images = Array.isArray(result.data) ? result.data : []
   if (images.length === 0) {
     throw new Error("API returned no images in data[]")
@@ -236,14 +495,14 @@ async function generateImages({ apiKey, baseURL, payload, outputPaths }) {
 
   const written = []
   for (let index = 0; index < Math.min(images.length, outputPaths.length); index += 1) {
-    const bytes = await imageBytes(images[index])
+    const bytes = await imageBytes(images[index], timeoutMs)
     await fs.writeFile(outputPaths[index], bytes)
     written.push(relativeToCwd(outputPaths[index]))
   }
   return { written, revisedPrompt: result.data?.[0]?.revised_prompt }
 }
 
-async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, quality, outputFormat, inputImages, outputPaths }) {
+async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, quality, outputFormat, inputImages, outputPaths, timeoutMs }) {
   const written = []
   let revisedPrompt
   let responseID
@@ -258,12 +517,12 @@ async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, q
       quality,
       outputFormat,
       inputImages,
-    }))
+    }), timeoutMs, apiResponseLimit(1))
     const image = responseImages(result)[0]
     if (!image) {
       throw new Error("Responses API returned no image_generation_call.result")
     }
-    const bytes = await imageBytes(image)
+    const bytes = await imageBytes(image, timeoutMs)
     await fs.writeFile(outputPath, bytes)
     written.push(relativeToCwd(outputPath))
     revisedPrompt ||= image.revised_prompt
@@ -275,19 +534,38 @@ async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, q
   return { written, revisedPrompt, responseID, imageGenerationCallID, actualSize, action }
 }
 
-async function postJson(endpoint, apiKey, payload) {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  })
+async function postJson(endpoint, apiKey, payload, timeoutMs, maxResponseBytes) {
+  let response
+  let body
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
+    })
+    body = await responseTextBounded(
+      response,
+      response.ok ? maxResponseBytes : MAX_ERROR_RESPONSE_BYTES,
+      !response.ok,
+    )
+  } catch (error) {
+    if (error?.name === "TimeoutError" || error?.name === "AbortError") error.ambiguousTimeout = true
+    else if (error instanceof TypeError) error.retryable = true
+    throw error
+  }
 
-  const body = await response.text()
   if (!response.ok) {
-    throw new Error(`API failed (${response.status} ${response.statusText}): ${body.slice(0, 1600)}`)
+    const error = new Error(`API failed (${response.status} ${response.statusText}): ${body.slice(0, 1600)}`)
+    const code = responseErrorCode(body)
+    error.retryable = response.status === 408 || response.status === 429 || response.status >= 500 || [
+      "model_unavailable",
+      "no_available_channel",
+    ].includes(code)
+    throw error
   }
 
   try {
@@ -295,6 +573,43 @@ async function postJson(endpoint, apiKey, payload) {
   } catch {
     throw new Error(`API returned non-JSON response: ${body.slice(0, 400)}`)
   }
+}
+
+function apiResponseLimit(imageCount) {
+  const encodedImageBytes = 4 * Math.ceil(MAX_OUTPUT_IMAGE_BYTES / 3)
+  return encodedImageBytes * imageCount + MAX_JSON_OVERHEAD_BYTES
+}
+
+async function responseTextBounded(response, maxBytes, truncate) {
+  const declaredLength = Number(response.headers.get("content-length"))
+  if (!truncate && Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    await response.body?.cancel()
+    throw new Error(`API response exceeds the ${formatMiB(maxBytes)} limit`)
+  }
+  const reader = response.body?.getReader()
+  if (!reader) return ""
+  const chunks = []
+  let length = 0
+  let truncated = false
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    if (length + value.byteLength > maxBytes) {
+      if (!truncate) {
+        await reader.cancel()
+        throw new Error(`API response exceeds the ${formatMiB(maxBytes)} limit`)
+      }
+      const remaining = Math.max(0, maxBytes - length)
+      if (remaining > 0) chunks.push(Buffer.from(value.subarray(0, remaining)))
+      length = maxBytes
+      truncated = true
+      await reader.cancel()
+      break
+    }
+    length += value.byteLength
+    chunks.push(Buffer.from(value))
+  }
+  return `${Buffer.concat(chunks, length).toString("utf8")}${truncated ? "<truncated>" : ""}`
 }
 
 function parseArgs(argv) {
@@ -307,7 +622,7 @@ function parseArgs(argv) {
       throw new Error(`unexpected positional argument: ${token}`)
     }
     const key = token.slice(2)
-    if (["dry-run", "force", "prompt-stdin", "help"].includes(key)) {
+    if (["dry-run", "force", "prompt-stdin", "help", "list-profiles"].includes(key)) {
       flags[key] = true
       continue
     }
@@ -323,6 +638,23 @@ function parseArgs(argv) {
     index += 1
   }
   return { command, flags }
+}
+
+function responseErrorCode(body) {
+  try {
+    const document = JSON.parse(body)
+    const code = document?.error?.code ?? document?.code
+    return typeof code === "string" ? code : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function parseTimeout(raw) {
+  if (raw === undefined) return undefined
+  const timeout = Number.parseInt(raw, 10)
+  if (!Number.isInteger(timeout) || timeout < 1) throw new Error("imagegen timeoutMs must be a positive integer")
+  return timeout
 }
 
 async function readPrompt(flags) {
@@ -624,6 +956,7 @@ async function plannedOutputPaths(input) {
     ? pathsFromOut(input.out, input.count, input.outputFormat)
     : pathsFromOutDir(input.outDir, input.count, input.outputFormat, input.prompt)
 
+  await assertSafeOutputPaths(paths)
   if (!input.force) {
     for (const outputPath of paths) {
       if (await exists(outputPath)) {
@@ -632,6 +965,33 @@ async function plannedOutputPaths(input) {
     }
   }
   return paths
+}
+
+async function assertSafeOutputPaths(outputPaths) {
+  const root = await fs.realpath(process.cwd())
+  for (const outputPath of outputPaths) {
+    const ancestor = await nearestExistingAncestor(path.dirname(outputPath))
+    const resolvedAncestor = await fs.realpath(ancestor)
+    const relative = path.relative(root, resolvedAncestor)
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      throw new Error("output paths must not escape the current working directory through symlinks")
+    }
+  }
+}
+
+async function nearestExistingAncestor(input) {
+  let current = input
+  while (true) {
+    try {
+      await fs.lstat(current)
+      return current
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error
+      const parent = path.dirname(current)
+      if (parent === current) throw error
+      current = parent
+    }
+  }
 }
 
 function pathsFromOut(rawOut, count, outputFormat) {
@@ -689,18 +1049,53 @@ function promptSlug(prompt) {
   return slug || `imagegen-${randomUUID().slice(0, 8)}`
 }
 
-async function imageBytes(image) {
+async function imageBytes(image, timeoutMs) {
   if (typeof image?.b64_json === "string") {
-    return Buffer.from(image.b64_json, "base64")
+    const maxEncodedBytes = 4 * Math.ceil(MAX_OUTPUT_IMAGE_BYTES / 3)
+    if (image.b64_json.length > maxEncodedBytes) throw new Error(`generated image exceeds the ${formatMiB(MAX_OUTPUT_IMAGE_BYTES)} limit`)
+    const bytes = Buffer.from(image.b64_json, "base64")
+    if (bytes.length > MAX_OUTPUT_IMAGE_BYTES) throw new Error(`generated image exceeds the ${formatMiB(MAX_OUTPUT_IMAGE_BYTES)} limit`)
+    return bytes
   }
   if (typeof image?.url === "string") {
-    const response = await fetch(image.url)
-    if (!response.ok) {
-      throw new Error(`could not download image URL (${response.status} ${response.statusText})`)
-    }
-    return Buffer.from(await response.arrayBuffer())
+    return downloadImageBytes(image.url, timeoutMs)
   }
   throw new Error("image item has neither b64_json nor url")
+}
+
+async function downloadImageBytes(url, timeoutMs) {
+  try {
+    const response = await fetch(url, { signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined })
+    if (!response.ok) {
+      const error = new Error(`could not download image URL (${response.status} ${response.statusText})`)
+      error.retryable = response.status === 408 || response.status === 429 || response.status >= 500
+      throw error
+    }
+    const declaredLength = Number(response.headers.get("content-length"))
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_OUTPUT_IMAGE_BYTES) {
+      throw new Error(`generated image exceeds the ${formatMiB(MAX_OUTPUT_IMAGE_BYTES)} limit`)
+    }
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error("image URL returned no response body")
+    const chunks = []
+    let length = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      length += value.byteLength
+      if (length > MAX_OUTPUT_IMAGE_BYTES) {
+        await reader.cancel()
+        throw new Error(`generated image exceeds the ${formatMiB(MAX_OUTPUT_IMAGE_BYTES)} limit`)
+      }
+      chunks.push(Buffer.from(value))
+    }
+    if (length === 0) throw new Error("image URL returned an empty response body")
+    return Buffer.concat(chunks, length)
+  } catch (error) {
+    if (error?.name === "TimeoutError" || error?.name === "AbortError") error.ambiguousTimeout = true
+    else if (error instanceof TypeError) error.retryable = true
+    throw error
+  }
 }
 
 function responseImages(result) {
@@ -756,6 +1151,9 @@ function printHelp() {
   node imagegen.mjs generate --prompt-stdin [options]
 
 Options:
+  --profile PROFILE         Named profile from opencode/config/imagegen.yaml
+  --route ROUTE             Ordered fallback route; cannot use direct provider/model overrides
+  --list-profiles           Print configured profiles and routes without generating
   --provider PROVIDER       OpenCode provider ID. Fallback: openai
   --api API                 images | responses. Fallback: images
   --input-image PATH        PNG, JPEG, or WebP reference; repeat up to ${MAX_INPUT_IMAGES} times (Responses only)
@@ -773,10 +1171,12 @@ Input limits:
   ${formatMiB(MAX_INPUT_IMAGE_BYTES)} per image and ${formatMiB(MAX_TOTAL_INPUT_IMAGE_BYTES)} total before base64 encoding.
 
 Config:
-  Reads imagegen defaults from opencode/labflow.json, ~/.config/opencode/labflow.json,
-  opencode/labflow.local.json, then OPENCODE_IMAGEGEN_CONFIG.
+  Reads named profiles/routes from opencode/config/imagegen.yaml, with legacy defaults from
+  opencode/labflow.json, ~/.config/opencode/labflow.json, opencode/labflow.local.json,
+  then OPENCODE_IMAGEGEN_CONFIG.
   Environment overrides: OPENCODE_IMAGEGEN_PROVIDER, OPENCODE_IMAGEGEN_API_KEY,
   OPENCODE_IMAGEGEN_BASE_URL, OPENCODE_IMAGEGEN_API, OPENCODE_IMAGEGEN_MODEL,
+  OPENCODE_IMAGEGEN_PROFILE, OPENCODE_IMAGEGEN_ROUTE,
   OPENCODE_IMAGEGEN_SIZE, OPENCODE_IMAGEGEN_QUALITY,
   OPENCODE_IMAGEGEN_OUTPUT_FORMAT, OPENCODE_IMAGEGEN_OUT_DIR, OPENCODE_IMAGEGEN_N.
   Secrets can also be loaded from imagegen.apiKeyFile, resolved relative to opencode/.

@@ -133,7 +133,9 @@ Make preservation and change boundaries explicit. This is especially important w
 
 ## Invocation
 
-Call the `imagegen` custom tool with the final prompt. Do not route through `/imagegen`; labflow no longer installs that slash command. The tool is backed by `node /home/hac/labflow/opencode/scripts/imagegen.mjs` and reads its provider profile from repo-local `opencode/labflow.json`, ignored `opencode/labflow.local.json`, optional `~/.config/opencode/labflow.json`, or `OPENCODE_IMAGEGEN_*` environment variables.
+Call the `imagegen` custom tool with the final prompt. Do not route through `/imagegen`; labflow no longer installs that slash command. The tool is backed by `node /home/hac/labflow/opencode/scripts/imagegen.mjs` and reads named profiles/routes from `opencode/config/imagegen.yaml`. Legacy `labflow.json`, ignored local JSON, CLI flags, and `OPENCODE_IMAGEGEN_*` remain compatibility and override surfaces.
+
+Set `profile` when the user requests a specific provider/model or deterministic single-provider behavior. Set `route` only when the user accepts ordered provider fallback; `profile` and `route` are mutually exclusive, and `route` cannot be combined with a model override. Omit both to use `defaultProfile`.
 
 ## References and Limits
 
@@ -147,13 +149,13 @@ Call the `imagegen` custom tool with the final prompt. Do not route through `/im
 
 ## Defaults
 
-- `provider` and `model`: use the configured profile; the bundled default is `routin-plan` with `gpt-5.6-sol`.
+- `provider` and `model`: use the configured profile; the bundled default is `lucoo-gpt-image-2`, and the optional `preferred` route tries Lucoo before GMN.
 - `size`: `3840x2160` for high-resolution landscape explanatory diagrams, `2048x1152` when speed matters, and `1024x1024` for quick square drafts.
 - `quality`: `high` for discussion figures, `medium` for faster normal use, and `low` for quick drafts.
 - `outDir`: `figures/imagegen`.
 - Set `out` when the user gives a stable asset path; otherwise use the timestamped output path returned by the tool.
 - Keep iteration outputs separate by default. Use `force` only when overwrite is explicitly requested.
-- Prefer reusing a configured OpenCode provider via `imagegen.provider`; do not duplicate its API key.
+- Provider credentials resolve through SOPS aliases and request-time secure transport. Never add literal API keys to prompts, tool arguments, tracked YAML, logs, or diagnostic output.
 
 </tool-contract>
 
@@ -167,7 +169,7 @@ Read every generated output path back and check it against the intended claim, l
 
 For an objective mismatch with settled constraints, allow at most two additional calls. Edit the previous output when its structure remains useful; regenerate from a revised text prompt when the direction is fundamentally wrong. Stop and ask the user when the remaining issue is subjective style or preference.
 
-If the tool fails because configuration is missing, ask for an Image API key or base URL rather than guessing from the chat provider.
+If the tool fails because encrypted configuration is unavailable, report the missing profile/alias or `install.sh --doctor` failure rather than asking the user to paste a key into chat.
 
 </verification>
 

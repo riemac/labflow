@@ -1,0 +1,42 @@
+version: 1
+defaultProfile: lucoo-gpt-image-2
+profiles:
+  lucoo-gpt-image-2:
+    provider: lucoo
+    api: images
+    baseURL: https://api.lucoo.net/v1
+    model: gpt-image-2
+    secret: lucoo-gpt-authorization
+    size: 3840x2160
+    quality: high
+    outputFormat: png
+    outDir: figures/imagegen
+    timeoutMs: 180000
+  gmn-gpt-image-2:
+    provider: gmn
+    api: images
+    baseURL: https://gmn.chuangzuoli.com/v1
+    model: gpt-image-2
+    secret: gmn
+    size: 3840x2160
+    quality: high
+    outputFormat: png
+    outDir: figures/imagegen
+    timeoutMs: 180000
+  routin-plan-responses:
+    provider: routin-plan
+    api: responses
+    baseURL: https://api.routin.ai/plan/v1
+    model: gpt-5.6-sol
+    secret: routin-plan
+    size: 3840x2160
+    quality: high
+    outputFormat: png
+    outDir: figures/imagegen
+    timeoutMs: 180000
+routes:
+  preferred:
+    profiles:
+      - lucoo-gpt-image-2
+      - gmn-gpt-image-2
+    fallbackOnAmbiguousTimeout: false

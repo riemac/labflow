@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { tool } from "@opencode-ai/plugin"
 import { parse as parseYaml } from "yaml"
+import { applyManagedOpenCodeConfig, readManagedConfig, SecretStore } from "../scripts/config.mjs"
 
 const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..") // opencode/ root
 const IMAGEGEN_SCRIPT = path.join(ASSETS, "scripts", "imagegen.mjs")
@@ -55,6 +56,8 @@ const imagegenTool = tool({
       .boolean()
       .optional()
       .describe("Use images from the latest image-bearing user message in this session"),
+    profile: tool.schema.string().optional().describe("Named imagegen profile; mutually exclusive with route"),
+    route: tool.schema.string().optional().describe("Named ordered fallback route; mutually exclusive with profile and model"),
     model: tool.schema.string().optional().describe("Image model override"),
     size: tool.schema.string().optional().describe("Image size such as 1024x1024 or 3840x2160"),
     quality: tool.schema.enum(["low", "medium", "high", "auto"]).optional().describe("Rendering quality"),
@@ -68,6 +71,8 @@ const imagegenTool = tool({
     if (args.useAttachedImages && args.useLatestAttachedImages) {
       throw new Error("imagegen failed: useAttachedImages and useLatestAttachedImages are mutually exclusive")
     }
+    if (args.profile && args.route) throw new Error("imagegen failed: profile and route are mutually exclusive")
+    if (args.route && args.model) throw new Error("imagegen failed: route and model are mutually exclusive")
     const attachedState = args.useAttachedImages
       ? currentAttachedImagesBySession.get(context.sessionID)
       : args.useLatestAttachedImages
@@ -137,6 +142,8 @@ const imagegenTool = tool({
 function buildImagegenArgs(args): string[] {
   const cliArgs = ["generate", "--prompt", args.prompt]
   for (const inputImage of args.inputImages ?? []) pushFlag(cliArgs, "--input-image", inputImage)
+  pushFlag(cliArgs, "--profile", args.profile)
+  pushFlag(cliArgs, "--route", args.route)
   pushFlag(cliArgs, "--model", args.model)
   pushFlag(cliArgs, "--size", args.size)
   pushFlag(cliArgs, "--quality", args.quality)
@@ -165,6 +172,8 @@ function formatImagegenToolOutput(result): string {
   const outputs = Array.isArray(result.outputs) ? result.outputs : []
   const lines = [result.generation_mode === "edit" ? "Edited image." : "Generated image."]
   if (outputs.length > 0) lines.push(`outputs: ${outputs.join(", ")}`)
+  if (result.profile) lines.push(`profile: ${result.profile}`)
+  if (result.route) lines.push(`route: ${result.route}`)
   if (result.model) lines.push(`model: ${result.model}`)
   if (result.generation_mode) lines.push(`generation_mode: ${result.generation_mode}`)
   if (Number.isInteger(result.input_image_count)) lines.push(`input_image_count: ${result.input_image_count}`)
@@ -398,8 +407,15 @@ function formatExecError(error: unknown): string {
   return detail.slice(0, 2000)
 }
 
-export default async () => ({
+export default async () => {
+  const managedConfig = await readManagedConfig()
+  const secretStore = new SecretStore({
+    secretPath: path.join(managedConfig.configDir, "secrets.sops.yaml"),
+  })
+
+  return {
   dispose: async () => {
+    secretStore.dispose()
     currentAttachedImagesBySession.clear()
     latestAttachedImagesBySession.clear()
   },
@@ -413,6 +429,7 @@ export default async () => ({
     imagegen: imagegenTool,
   },
   config(cfg) {
+    applyManagedOpenCodeConfig(cfg, managedConfig, secretStore)
     cfg.instructions = [...(cfg.instructions ?? []), ASSETS + "/labflow-rules.md"]
 
     cfg.agent = {
@@ -429,4 +446,5 @@ export default async () => ({
 
     cfg.skills = { paths: [...(cfg.skills?.paths ?? []), ASSETS + "/skills"] }
   },
-})
+  }
+}
