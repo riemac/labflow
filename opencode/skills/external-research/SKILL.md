@@ -1,6 +1,6 @@
 ---
 name: external-research
-description: External research orchestration skill. Use for third-party libraries/APIs, official docs, public GitHub repository code understanding, upstream source, version migrations, papers/PDFs, GitHub releases/issues/PRs, and high-noise/low-signal deep research. Default to ctx7 CLI / find-docs for docs and APIs; default to DeepWiki MCP for public GitHub repository structure/source explanations when available; use gh CLI only when GitHub-native evidence is needed; strongly delegate high-noise research to the built-in scout subagent. Do not use for local codebase architecture or symbol research.
+description: External research orchestration skill. Use for third-party libraries/APIs, official docs, public GitHub repository code understanding, upstream source, version migrations, papers/PDFs, GitHub releases/issues/PRs, and high-noise/low-signal research. Default to ctx7 CLI / find-docs for docs and APIs; default to DeepWiki MCP for public GitHub repository structure/source explanations when available; use gh CLI only when GitHub-native evidence is needed; delegate bounded noisy retrieval to explore-worker when it protects the main context. Do not use for local codebase architecture or symbol research.
 ---
 
 # External Research
@@ -19,20 +19,17 @@ Decision order: first ask "Is this a docs/API usage question?" If yes, use ctx7 
 
 ## Delegate
 
-For high-noise, low-signal, multi-hop external research, strongly consider
-delegating to the built-in `scout` subagent. Follow the global
-**Background-First Prefetch** protocol for the worker lifecycle; this section
-only defines external-research signals and outputs. The worker absorbs long
-webpages, issue threads, partial hits, and dead-end docs so the main context
-does not.
+For high-noise, low-signal, multi-hop external research, use `explore-worker` when delegation materially protects the main context. Follow the global profile and **Background-First Prefetch** contract; this section only defines external-research signals and outputs. Directly use the appropriate evidence tool when a small number of authoritative sources can answer the question.
 
 Signals:
 
 - A single ctx7 / DeepWiki / web / gh query is unlikely to answer directly.
 - Many search results exist, but very little decisive evidence.
 - Multiple issues, PRs, discussions, release notes, or long docs must be scanned to find the key fact.
-- Research directions are independent enough to split across subagents.
+- Research directions are genuinely independent enough to justify separate workers.
 - The main agent still needs to implement or design afterward and should not carry retrieval noise.
+
+Pass the target question, source and date/version scope, known identifiers or URLs, exclusions, expected citations, response language, and `profile` in every assignment. Default to `normal`. Reuse the same task for the same source chain.
 
 ## Keep It Small
 

@@ -12,6 +12,8 @@ This directory is the tracked source of truth for portable OpenCode configuratio
 
 The generated `~/.config/opencode/opencode.json` remains machine-local because its labflow `file://` URL contains the clone's absolute path. After migration it is a thin bootstrap containing only `$schema` and startup plugin registrations; the labflow plugin injects tracked defaults and providers with existing machine-local values taking precedence.
 
+The tracked agent defaults disable OpenCode's built-in `explore` and `general` subagents and select Luna with `xhigh` reasoning for labflow's unified `explore-worker`. User configuration may override that worker's model or options; its read-only behavior and profile contract remain sourced from `opencode/agents/explore-worker.md` unless the user explicitly overrides those fields too.
+
 ## Security Model
 
 Provider secrets are decrypted lazily in memory. The plugin injects a custom AI SDK `fetch` closure that replaces sentinel authentication immediately before a request; decrypted values are never inserted into the resolved OpenCode config, written to temporary files, or logged. `install.sh --doctor` decrypts the alias set and fails if `opencode debug config` contains any managed plaintext value.

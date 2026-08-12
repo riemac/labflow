@@ -1,6 +1,6 @@
 ---
 name: external-research
-description: 外部资料调研编排技能。用于第三方库/API、官方文档、公开 GitHub 仓库代码理解、上游源码、版本迁移、论文/PDF、GitHub release/issue/PR，以及高噪音/低信噪比的深度外部调研。文档/API 默认用 ctx7 CLI / find-docs；公开 GitHub 仓库结构/源码解释默认优先 DeepWiki MCP；gh CLI 仅在需要 GitHub 原生证据时辅助；高噪音调研强烈委派内置 scout subagent。不要用于本地已有代码库架构或符号调研。
+description: 外部资料调研编排技能。用于第三方库/API、官方文档、公开 GitHub 仓库代码理解、上游源码、版本迁移、论文/PDF、GitHub release/issue/PR，以及高噪音/低信噪比调研。文档/API 默认用 ctx7 CLI / find-docs；公开 GitHub 仓库结构/源码解释默认优先 DeepWiki MCP；gh CLI 仅在需要 GitHub 原生证据时辅助；确实能保护主上下文时，把有边界的噪音检索委派给 explore-worker。不要用于本地已有代码库架构或符号调研。
 ---
 
 # External Research
@@ -19,18 +19,17 @@ description: 外部资料调研编排技能。用于第三方库/API、官方文
 
 ## Delegate
 
-遇到高噪音、低信噪比、需要多跳搜索的外部调研时，强烈建议委派内置 `scout`
-subagent。worker 生命周期遵循全局 **Background-First Prefetch** 协议；本节只规定
-外部调研特有的触发信号和输出。worker 负责吸收长网页、issue 串、半相关结果和
-无效文档，避免污染主 agent 上下文。
+遇到高噪音、低信噪比、需要多跳搜索的外部调研时，只有委派确实能保护主上下文才使用 `explore-worker`。worker 生命周期遵循全局探索档位和 **Background-First Prefetch** 协议；若少量权威来源足以回答，直接使用相应证据工具。
 
 典型信号：
 
 - 单次 ctx7 / DeepWiki / web / gh 查询大概率不能直接回答。
 - 搜索结果很多，但真正有效信息只占很小比例。
 - 需要翻多个 issue、PR、discussion、release note 或长文档才能找到关键事实。
-- 调研方向之间相对独立，可以拆给多个 subagent 预取。
+- 调研方向真正独立，足以拆给不同 worker。
 - 主 agent 后续还要实现或设计，不应把大量检索噪音带进主上下文。
+
+每次 assignment 传递问题、来源及日期/版本范围、已知 identifier 或 URL、排除范围、预期 citation、语言和 `profile`；默认 `normal`。同一来源链复用同一 task。
 
 ## Keep It Small
 

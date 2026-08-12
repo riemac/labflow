@@ -51,6 +51,8 @@ Worker 负责提高 recall 和定位证据，不拥有 novelty 判断，也不�
 
 Agent 审计材料全部进入 `.research/`。目录初始化和验证使用标准库脚本：
 
+新建目录时，脚本会在 dossier 根写入仅含 `*` 的本地 `.gitignore`，因此整份 dossier（包括人类可见报告和 `.gitignore` 自身）都不会出现在外层 Git 工作区。不要修改宿主项目的 `.gitignore`；确需纳入版本控制的报告应移到 dossier 之外。
+
 ```bash
 python3 scripts/research.py init \
   --path <research-path> --language <language> --title "<title>" \

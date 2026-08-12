@@ -437,7 +437,11 @@ export default async () => {
       "labflow-develop": readAgentDefinition("labflow-develop"),
       "labflow-plan": readAgentDefinition("labflow-plan"),
       "labflow-paper": readAgentDefinition("labflow-paper"),
-      // Keep the bundled worker definition portable while allowing user config to select its provider/model.
+      // Keep bundled worker behavior portable while allowing user config to select provider/model options.
+      "explore-worker": {
+        ...readAgentDefinition("explore-worker"),
+        ...cfg.agent?.["explore-worker"],
+      },
       "literature-worker": {
         ...readAgentDefinition("literature-worker"),
         ...cfg.agent?.["literature-worker"],

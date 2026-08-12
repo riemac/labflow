@@ -6,7 +6,7 @@ git hygiene) live in the thin entry [AGENTS.md](AGENTS.md); read that first.
 
 ## Product shape
 
-The integration is centered on a single **opencode plugin** loaded via `file://` URL from the repo. The plugin's `config` hook injects rules, primary agents, and skill paths; the same plugin also registers labflow custom tools.
+The integration is centered on a single **opencode plugin** loaded via `file://` URL from the repo. The plugin's `config` hook injects rules, agents, and skill paths; the same plugin also registers labflow custom tools.
 
 OpenCode surfaces (all under `opencode/`):
 
@@ -26,6 +26,7 @@ opencode/
 │   ├── labflow-develop.md    # primary develop stage: research dialogue + scaffold
 │   ├── labflow-plan.md       # primary read-only structured planning stage
 │   ├── labflow-paper.md      # primary paper preparation and evidence alignment
+│   ├── explore-worker.md     # hidden read-only local/external exploration worker
 │   └── literature-worker.md  # hidden prior-art evidence worker
 ├── skills/                   # adapted ability skills (de-Codex'd copies)
 └── install.sh                # bootstrap registration and explicit encrypted migration entry point
@@ -50,6 +51,8 @@ only removes the legacy symlink when it points back into this repo.
 CLI and the hidden `literature-worker` subagent. The primary agent remains the
 research lead; workers own bounded topic artifacts, while the primary persists
 resumable task IDs in each project's ignored dossier state.
+
+General read-heavy or retrieval-heavy delegation uses the hidden `explore-worker` with explicit `fast`, `normal`, or `deep` scope profiles; `normal` is the default. The worker is read-only, cannot delegate, and covers both local and external evidence. Its prompt and permissions live in `agents/explore-worker.md`; the portable default model and reasoning options live in `config/defaults.yaml`, where built-in `explore` and `general` are disabled. The plugin merges user agent config last so users may replace the provider/model/options without forking the worker behavior.
 
 ## Stages as agents
 
@@ -76,7 +79,7 @@ When adapting a shared skill from `plugins/labflow/skills/` into
 | `$labflow:stage-*` entry | switch primary agent (Tab) |
 | `stage-control pass` | no port; continue or choose an explicit agent handoff |
 | `request_user_input` | `question` tool |
-| `lab-explore` / `lab-research` subagents | built-in `explore` / `scout` subagents |
+| `lab-explore` / `lab-research` subagents | unified `explore-worker` subagent |
 | stage state under `.codex/labflow-stage/` | none (agent + conversation) |
 | reload codex plugin | restart opencode; rerun `install.sh` only for registration/dependencies |
 | `.mcp.json` manifest | `mcp` field in `opencode.json` |

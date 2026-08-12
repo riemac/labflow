@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import tempfile
 from pathlib import Path
 import unittest
@@ -23,6 +24,29 @@ class ResearchDirectoryTests(unittest.TestCase):
             self.assertEqual(result["language"], "zh-CN")
             self.assertTrue((root / "overview.md").is_file())
             self.assertTrue((root / ".research/audit/papers").is_dir())
+            self.assertEqual((root / ".gitignore").read_text(encoding="utf-8"), "*\n")
+
+    def test_init_is_hidden_from_enclosing_git_worktree(self) -> None:
+        """A fresh dossier does not add untracked files to its parent repository."""
+
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            subprocess.run(["git", "init", "--quiet"], cwd=repository, check=True)
+            initialize(
+                repository / "docs/research",
+                language="en",
+                title="Research",
+                question="What is known?",
+            )
+
+            status = subprocess.run(
+                ["git", "status", "--short", "--untracked-files=all"],
+                cwd=repository,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(status.stdout, "")
 
     def test_migration_moves_agent_material(self) -> None:
         """A v1 dossier preserves evidence while replacing its visible structure."""

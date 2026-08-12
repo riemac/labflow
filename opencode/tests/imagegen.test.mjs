@@ -11,6 +11,7 @@ import test from "node:test"
 const OPENCODE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const IMAGEGEN_SCRIPT = path.join(OPENCODE_DIR, "scripts", "imagegen.mjs")
 const PLUGIN_PATH = path.join(OPENCODE_DIR, "plugins", "labflow.ts")
+const EXPLORE_WORKER_PATH = path.join(OPENCODE_DIR, "agents", "explore-worker.md")
 const PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZrN8AAAAASUVORK5CYII="
 const PNG_BYTES = Buffer.from(PNG_BASE64, "base64")
 const execFileAsync = promisify(execFile)
@@ -68,6 +69,47 @@ test("plugin preserves native agent system prompts", async (t) => {
     await hooks["chat.message"]({ sessionID: `native-${agent}`, agent }, output)
     assert.equal(output.message.system, "existing system")
   }
+})
+
+test("plugin registers the bounded explore worker and preserves model overrides", async (t) => {
+  const plugin = await import(`${new URL(`file://${PLUGIN_PATH}`).href}?explore-worker=${Date.now()}`)
+  const hooks = await plugin.default()
+  t.after(() => hooks.dispose())
+
+  const defaults = {}
+  hooks.config(defaults)
+
+  assert.equal(defaults.agent.explore.disable, true)
+  assert.equal(defaults.agent.general.disable, true)
+  assert.equal(defaults.agent["explore-worker"].model, "routin/gpt-5.6-luna")
+  assert.equal(defaults.agent["explore-worker"].options.reasoningEffort, "xhigh")
+  assert.equal(defaults.agent["explore-worker"].options.store, false)
+  assert.equal(defaults.agent["explore-worker"].mode, "subagent")
+  assert.equal(defaults.agent["explore-worker"].hidden, true)
+  assert.match(defaults.agent["explore-worker"].prompt, /If `profile` is omitted, use `normal`/)
+  assert.equal(defaults.agent["explore-worker"].permission.edit, "deny")
+  assert.equal(defaults.agent["explore-worker"].permission.task, "deny")
+  assert.equal(defaults.agent["explore-worker"].permission.question, "deny")
+
+  const workerSource = await fs.readFile(EXPLORE_WORKER_PATH, "utf8")
+  const workerFrontmatter = workerSource.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? ""
+  assert.doesNotMatch(workerFrontmatter, /^(model|variant):/m)
+
+  const overridden = {
+    agent: {
+      "explore-worker": {
+        model: "custom/reader",
+        options: { reasoningEffort: "high" },
+      },
+    },
+  }
+  hooks.config(overridden)
+
+  assert.equal(overridden.agent["explore-worker"].model, "custom/reader")
+  assert.equal(overridden.agent["explore-worker"].options.reasoningEffort, "high")
+  assert.equal(overridden.agent["explore-worker"].options.store, false)
+  assert.match(overridden.agent["explore-worker"].prompt, /# Explore Worker/)
+  assert.equal(overridden.agent["explore-worker"].permission.edit, "deny")
 })
 
 test("CLI preserves text-only Responses payloads", async (t) => {

@@ -27,6 +27,7 @@ HIDDEN_DIRECTORIES = (
     ".research/library",
     ".research/state",
 )
+DOSSIER_GITIGNORE = "*\n"
 LINK_PATTERN = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 
@@ -92,7 +93,7 @@ def _skeleton(*, language: str, title: str, question: str | None) -> dict[str, s
             "MAP.md": f"{_frontmatter(language=language, title=title, kind='research-map', question=question)}\n\n# 研究地图\n\n尚未策展。\n",
             "topics/README.md": "# 主题报告\n\n每个文件是一篇面向研究者的完整主题调研报告。\n",
             ".research/brief.md": f"{_frontmatter(language=language, title=title, kind='research-brief', question=question)}\n\n# Research Brief\n\n## Question\n\n{question_text}\n",
-            ".gitignore": ".research/state/\n.research/library/*.pdf\n",
+            ".gitignore": DOSSIER_GITIGNORE,
         }
     return {
         "README.md": "# Literature Research\n\n- [Overview](overview.md)\n- [Research map](MAP.md)\n- [Topic reports](topics/)\n",
@@ -100,7 +101,7 @@ def _skeleton(*, language: str, title: str, question: str | None) -> dict[str, s
         "MAP.md": f"{_frontmatter(language=language, title=title, kind='research-map', question=question)}\n\n# Research Map\n\nNot curated yet.\n",
         "topics/README.md": "# Topic Reports\n\nEach file is a complete, researcher-facing topic report.\n",
         ".research/brief.md": f"{_frontmatter(language=language, title=title, kind='research-brief', question=question)}\n\n# Research Brief\n\n## Question\n\n{question_text}\n",
-        ".gitignore": ".research/state/\n.research/library/*.pdf\n",
+        ".gitignore": DOSSIER_GITIGNORE,
     }
 
 

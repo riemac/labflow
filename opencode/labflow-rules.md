@@ -27,19 +27,30 @@ Frequency depends on the activity:
 
 ## Purpose
 
-Use subagents primarily for read-heavy, retrieval-heavy, or otherwise noisy
-work. Delegation keeps retrieval noise out of the main context while the main
-agent retains the user's goals, orchestration, final decisions, and user-facing
-synthesis.
+Use subagents for bounded read-heavy, retrieval-heavy, or otherwise noisy work when delegation materially protects the main context. The primary agent retains the user's goals, orchestration, decisions, edits, verification, and user-facing synthesis.
+
+Do not delegate a known file read, a search for one symbol, or a question answerable by a few direct tool calls. Prefer one coherent worker for one evidence chain. Parallel workers are appropriate only for genuinely independent directions whose results can be integrated without duplicating retrieval.
+
+## Exploration Contract
+
+Use `explore-worker` for general local or external exploration. Domain-specific workers such as `literature-worker` keep their narrower contracts. Every `explore-worker` assignment should state:
+
+```yaml
+profile: fast | normal | deep
+goal: <question or fact to resolve>
+scope: <paths, systems, sources, or exclusions>
+context: <known facts, seeds, and prior findings>
+return: <expected evidence and format>
+language: <response language>
+```
+
+`normal` is the default. `fast` checks the most direct evidence and returns once sufficient. `normal` follows relevant entry points and key relationships with enough cross-checking for the central conclusion. `deep` systematically covers alternate names, cross-source chains, important boundaries, and plausible counterexamples while still stopping at diminishing returns.
+
+The worker must not change profile itself. The primary agent may explicitly change profile when resuming the same task. Ask for paths, line references, source identifiers, decisive evidence, and remaining uncertainty rather than retrieval narration or raw dumps.
 
 ## Background-First Prefetch
 
-Treat delegation as prefetch, not a blocking handoff. First decide whether a
-bounded task will materially advance the work. Once a task is delegated, launch
-it in the background whenever the runtime supports that mode, even when a later
-step will depend on its result. Immediately continue meaningful work that does
-not overlap the worker's scope. At the dependency barrier, use the runtime's
-native wait mechanism or yield until the completion notification arrives.
+Treat delegation as prefetch, not a blocking handoff. Once a bounded task is delegated, launch it in the background whenever the runtime supports that mode. Immediately continue meaningful work that does not overlap the worker's scope. At the dependency barrier, use the runtime's native wait mechanism or yield until the completion notification arrives.
 
 ```mermaid
 flowchart TD
@@ -53,38 +64,21 @@ flowchart TD
     G --> F
 ```
 
-Do not use shell sleep, poll task status, or duplicate the worker's task while
-waiting.
+Do not use shell sleep, poll task status, or duplicate the worker's task while waiting.
 
 ## Ownership and Integration
 
-Give each worker an explicit scope, expected output, and ownership boundary.
-Default to read-heavy assignments. A worker may write only clearly assigned
-support artifacts or files with a disjoint write set; the main agent must not
-edit the same files concurrently. Treat worker results as high-signal prefetch,
-but verify exact facts that drive edits, scientific conclusions, or the final
-answer. Do not delegate final decisions or user-facing synthesis.
+Give each worker an explicit scope, expected return, and ownership boundary. Treat worker results as high-signal prefetch, but verify exact facts that drive edits, scientific conclusions, or the final answer. Do not delegate final decisions or user-facing synthesis. `explore-worker` is strictly read-only; a domain worker may write only when its own contract and the assignment explicitly authorize disjoint support artifacts.
 
 ## Continuing Work
 
-For a continuing question, workstream, or evidence chain that remains
-substantially related, shares meaningful context, or has an unclear but
-plausible connection to the previous work, resume the same worker rather than
-creating a new one. If its result is incomplete or mistaken, send corrective
-context to that worker while its context remains useful. Start a new worker
-when the scope clearly changes, independent verification is needed, or the
-previous context is noisy or no longer useful. A domain skill may impose a
-stricter continuation boundary.
+For a continuing question, workstream, or evidence chain that remains substantially related, resume the same worker rather than creating a new one. If its result is incomplete or mistaken, send corrective context while that context remains useful. Start a new worker only when the scope clearly changes, independent verification is needed, or the previous context is noisy or no longer useful. A domain skill may impose a stricter continuation boundary.
+
+Workers should return once the assigned profile is satisfied, additional retrieval repeats known facts, remaining uncertainty cannot be resolved within the read-only boundary, or context growth threatens a timely response. A useful bounded result with an explicit gap is better than an exhaustive return that arrives only after the parent session compacts.
 
 ## Platform Notes
 
-When OpenCode exposes the task tool's background mode, explicitly set
-`background: true` on every delegation by default; enabling the capability does
-not make ordinary task calls asynchronous. If background mode is unavailable,
-fall back to foreground delegation. Continue related work with the same
-`task_id`. When no non-overlapping work remains and the result is required, end
-the current turn without claiming completion and let the automatic task
-notification resume the session; do not poll for it.
+When OpenCode exposes the task tool's background mode, explicitly set `background: true` on every delegation by default; enabling the capability does not make ordinary task calls asynchronous. If background mode is unavailable, fall back to foreground delegation. Continue related work with the same `task_id`. When no non-overlapping work remains and the result is required, end the current turn without claiming completion and let the automatic task notification resume the session; do not poll for it.
 
 </subagent-delegation>
 

@@ -74,6 +74,8 @@ Read `references/dossier-layout.md`. Human-facing artifacts are:
 Agent audit material belongs under `.research/`. Initialize or validate the
 structure with the standard-library helper:
 
+Fresh initialization writes a dossier-local `.gitignore` containing `*`, so the entire dossier, including human-facing reports and the `.gitignore` itself, stays out of the enclosing Git worktree. Do not modify the enclosing project's `.gitignore`; move any report that should be versioned outside the dossier.
+
 ```bash
 python3 scripts/research.py init \
   --path <research-path> --language <language> --title "<title>" \

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - 2026-08-12
+
+- Added a unified read-only OpenCode `explore-worker` for bounded local and external evidence retrieval with caller-selected `fast`, `normal`, or `deep` scope profiles, `normal` by default, resumable profile changes, timely diminishing-return stops, and user-overridable Luna/xhigh model defaults; disabled the built-in `explore` and `general` workers.
+- Rebuilt `neat-freak` as a compact cross-platform governance method for existing root and nested `AGENTS.md` and `README.md` files, including explicit creation and maintenance authorization, a 150-line AGENTS limit, a stable engineering-contract template, and research-oriented human README guidance.
+- Tightened shared delegation guidance and the codebase, external, and deep-research routes around one coherent worker per evidence chain, direct reads for known targets, background prefetch, task reuse, and concise evidence returns before worker context growth delays the parent session.
+- Made newly initialized literature-forensics dossiers ignore their entire local directory through a dossier-owned `.gitignore`, keeping all research artifacts out of the enclosing Git worktree without changing the host repository's ignore rules.
+
 ## 1.0.0 - 2026-08-07
 
 - Moved portable OpenCode defaults, third-party plugin declarations, eight relay providers, and twenty-five model definitions into tracked YAML loaded by the labflow plugin, while reducing the machine-local global config to a generated startup bootstrap.

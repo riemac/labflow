@@ -38,7 +38,7 @@ description: 针对复杂科研或工程问题做深入调研，综合本地代�
 - 本地代码：优先语义检索定位，再精读关键文件和行号。
 - 外部库/API：优先 `find-docs` / ctx7；只有需要 GitHub 事实时再用 `gh`。
 - 论文/PDF：用 `pdf-read`，保留页码、章节或提取路径。
-- 高噪音分支：按照全局 **Background-First Prefetch** 协议委派内置 `explore`（本地代码）/ `scout`（外部文档）subagent 吸收检索噪音；返回内容作为高信号预取，主 agent 必须核验驱动结论的关键证据。
+- 高噪音分支：按照全局探索档位和 **Background-First Prefetch** 协议，把有边界的检索委派给 `explore-worker` 吸收噪音；返回内容作为高信号预取，主 agent 必须核验驱动结论的关键证据。
 
 ## 3. 综合判断
 

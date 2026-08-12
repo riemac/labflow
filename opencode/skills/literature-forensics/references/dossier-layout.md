@@ -2,6 +2,7 @@
 
 ```text
 <research>/
+|-- .gitignore
 |-- README.md
 |-- overview.md
 |-- MAP.md
@@ -43,6 +44,12 @@
 - Search coverage, exclusions, verification queues, BibTeX, and task state stay
   under `.research/`.
 - Litnav owns its global SQLite cache; no literature cache belongs in a dossier.
+
+## Git Boundary
+
+- A fresh dossier is local-only: its root `.gitignore` contains `*`, which also ignores that `.gitignore` file itself.
+- This local boundary keeps every dossier artifact out of the enclosing Git worktree without changing the enclosing repository's ignore files.
+- Move any report that must be versioned or shared through Git outside the dossier.
 
 ## Ownership
 
