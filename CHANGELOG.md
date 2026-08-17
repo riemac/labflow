@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2 - 2026-08-17
+
+- Restored native ChatGPT Plus/Pro OAuth for the `openai` provider by removing the Routin Plan endpoint and managed credential injection; relay providers continue to use distinct IDs.
+- Limited native OpenAI selection to the GPT-5.6 Sol, Terra, and Luna models and configured each with a 372k context/input budget and 64k output budget.
+
 ## 1.0.1 - 2026-08-12
 
 - Added a unified read-only OpenCode `explore-worker` for bounded local and external evidence retrieval with caller-selected `fast`, `normal`, or `deep` scope profiles, `normal` by default, resumable profile changes, timely diminishing-return stops, and user-overridable Luna/xhigh model defaults; disabled the built-in `explore` and `general` workers.
