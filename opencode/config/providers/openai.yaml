@@ -11,16 +11,31 @@ config:
   models:
     gpt-5.6-sol:
       limit:
-        context: 372000
-        input: 372000
-        output: 64000
+        context: 872000
+        input: 872000
+        output: 128000
     gpt-5.6-terra:
       limit:
-        context: 372000
-        input: 372000
-        output: 64000
+        context: 872000
+        input: 872000
+        output: 128000
     gpt-5.6-luna:
       limit:
-        context: 372000
-        input: 372000
-        output: 64000
+        context: 872000
+        input: 872000
+        output: 128000
+    gpt-5.6-sol-fast:
+      limit:
+        context: 872000
+        input: 872000
+        output: 128000
+    gpt-5.6-terra-fast:
+      limit:
+        context: 872000
+        input: 872000
+        output: 128000
+    gpt-5.6-luna-fast:
+      limit:
+        context: 872000
+        input: 872000
+        output: 128000
