@@ -1,21 +1,22 @@
 # labflow
 
-Stage-Driven Development Codex-native scientific research coding skill toolbox.
+Cross-platform scientific research coding skill toolbox for Codex and OpenCode.
 
-labflow provides reusable skills for research-heavy coding work in Codex:
+labflow provides reusable skills for research-heavy coding work:
 
 - Stage-driven discussion hooks for lightweight idea refinement and goal clarification.
 - Local codebase research with replaceable semantic/code-RAG retrieval, `tree`/`fd`/`rg`, key-file reads, and read-heavy subagent delegation.
 - External research over official docs, upstream source, papers, and version-specific evidence.
 - Deep research reports for complex cross-source feasibility and architecture questions.
 - First-principles research brainstorming with method cards, assumptions, counterexamples, and minimal validation probes.
+- Learning forensics for tracing failed behavior through a case-specific causal chain, coordinating hypothesis-blind parallel workers, and selecting high-information probes before formal tuning.
 - Design-scaffold stage for turning mature ideas into reviewable interfaces, fields, docs, and TODO anchors.
 - Git task flow for task boundaries, commits, history review, and GitHub publishing mechanics.
 - Scientific annotation, PDF reading, Obsidian CLI operations, and self-update.
-- Background agents for read-heavy local exploration and external research.
+- Background agents for read-heavy exploration, external research, and bounded learning-system diagnosis.
 - MCP configuration for `pdf-reader`.
 
-The old GitHub Copilot plugin version is preserved on the `copilot-legacy` branch. The `main` branch targets Codex only.
+The old GitHub Copilot plugin version is preserved on the `copilot-legacy` branch. The `main` branch carries both the Codex plugin and the OpenCode integration.
 
 ## Layout
 
@@ -28,20 +29,22 @@ plugins/labflow/
 ├── hooks/
 ├── prompts/
 └── skills/
+opencode/
+├── agents/
+├── config/
+├── plugins/
+└── skills/
 ```
 
 ## Install Or Reload
 
-From this repository:
+From this repository, use the reload helper so the marketplace, plugin cache, and `learning-worker` custom-agent link are updated together:
 
 ```bash
-codex plugin marketplace remove riemac
-codex plugin marketplace add /home/hac/labflow
-codex plugin remove labflow@riemac
-codex plugin add labflow@riemac
+/home/hac/labflow/plugins/labflow/skills/self-update/scripts/reload_labflow_plugin.sh
 ```
 
-For local directory marketplaces, refresh both the marketplace source and the installed plugin cache. A plain marketplace `add` may only report that the marketplace already exists.
+The helper preserves any user-owned `~/.codex/agents/learning-worker.toml`. When that path is free, it links the tracked Labflow template. Manual marketplace remove/add remains available, but it installs skills only and leaves the custom agent to the built-in-worker fallback.
 
 External library/API docs are handled by ctx7 CLI skills, not an MCP server. The configured MCP server uses a local command:
 
@@ -88,6 +91,7 @@ Install or reload the marketplace, then use the plugin by naming the skill in th
 - `使用 external-research 查 IsaacLab 官方相机 API`
 - `使用 deep-research 调研 IsaacLab 是否支持异构资产并行训练`
 - `使用 research-brainstorm 从第一性原理手撕这个研究 idea 并给出候选方法卡片`
+- `使用 learning-forensics 调查这次训练为什么没有学会，并定位最早断点`
 - `使用 git-task-flow 提交并推送当前任务`
 
 Codex may also trigger these skills automatically when the request clearly matches their descriptions.
@@ -96,4 +100,4 @@ Codex may also trigger these skills automatically when the request clearly match
 
 `prompts/lab.md` and `prompts/labprompt.md` are kept as optional manual reference prompts. They are not the primary plugin interface.
 
-`agents/lab-explore.md` and `agents/lab-research.md` are read-heavy background agent templates. They are not top-level agents; the main Codex session can delegate local code exploration or external evidence gathering to them when that saves context.
+`agents/lab-explore.md` and `agents/lab-research.md` are legacy read-heavy templates. `agents/learning-worker.toml` follows Codex's custom-agent schema; the reload helper links it into `~/.codex/agents/` without replacing a user-owned file. The main session delegates bounded evidence work while retaining scientific decisions and human-facing synthesis.

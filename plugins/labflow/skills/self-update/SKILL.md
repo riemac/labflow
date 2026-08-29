@@ -14,7 +14,7 @@ description: 对 labflow Codex plugin 本身进行自更新。当某个 skill、
 ## 可更新的内容
 
 - `plugins/labflow/prompts/*.md`：可手动粘贴的参考 prompt，不是主入口
-- `plugins/labflow/agents/*.md`：read-heavy background agents，如 `lab-explore`、`lab-research`
+- `plugins/labflow/agents/*.md` / `*.toml`：background agent 模板；Codex custom agent 使用 TOML 并由 reload helper 链接到 `~/.codex/agents/`
 - `plugins/labflow/skills/*/SKILL.md`：skills 的操作指南、模板、规范
 - `plugins/labflow/hooks/*`：plugin-bundled lifecycle hooks
 - `plugins/labflow/.mcp.json`：插件 MCP 配置

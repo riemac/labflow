@@ -82,6 +82,30 @@ When OpenCode exposes the task tool's background mode, explicitly set `backgroun
 
 </subagent-delegation>
 
+<background-processes>
+
+## Ownership
+
+The primary agent owns long-running commands, formal training, live services, and interactive process sessions. Domain workers normally use ordinary bounded shell commands inside their own background task; a worker may own a PTY only when its assignment explicitly grants that exception.
+
+## Routing
+
+- Use ordinary Bash for commands expected to finish within the tool timeout.
+- Use an available PTY/background-session tool for user-approved long jobs, formal training, live servers, or interactive programs.
+- If no reliable background facility is available, ask the user to enable one or launch the command manually. A generic subagent is an evidence worker rather than a process supervisor.
+
+## PTY Contract
+
+When `pty_spawn` is available, set an explicit project-local `workdir`, descriptive `title`, and `notifyOnExit: true`. Add `timeoutSeconds` when the job has a natural safety limit. An external working directory requires an explicit allow rule and user-approved scope. Record the returned session ID, command, workdir, case digest, optional probe ID, and GPU assignment in the relevant task or experiment state; learning-forensics cases use `.learning/state/processes.json`. Then continue non-overlapping work.
+
+Completion notifications replace polling. On `<pty_exited>`, inspect the exit code, read focused error matches for failures, and retrieve only the bounded final context needed to interpret the result. Process success establishes command completion; artifact integrity, scientific acceptance, simulation behavior, and visual quality retain their own validation gates.
+
+Each long job has one clear owner and one PTY session. Before spawning after compaction or resume, inspect existing sessions and recorded state so the same experiment is not launched twice. Clean up exited sessions after the needed evidence is preserved.
+
+The current `opencode-pty` permission bridge treats Bash `ask` rules as denied and treats `external_directory: ask` as allowed with a warning. Configure explicit allow/deny rules for PTY commands and external working directories. Exit notifications create a new agent turn and may incur another provider request.
+
+</background-processes>
+
 <distributed-prompting>
 
 The user often leaves requirements, notes, TODOs, design drafts, research
@@ -150,14 +174,27 @@ Common CLI tools available in this machine:
 
 </tools>
 
-<formatting>
+<formatting-and-tune>
 
 ## latex-render
 
-OpenCode Desktop output renders LaTeX inline with `\( ... \)` and display math with `$$ ... $$`. Use these delimiters for mathematical formulas; do not use `\[ ... \]` for display math.
+OpenCode Desktop only output renders LaTeX inline with `\( ... \)`.
+Use display math with:
+
+```bash
+$$
+<formula,no blank lines,a single continuous block>
+$$
+```
+
+Chat output uses these delimiters without `\[ ... \]` or blank lines inside a display block. Authored Markdown reports may use `$$\large ...$$` when the larger display materially improves a central equation and the target renderer supports it.
 
 ## markdown text
 
 When editing Markdown files, write complete paragraphs or single sentences on one line—there's no need to deliberately split lines. Obsidian, VS Code, and similar editors will render them correctly.
 
-</formatting>
+## language tune
+
+When outputting, do not overuse mixed Chinese and English, as this will make reading burdensome. Try to use complete and fluent Chinese explanations. Only use a small number of English Jargon when necessary, and add Chinese annotations in parentheses
+
+</formatting-and-tune>

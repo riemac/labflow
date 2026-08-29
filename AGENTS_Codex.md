@@ -17,7 +17,7 @@ labflow/
 ├── plugins/labflow/
 │   ├── .codex-plugin/plugin.json
 │   ├── .mcp.json
-│   ├── agents/                         # read-heavy delegation templates
+│   ├── agents/                         # delegation templates; custom workers use TOML
 │   ├── hooks/                          # stage runtime hooks and HUD
 │   ├── prompts/                        # optional reference prompts
 │   └── skills/                         # primary user-facing interface
@@ -29,9 +29,11 @@ Main skill families:
 - Research stages: `stage-idea-refine`, `stage-goal-clarify`,
   `stage-design-scaffold`, `stage-control`.
 - Research abilities: `research-brainstorm`, `deep-research`,
-  `codebase-research`, `external-research`, `pdf-read`.
+  `learning-forensics`, `codebase-research`, `external-research`, `pdf-read`.
 - Design / implementation support: `annotation`, `git-task-flow`,
   `obsidian-cli`, `self-update`, `neat-freak`.
+
+`learning-forensics` is a cross-platform ability backed by the `learning-worker` custom agent. Codex discovers custom agents only from project/global `.codex/agents/*.toml`; the local reload helper links `plugins/labflow/agents/learning-worker.toml` into `~/.codex/agents/` without replacing a user-owned file. The skill falls back to Codex's built-in `worker` when that custom role is unavailable. A primary agent freezes a fact-only casefile, assigns independent causal lenses, verifies decisive evidence, and owns the final diagnosis and researcher-facing topic reports.
 
 ## Stage-Driven Development
 

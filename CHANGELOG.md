@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 - 2026-08-30
+
+- Added cross-platform `learning-forensics`, a causal investigation method for supervised, unsupervised, self-supervised, generative, reinforcement-learning, and robotics failures that freezes hypothesis-free casefiles, locates the earliest broken learning link, and prioritizes discriminative probes before formal tuning.
+- Added the reusable hidden `learning-worker` for up to eight independent blind lenses, resumable cross-examination, focused external evidence, disjoint audit artifacts, and explicitly bounded ten-minute probe execution while the primary agent retains scientific judgment and human-facing synthesis.
+- Added local-only learning case dossiers with dynamic paper-flavor topic reports, sealed case identities, evidence indexes, hidden worker state, isolated probe scaffolds, and a standard-library `init`/`new-case`/`seal-case`/`new-probe`/`validate` helper.
+- Added tracked `opencode-pty` integration and global long-process ownership rules so primary agents can launch user-approved formal jobs with exit notifications, focused log recovery, and explicit permission caveats without polling.
+
 ## 1.0.2 - 2026-08-17
 
 - Restored native ChatGPT Plus/Pro OAuth for the `openai` provider by removing the Routin Plan endpoint and managed credential injection; relay providers continue to use distinct IDs.

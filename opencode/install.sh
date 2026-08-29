@@ -84,7 +84,9 @@ The labflow plugin is now registered. It injects:
   - labflow-plan agent (read-only Codex-style planning, outputs <proposed_plan>)
   - labflow-paper agent (paper preparation, writing guidance, review, and submission readiness)
   - literature-worker subagent (bounded prior-art search and evidence artifacts)
+  - learning-worker subagent (blind causal learning diagnosis and bounded probes)
   - bundled ability skills
+  - opencode-pty startup plugin for primary-owned long-running sessions
   - imagegen generation/editing tool backed by opencode/scripts/imagegen.mjs
 
 Toggle between agents with Tab. Quit and restart opencode for changes to take effect.

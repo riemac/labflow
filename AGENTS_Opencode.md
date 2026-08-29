@@ -27,7 +27,8 @@ opencode/
 │   ├── labflow-plan.md       # primary read-only structured planning stage
 │   ├── labflow-paper.md      # primary paper preparation and evidence alignment
 │   ├── explore-worker.md     # hidden read-only local/external exploration worker
-│   └── literature-worker.md  # hidden prior-art evidence worker
+│   ├── literature-worker.md  # hidden prior-art evidence worker
+│   └── learning-worker.md    # hidden learning-system causal evidence worker
 ├── skills/                   # adapted ability skills (de-Codex'd copies)
 └── install.sh                # bootstrap registration and explicit encrypted migration entry point
 ```
@@ -51,6 +52,10 @@ only removes the legacy symlink when it points back into this repo.
 CLI and the hidden `literature-worker` subagent. The primary agent remains the
 research lead; workers own bounded topic artifacts, while the primary persists
 resumable task IDs in each project's ignored dossier state.
+
+`learning-forensics` is a cross-platform ability backed by the hidden `learning-worker`. The primary agent builds and seals a fact-only learning case, assigns independent causal lenses to parallel worker instances, verifies decisive evidence, and writes human-facing topic reports. The worker supports blind audit, cross-examination, and explicitly bounded short probes while long-running process ownership remains with the primary agent.
+
+The tracked `opencode-pty` startup plugin provides optional PTY sessions for formal training, live services, and other long-running commands. Global rules assign each long job to one primary-owned session with completion notifications; ordinary background workers continue to use bounded shell commands.
 
 General read-heavy or retrieval-heavy delegation uses the hidden `explore-worker` with explicit `fast`, `normal`, or `deep` scope profiles; `normal` is the default. The worker is read-only, cannot delegate, and covers both local and external evidence. Its prompt and permissions live in `agents/explore-worker.md`; the portable default model and reasoning options live in `config/defaults.yaml`, where built-in `explore` and `general` are disabled. The plugin merges user agent config last so users may replace the provider/model/options without forking the worker behavior.
 

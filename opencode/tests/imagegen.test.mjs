@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import test from "node:test"
 
+import { readManagedConfig } from "../scripts/config.mjs"
+
 const OPENCODE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const IMAGEGEN_SCRIPT = path.join(OPENCODE_DIR, "scripts", "imagegen.mjs")
 const PLUGIN_PATH = path.join(OPENCODE_DIR, "plugins", "labflow.ts")
@@ -78,12 +80,14 @@ test("plugin registers the bounded explore worker and preserves model overrides"
 
   const defaults = {}
   hooks.config(defaults)
+  const managed = await readManagedConfig()
+  const expectedWorker = managed.defaults.agent["explore-worker"]
 
   assert.equal(defaults.agent.explore.disable, true)
   assert.equal(defaults.agent.general.disable, true)
-  assert.equal(defaults.agent["explore-worker"].model, "routin/gpt-5.6-luna")
-  assert.equal(defaults.agent["explore-worker"].options.reasoningEffort, "xhigh")
-  assert.equal(defaults.agent["explore-worker"].options.store, false)
+  assert.equal(defaults.agent["explore-worker"].model, expectedWorker.model)
+  assert.equal(defaults.agent["explore-worker"].options.reasoningEffort, expectedWorker.options.reasoningEffort)
+  assert.equal(defaults.agent["explore-worker"].options.store, expectedWorker.options.store)
   assert.equal(defaults.agent["explore-worker"].mode, "subagent")
   assert.equal(defaults.agent["explore-worker"].hidden, true)
   assert.match(defaults.agent["explore-worker"].prompt, /If `profile` is omitted, use `normal`/)

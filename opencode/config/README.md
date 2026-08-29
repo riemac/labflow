@@ -12,7 +12,9 @@ This directory is the tracked source of truth for portable OpenCode configuratio
 
 The generated `~/.config/opencode/opencode.json` remains machine-local because its labflow `file://` URL contains the clone's absolute path. After migration it is a thin bootstrap containing only `$schema` and startup plugin registrations; the labflow plugin injects tracked defaults and providers with existing machine-local values taking precedence.
 
-The tracked agent defaults disable OpenCode's built-in `explore` and `general` subagents and select Luna with `xhigh` reasoning for labflow's unified `explore-worker`. User configuration may override that worker's model or options; its read-only behavior and profile contract remain sourced from `opencode/agents/explore-worker.md` unless the user explicitly overrides those fields too.
+The tracked agent defaults disable OpenCode's built-in `explore` and `general` subagents and provide a portable model choice for labflow's unified `explore-worker`. User configuration may change that model or its reasoning options; tests derive expectations from the managed defaults instead of fixing one provider choice. The `learning-worker` intentionally leaves model selection to inheritance or user configuration.
+
+Tracked startup plugins include `opencode-pty`, which exposes background PTY sessions after OpenCode restarts. Labflow global rules reserve long-running PTY ownership for the primary agent, while domain workers continue to use bounded shell commands unless an assignment grants a narrower exception.
 
 ## Security Model
 

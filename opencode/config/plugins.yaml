@@ -6,4 +6,5 @@ plugins:
       maxTokens: 1000000
       minDelayMs: 5000
       registerTools: true
+  - opencode-pty
 bootstrap: {}

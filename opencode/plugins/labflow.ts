@@ -38,6 +38,15 @@ function readAgentDefinition(name: string): Record<string, unknown> {
   return { ...(metadata as Record<string, unknown>), prompt: match[2].trimStart() }
 }
 
+// Domain-worker methodology and permissions remain Labflow-owned. User config
+// may select execution quality/cost without replacing the scientific contract.
+function readAgentExecutionOverride(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  const source = value as Record<string, unknown>
+  const allowed = ("model variant temperature top_p steps options disable" as const).split(" ")
+  return Object.fromEntries(allowed.filter((name) => source[name] !== undefined).map((name) => [name, source[name]]))
+}
+
 const imagegenTool = tool({
   description:
     "Generate or edit raster images through labflow's configured OpenAI-compatible image API. Accepts workspace paths plus explicitly selected current-message or latest session attachments.",
@@ -445,6 +454,10 @@ export default async () => {
       "literature-worker": {
         ...readAgentDefinition("literature-worker"),
         ...cfg.agent?.["literature-worker"],
+      },
+      "learning-worker": {
+        ...readAgentDefinition("learning-worker"),
+        ...readAgentExecutionOverride(cfg.agent?.["learning-worker"]),
       },
     }
 

@@ -87,6 +87,29 @@ fi
 
 codex plugin add "$plugin_selector"
 
+# Codex custom agents use the documented global/project TOML locations rather
+# than the plugin manifest. A local marketplace therefore links Labflow's agent
+# template into CODEX_HOME without replacing a user-owned file.
+codex_home="${CODEX_HOME:-${HOME}/.codex}"
+agent_source="$marketplace_root/plugins/labflow/agents/learning-worker.toml"
+agent_directory="$codex_home/agents"
+agent_target="$agent_directory/learning-worker.toml"
+if [[ -f "$agent_source" ]]; then
+  if [[ -L "$agent_target" ]]; then
+    if [[ "$(readlink "$agent_target")" == "$agent_source" ]]; then
+      printf 'Codex learning worker already linked: %s\n' "$agent_target"
+    else
+      printf 'Warning: preserving non-Labflow learning-worker symlink: %s\n' "$agent_target" >&2
+    fi
+  elif [[ -e "$agent_target" ]]; then
+    printf 'Warning: preserving user-owned Codex agent: %s\n' "$agent_target" >&2
+  else
+    mkdir -p "$agent_directory"
+    ln -s "$agent_source" "$agent_target"
+    printf 'Linked Codex learning worker: %s -> %s\n' "$agent_target" "$agent_source"
+  fi
+fi
+
 cache_root="${HOME}/.codex/plugins/cache/${marketplace_id}/${plugin_name}"
 if [[ -d "$cache_root" ]]; then
   latest_cache="$(find "$cache_root" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
