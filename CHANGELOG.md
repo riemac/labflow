@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 - 2026-08-30
+
+- Exposed OpenCode's native GPT-5.6 Sol, Terra, and Luna Fast modes for ChatGPT OAuth while retaining their Standard entries and existing defaults.
+
 ## 1.1.0 - 2026-08-30
 
 - Added cross-platform `learning-forensics`, a causal investigation method for supervised, unsupervised, self-supervised, generative, reinforcement-learning, and robotics failures that freezes hypothesis-free casefiles, locates the earliest broken learning link, and prioritizes discriminative probes before formal tuning.

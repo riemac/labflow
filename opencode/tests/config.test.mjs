@@ -17,6 +17,17 @@ async function temporaryDirectory(t, prefix) {
   return directory
 }
 
+test("native OpenAI OAuth exposes standard and fast GPT-5.6 modes", async () => {
+  const managed = await readManagedConfig()
+  const openai = managed.providers.openai.config
+
+  for (const model of ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]) {
+    assert.equal(openai.whitelist.includes(model), true)
+    assert.equal(openai.whitelist.includes(`${model}-fast`), true)
+    assert.equal(Object.hasOwn(openai.models, `${model}-fast`), false)
+  }
+})
+
 test("managed config keeps local overrides and secrets out of resolved config", async (t) => {
   const configDir = await temporaryDirectory(t, "labflow-config-")
   await fs.mkdir(path.join(configDir, "providers"))
