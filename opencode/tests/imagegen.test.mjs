@@ -66,6 +66,14 @@ test("plugin preserves native agent system prompts", async (t) => {
   const hooks = await plugin.default()
   t.after(() => hooks.dispose())
 
+  assert.equal(hooks.auth.provider, "openai")
+  assert.deepEqual(hooks.auth.methods, [])
+  assert.deepEqual(await hooks.auth.loader(async () => ({
+    type: "oauth",
+    access: "not-exposed-to-test-output",
+    accountId: "account-test",
+  })), {})
+
   for (const agent of ["build", "labflow-plan"]) {
     const output = { message: { system: "existing system" }, parts: [] }
     await hooks["chat.message"]({ sessionID: `native-${agent}`, agent }, output)
@@ -114,6 +122,26 @@ test("plugin registers the bounded explore worker and preserves model overrides"
   assert.equal(overridden.agent["explore-worker"].options.store, false)
   assert.match(overridden.agent["explore-worker"].prompt, /# Explore Worker/)
   assert.equal(overridden.agent["explore-worker"].permission.edit, "deny")
+})
+
+test("bundled imagegen defaults to the configurable Pro-first route", async () => {
+  const managed = await readManagedConfig()
+  const imagegen = managed.imagegen
+
+  assert.equal(imagegen.defaultRoute, "openai-pro-first")
+  assert.deepEqual(imagegen.routes["openai-pro-first"].profiles, [
+    "openai-pro-codex",
+    "lucoo-gpt-image-2",
+    "gmn-gpt-image-2",
+  ])
+  assert.deepEqual(imagegen.routes["relay-first"].profiles, [
+    "lucoo-gpt-image-2",
+    "gmn-gpt-image-2",
+    "openai-pro-codex",
+  ])
+  assert.equal(imagegen.profiles["openai-pro-codex"].api, "codex")
+  assert.equal(imagegen.profiles["openai-pro-codex"].quality, "high")
+  assert.equal(imagegen.profiles["openai-pro-codex"].secret, undefined)
 })
 
 test("CLI preserves text-only Responses payloads", async (t) => {
@@ -236,6 +264,187 @@ test("CLI builds a redacted multi-image edit payload", async (t) => {
   ])
   assert.equal(result.payload.input[0].content[1].image_url, "data:image/png;base64,<redacted>")
   assert.deepEqual(result.input_images.map((image) => image.source), ["first.png", "second.png"])
+})
+
+test("Codex Pro profile calls the hosted image tool with in-memory OAuth", async (t) => {
+  const cwd = await temporaryDirectory(t, "labflow-imagegen-codex-")
+  const configDir = await temporaryDirectory(t, "labflow-imagegen-codex-config-")
+  const requests = []
+  const codex = http.createServer(async (request, response) => {
+    const chunks = []
+    for await (const chunk of request) chunks.push(chunk)
+    requests.push({ headers: request.headers, body: JSON.parse(Buffer.concat(chunks).toString("utf8")) })
+    response.writeHead(200, { "Content-Type": "text/event-stream" })
+    response.end(`data: ${JSON.stringify({
+      type: "response.output_item.done",
+      item: { id: "ig_test", type: "image_generation_call", result: PNG_BASE64, revised_prompt: "revised" },
+    })}\n\ndata: [DONE]\n\n`)
+  })
+  await new Promise((resolve) => codex.listen(0, "127.0.0.1", resolve))
+  t.after(() => new Promise((resolve, reject) => codex.close((error) => error ? reject(error) : resolve())))
+  const codexAddress = codex.address()
+  await fs.writeFile(path.join(cwd, "reference.png"), PNG_BYTES)
+  await fs.writeFile(path.join(configDir, "defaults.yaml"), "version: 1\nconfig: {}\n")
+  await fs.writeFile(path.join(configDir, "plugins.yaml"), "version: 1\nplugins: []\nbootstrap: {}\n")
+  await fs.writeFile(path.join(configDir, "imagegen.yaml"), [
+    "version: 1",
+    "defaultRoute: pro-first",
+    "profiles:",
+    "  pro:",
+    "    provider: openai",
+    "    api: codex",
+    `    codexEndpoint: http://127.0.0.1:${codexAddress.port}/responses`,
+    "    coordinatorModel: gpt-5.5",
+    "    model: gpt-image-2",
+    "    size: auto",
+    "    quality: auto",
+    "    outputFormat: png",
+    "    timeoutMs: 2000",
+    "routes:",
+    "  pro-first:",
+    "    profiles: [pro]",
+    "",
+  ].join("\n"))
+  const environment = {
+    LABFLOW_CONFIG_DIR: configDir,
+    OPENCODE_CONFIG_DIR: path.join(configDir, "global"),
+    OPENCODE_IMAGEGEN_API: null,
+    OPENCODE_IMAGEGEN_MODEL: null,
+    OPENCODE_IMAGEGEN_PROVIDER: null,
+    OPENCODE_IMAGEGEN_API_KEY: null,
+    OPENCODE_IMAGEGEN_BASE_URL: null,
+    LABFLOW_IMAGEGEN_OPENAI_OAUTH_ACCESS: "oauth-test-token",
+    LABFLOW_IMAGEGEN_OPENAI_ACCOUNT_ID: "account-test",
+  }
+
+  const result = JSON.parse(await runImagegenAsync(cwd, [
+    "--prompt",
+    "preserve the subject",
+    "--input-image",
+    "reference.png",
+    "--n",
+    "2",
+    "--out",
+    "edited.png",
+  ], environment))
+
+  assert.equal(result.profile, "pro")
+  assert.equal(result.route, "pro-first")
+  assert.equal(result.api, "codex")
+  assert.equal(result.backend_size, "auto")
+  assert.equal(result.actual_size, "1x1")
+  assert.equal(result.action, "edit")
+  assert.deepEqual(result.outputs, ["edited-1.png", "edited-2.png"])
+  assert.deepEqual(await fs.readFile(path.join(cwd, "edited-1.png")), PNG_BYTES)
+  assert.deepEqual(await fs.readFile(path.join(cwd, "edited-2.png")), PNG_BYTES)
+
+  assert.equal(requests.length, 2)
+  for (const request of requests) {
+    assert.equal(request.headers.authorization, "Bearer oauth-test-token")
+    assert.equal(request.headers["chatgpt-account-id"], "account-test")
+    assert.equal(request.headers.originator, "opencode")
+    assert.equal(request.body.model, "gpt-5.5")
+    assert.equal(request.body.tool_choice.type, "image_generation")
+    assert.equal(request.body.tools[0].quality, "auto")
+    assert.equal(request.body.tools[0].size, "auto")
+    assert.deepEqual(request.body.input[0].content.map((part) => part.type), ["input_text", "input_image"])
+  }
+})
+
+test("Codex Pro route falls back only on definitive failures", async (t) => {
+  const cwd = await temporaryDirectory(t, "labflow-imagegen-codex-fallback-")
+  const configDir = await temporaryDirectory(t, "labflow-imagegen-codex-fallback-config-")
+  const requests = []
+  let codexMode = "quota"
+  const codex = http.createServer(async (request, response) => {
+    for await (const _chunk of request) {}
+    requests.push("codex")
+    if (codexMode === "timeout") {
+      setTimeout(() => {
+        response.writeHead(200, { "Content-Type": "text/event-stream" })
+        response.end(`data: ${JSON.stringify({ type: "response.output_item.done", item: { type: "image_generation_call", result: PNG_BASE64 } })}\n\n`)
+      }, 500)
+      return
+    }
+    response.writeHead(429, { "Content-Type": "application/json" })
+    response.end(JSON.stringify({ error: { code: "usage_limit_reached" } }))
+  })
+  const relay = http.createServer(async (request, response) => {
+    for await (const _chunk of request) {}
+    requests.push(request.headers.authorization)
+    response.writeHead(200, { "Content-Type": "application/json" })
+    response.end(JSON.stringify({ data: [{ b64_json: PNG_BASE64 }] }))
+  })
+  await Promise.all([
+    new Promise((resolve) => codex.listen(0, "127.0.0.1", resolve)),
+    new Promise((resolve) => relay.listen(0, "127.0.0.1", resolve)),
+  ])
+  t.after(() => Promise.all([
+    new Promise((resolve, reject) => codex.close((error) => error ? reject(error) : resolve())),
+    new Promise((resolve, reject) => relay.close((error) => error ? reject(error) : resolve())),
+  ]))
+  const codexAddress = codex.address()
+  const relayAddress = relay.address()
+
+  await fs.writeFile(path.join(configDir, "defaults.yaml"), "version: 1\nconfig: {}\n")
+  await fs.writeFile(path.join(configDir, "plugins.yaml"), "version: 1\nplugins: []\nbootstrap: {}\n")
+  await fs.writeFile(path.join(configDir, "imagegen.yaml"), [
+    "version: 1",
+    "defaultRoute: pro-first",
+    "profiles:",
+    "  pro:",
+    "    provider: openai",
+    "    api: codex",
+    `    codexEndpoint: http://127.0.0.1:${codexAddress.port}/responses`,
+    "    coordinatorModel: gpt-5.5",
+    "    model: gpt-image-2",
+    "    size: auto",
+    "    quality: auto",
+    "    outputFormat: png",
+    "    timeoutMs: 100",
+    "  relay:",
+    "    provider: relay",
+    "    api: images",
+    `    baseURL: http://127.0.0.1:${relayAddress.port}/v1`,
+    "    model: gpt-image-2",
+    "    secret: relay-key",
+    "    size: 1024x1024",
+    "    quality: low",
+    "    outputFormat: png",
+    "routes:",
+    "  pro-first:",
+    "    profiles: [pro, relay]",
+    "    fallbackOnAmbiguousTimeout: false",
+    "",
+  ].join("\n"))
+  const fakeSops = path.join(configDir, "fake-sops.mjs")
+  await fs.writeFile(fakeSops, "#!/usr/bin/env node\nconsole.log(JSON.stringify({version: 1, secrets: {'relay-key': 'relay-secret'}}))\n")
+  await fs.chmod(fakeSops, 0o755)
+  const environment = {
+    LABFLOW_CONFIG_DIR: configDir,
+    LABFLOW_SOPS_BIN: fakeSops,
+    OPENCODE_CONFIG_DIR: path.join(configDir, "global"),
+    OPENCODE_IMAGEGEN_API: null,
+    OPENCODE_IMAGEGEN_MODEL: null,
+    OPENCODE_IMAGEGEN_PROVIDER: null,
+    OPENCODE_IMAGEGEN_API_KEY: null,
+    OPENCODE_IMAGEGEN_BASE_URL: null,
+    LABFLOW_IMAGEGEN_OPENAI_OAUTH_ACCESS: "oauth-test-token",
+    LABFLOW_IMAGEGEN_OPENAI_ACCOUNT_ID: "account-test",
+  }
+
+  const fallback = JSON.parse(await runImagegenAsync(cwd, ["--prompt", "fallback", "--out", "fallback.png"], environment))
+  assert.deepEqual(fallback.attempted_profiles, ["pro", "relay"])
+  assert.equal(fallback.failed_profiles[0].error.includes("429"), true)
+  assert.deepEqual(requests, ["codex", "Bearer relay-secret"])
+  assert.deepEqual(await fs.readFile(path.join(cwd, "fallback.png")), PNG_BYTES)
+
+  codexMode = "timeout"
+  await assert.rejects(
+    runImagegenAsync(cwd, ["--prompt", "ambiguous", "--out", "ambiguous.png"], environment),
+    /aborted|timeout|operation/i,
+  )
+  assert.equal(requests.filter((request) => request === "Bearer relay-secret").length, 1)
 })
 
 test("CLI rejects image edits through the Images API and more than four references", async (t) => {
@@ -635,6 +844,59 @@ test("plugin edits the current user attachment through the CLI", async (t) => {
     /mutually exclusive/,
   )
   assert.equal(requests.length, 4)
+})
+
+test("plugin forwards OpenCode OAuth from auth loader without reading auth files", async (t) => {
+  const cwd = await temporaryDirectory(t, "labflow-imagegen-plugin-oauth-")
+  const requests = []
+  const codex = http.createServer(async (request, response) => {
+    const chunks = []
+    for await (const chunk of request) chunks.push(chunk)
+    requests.push({ headers: request.headers, body: JSON.parse(Buffer.concat(chunks).toString("utf8")) })
+    response.writeHead(200, { "Content-Type": "text/event-stream" })
+    response.end(`data: ${JSON.stringify({
+      type: "response.output_item.done",
+      item: { id: "ig_plugin", type: "image_generation_call", result: PNG_BASE64 },
+    })}\n\ndata: [DONE]\n\n`)
+  })
+  await new Promise((resolve) => codex.listen(0, "127.0.0.1", resolve))
+  t.after(() => new Promise((resolve, reject) => codex.close((error) => error ? reject(error) : resolve())))
+  const address = codex.address()
+  const oldEndpoint = process.env.OPENCODE_IMAGEGEN_CODEX_ENDPOINT
+  process.env.OPENCODE_IMAGEGEN_CODEX_ENDPOINT = `http://127.0.0.1:${address.port}/responses`
+  t.after(() => restoreEnvironment("OPENCODE_IMAGEGEN_CODEX_ENDPOINT", oldEndpoint))
+
+  const plugin = await import(`${new URL(`file://${PLUGIN_PATH}`).href}?oauth=${Date.now()}`)
+  const hooks = await plugin.default()
+  t.after(() => hooks.dispose())
+  await hooks.auth.loader(async () => ({ type: "oauth", access: "oauth-plugin-token", accountId: "account-plugin" }))
+
+  const result = await hooks.tool.imagegen.execute(
+    {
+      prompt: "direct OAuth image",
+      profile: "openai-pro-codex",
+      size: "1024x1024",
+      quality: "low",
+      out: "oauth.png",
+    },
+    {
+      sessionID: "oauth-session",
+      messageID: "oauth-message",
+      agent: "build",
+      directory: cwd,
+      worktree: cwd,
+      abort: new AbortController().signal,
+      metadata: () => {},
+      ask: async () => {},
+    },
+  )
+
+  assert.match(result.output, /oauth\.png/)
+  assert.deepEqual(await fs.readFile(path.join(cwd, "oauth.png")), PNG_BYTES)
+  assert.equal(requests.length, 1)
+  assert.equal(requests[0].headers.authorization, "Bearer oauth-plugin-token")
+  assert.equal(requests[0].headers["chatgpt-account-id"], "account-plugin")
+  assert.equal(JSON.stringify(requests[0].body).includes("oauth-plugin-token"), false)
 })
 
 test("plugin clears stale attachments and rejects paths outside the worktree", async (t) => {

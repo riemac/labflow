@@ -135,7 +135,7 @@ Make preservation and change boundaries explicit. This is especially important w
 
 Call the `imagegen` custom tool with the final prompt. Do not route through `/imagegen`; labflow no longer installs that slash command. The tool is backed by `node /home/hac/labflow/opencode/scripts/imagegen.mjs` and reads named profiles/routes from `opencode/config/imagegen.yaml`. Legacy `labflow.json`, ignored local JSON, CLI flags, and `OPENCODE_IMAGEGEN_*` remain compatibility and override surfaces.
 
-Set `profile` when the user requests a specific provider/model or deterministic single-provider behavior. Set `route` only when the user accepts ordered provider fallback; `profile` and `route` are mutually exclusive, and `route` cannot be combined with a model override. Omit both to use `defaultProfile`.
+Set `profile` when the user requests a specific provider/model or deterministic single-provider behavior. Set `route` only when the user accepts ordered provider fallback; `profile` and `route` are mutually exclusive, and `route` cannot be combined with a model override. Omit both to use the configured `defaultRoute`, falling back to `defaultProfile` for older configurations.
 
 ## References and Limits
 
@@ -145,17 +145,17 @@ Set `profile` when the user requests a specific provider/model or deterministic 
 - `useAttachedImages` and `useLatestAttachedImages` are mutually exclusive and consume the selected attachment state after one attempt.
 - Local paths and the selected attachment scope can be combined, with a maximum of four reference images in total.
 - Each reference image is limited to 20 MiB and all references together to 50 MiB before base64 encoding.
-- Image-input editing requires a Responses API profile. Masks, remote image URLs, and `previous_response_id` continuation are not supported.
+- Image-input editing requires a Responses API or Codex Pro profile. Masks, remote image URLs, and `previous_response_id` continuation are not supported.
 
 ## Defaults
 
-- `provider` and `model`: use the configured profile; the bundled default is `lucoo-gpt-image-2`, and the optional `preferred` route tries Lucoo before GMN.
-- `size`: `3840x2160` for high-resolution landscape explanatory diagrams, `2048x1152` when speed matters, and `1024x1024` for quick square drafts.
-- `quality`: `high` for discussion figures, `medium` for faster normal use, and `low` for quick drafts.
+- `provider` and `model`: the bundled `openai-pro-first` default route uses OpenCode's in-memory ChatGPT OAuth and the official Codex hosted `image_generation` tool, then falls back to Lucoo and GMN only after a definitive retryable failure. `relay-first` reverses that preference, while `preferred` retains the legacy Lucoo-then-GMN route.
+- The Codex Pro profile defaults to `quality: high`, passes PNG size and quality directly to the hosted tool, and reports the actual dimensions. Choose a relay profile for JPEG or WebP output, or when the ChatGPT subscription channel is unavailable.
+- Relay profiles use `3840x2160` for high-resolution landscape explanatory diagrams, `2048x1152` when speed matters, and `1024x1024` for quick square drafts; use `high`, `medium`, or `low` according to the desired cost/speed.
 - `outDir`: `figures/imagegen`.
 - Set `out` when the user gives a stable asset path; otherwise use the timestamped output path returned by the tool.
 - Keep iteration outputs separate by default. Use `force` only when overwrite is explicitly requested.
-- Provider credentials resolve through SOPS aliases and request-time secure transport. Never add literal API keys to prompts, tool arguments, tracked YAML, logs, or diagnostic output.
+- Codex Pro authentication remains owned by OpenCode. Labflow receives the current credential only through OpenCode's `auth.loader(getAuth)` hook, passes it to the bounded image child process in memory, and never reads `auth.json` or writes the token. Relay credentials resolve through SOPS aliases and request-time secure transport. Never add literal credentials to prompts, tool arguments, tracked YAML, logs, or diagnostic output.
 
 </tool-contract>
 
