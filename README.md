@@ -10,6 +10,7 @@ labflow provides reusable skills for research-heavy coding work:
 - Deep research reports for complex cross-source feasibility and architecture questions.
 - First-principles research brainstorming with method cards, assumptions, counterexamples, and minimal validation probes.
 - Learning forensics for tracing failed behavior through a case-specific causal chain, coordinating hypothesis-blind parallel workers, and selecting high-information probes before formal tuning.
+- OpenCode-only Autopilot for explicitly authorized, no-question long-horizon Research, Coding, and Paper execution with resource-aware candidate waves and event-driven PTY/background continuation.
 - Design-scaffold stage for turning mature ideas into reviewable interfaces, fields, docs, and TODO anchors.
 - Git task flow for task boundaries, commits, history review, and GitHub publishing mechanics.
 - Scientific annotation, PDF reading, Obsidian CLI operations, and self-update.

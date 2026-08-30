@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 - 2026-08-30
+
+- Added the OpenCode-only `autopilot` ability for explicitly authorized, no-question long-horizon Research, Coding, and Paper execution with lightweight topic-local contracts, evidence-guided iteration, resource-aware candidate waves, event-driven PTY/background continuation, and bounded Git/side-effect ownership.
+- Made user-started Goal workflows wait for active background subagents and remain held under both built-in Plan and `labflow-plan`, without making Goal an Autopilot dependency.
+- Added an official ChatGPT Pro `gpt-image-2` backend through OpenCode's in-memory OAuth auth-loader and the Codex hosted image-generation tool, configurable Pro-first and relay-first default routes, deterministic fallback boundaries, and retained Lucoo/GMN profiles.
+
 ## 1.1.1 - 2026-08-30
 
 - Exposed OpenCode's native GPT-5.6 Sol, Terra, and Luna Fast modes for ChatGPT OAuth while retaining their Standard entries and existing defaults.

@@ -20,8 +20,9 @@ const MAX_TOTAL_INPUT_IMAGE_BYTES = 50 * 1024 * 1024
 const MAX_OUTPUT_IMAGE_BYTES = 50 * 1024 * 1024
 const MAX_ERROR_RESPONSE_BYTES = 1024 * 1024
 const MAX_JSON_OVERHEAD_BYTES = 1024 * 1024
+const CODEX_RESPONSES_ENDPOINT = "https://chatgpt.com/backend-api/codex/responses"
 
-const VALID_APIS = new Set(["images", "responses"])
+const VALID_APIS = new Set(["images", "responses", "codex"])
 const VALID_QUALITIES = new Set(["low", "medium", "high", "auto"])
 const VALID_FORMATS = new Set(["png", "jpeg", "jpg", "webp"])
 const REPO_CONFIG_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -54,7 +55,7 @@ async function main() {
 
   const prompt = await readPrompt(flags)
   const imagegenConfig = labflowConfig?.imagegen ?? {}
-  const selection = selectProfiles(managedConfig.imagegen, flags)
+  const selection = selectProfiles(managedConfig.imagegen, flags, imagegenConfig)
   const preferManagedDefaults = selection.explicit || Boolean(selection.route)
   const attempts = selection.profiles.map((profile) => resolveGenerationConfig({
     profile,
@@ -111,7 +112,7 @@ async function main() {
       profile: attempt.profileName,
       provider: attempt.provider,
       api: attempt.api,
-      endpoint: apiEndpoint(attempt.baseURL, attempt.api),
+      endpoint: apiEndpoint(attempt.baseURL, attempt.api, attempt.codexEndpoint),
       payload: redactImageData(buildPayload(attempt, { prompt, count, inputImages })),
     }))
     printResult({
@@ -181,13 +182,14 @@ async function main() {
     response_id: generation.responseID,
     image_generation_call_id: generation.imageGenerationCallID,
     actual_size: generation.actualSize,
+    backend_size: generation.backendSize,
     action: generation.action,
     input_images: inputImages.map(inputImageSummary),
     prompt,
   })
 }
 
-function selectProfiles(imagegen, flags) {
+function selectProfiles(imagegen, flags, legacyConfig = {}) {
   const profileName = firstString(flags.profile, process.env.OPENCODE_IMAGEGEN_PROFILE)
   const routeName = firstString(flags.route, process.env.OPENCODE_IMAGEGEN_ROUTE)
   if (profileName && routeName) throw new Error("--profile and --route are mutually exclusive")
@@ -195,16 +197,11 @@ function selectProfiles(imagegen, flags) {
 
   if (routeName) {
     rejectRouteOverrides(flags)
-    const route = imagegen.routes?.[routeName]
-    if (!isPlainObject(route) || !Array.isArray(route.profiles) || route.profiles.length === 0) {
-      throw new Error(`unknown or empty imagegen route: ${routeName}`)
-    }
-    return {
-      explicit: true,
-      route,
-      routeName,
-      profiles: route.profiles.map((name) => namedProfile(profiles, name)),
-    }
+    return namedRoute(imagegen, profiles, routeName, true)
+  }
+
+  if (!profileName && !hasBackendOverride(flags, legacyConfig) && imagegen.defaultRoute) {
+    return namedRoute(imagegen, profiles, imagegen.defaultRoute, false)
   }
 
   const selectedName = profileName ?? imagegen.defaultProfile
@@ -217,6 +214,40 @@ function selectProfiles(imagegen, flags) {
     }
   }
   return { explicit: false, route: undefined, routeName: undefined, profiles: [{ name: undefined, config: {} }] }
+}
+
+function namedRoute(imagegen, profiles, routeName, explicit) {
+  const route = imagegen.routes?.[routeName]
+  if (!isPlainObject(route) || !Array.isArray(route.profiles) || route.profiles.length === 0) {
+    throw new Error(`unknown or empty imagegen route: ${routeName}`)
+  }
+  return {
+    explicit,
+    route,
+    routeName,
+    profiles: route.profiles.map((name) => namedProfile(profiles, name)),
+  }
+}
+
+function hasBackendOverride(flags, legacyConfig) {
+  return Boolean(firstString(
+    flags.provider,
+    flags.api,
+    flags["api-key"],
+    flags["base-url"],
+    flags.model,
+    process.env.OPENCODE_IMAGEGEN_PROVIDER,
+    process.env.OPENCODE_IMAGEGEN_API,
+    process.env.OPENCODE_IMAGEGEN_API_KEY,
+    process.env.OPENCODE_IMAGEGEN_BASE_URL,
+    process.env.OPENCODE_IMAGEGEN_MODEL,
+    legacyConfig.provider,
+    legacyConfig.api,
+    legacyConfig.apiKey,
+    legacyConfig.apiKeyFile ?? legacyConfig.api_key_file,
+    legacyConfig.baseURL ?? legacyConfig.baseUrl,
+    legacyConfig.model,
+  ))
 }
 
 function namedProfile(profiles, name) {
@@ -285,6 +316,18 @@ function resolveGenerationConfig({ profile, flags, imagegenConfig, managedConfig
     profile: profile.config,
     profileName: profile.name,
     provider,
+    coordinatorModel: firstString(
+      process.env.OPENCODE_IMAGEGEN_COORDINATOR_MODEL,
+      profile.config.coordinatorModel ?? profile.config.coordinator_model,
+      imagegenConfig.coordinatorModel ?? imagegenConfig.coordinator_model,
+      "gpt-5.5",
+    ),
+    codexEndpoint: firstString(
+      process.env.OPENCODE_IMAGEGEN_CODEX_ENDPOINT,
+      profile.config.codexEndpoint ?? profile.config.codex_endpoint,
+      imagegenConfig.codexEndpoint ?? imagegenConfig.codex_endpoint,
+      CODEX_RESPONSES_ENDPOINT,
+    ),
     api: firstString(
       direct.api,
       environment.OPENCODE_IMAGEGEN_API,
@@ -340,21 +383,35 @@ function resolveGenerationConfig({ profile, flags, imagegenConfig, managedConfig
 }
 
 function validateGenerationConfig(config, inputImages) {
-  if (!VALID_APIS.has(config.api)) throw new Error("--api must be one of images or responses")
+  if (!VALID_APIS.has(config.api)) throw new Error("--api must be one of images, responses, or codex")
   if (!VALID_QUALITIES.has(config.quality)) throw new Error("--quality must be one of low, medium, high, or auto")
   if (!VALID_FORMATS.has(config.outputFormat)) throw new Error("--output-format must be one of png, jpeg, jpg, or webp")
-  if (inputImages.length > 0 && config.api !== "responses") throw new Error("input images require --api responses")
+  if (inputImages.length > 0 && !["responses", "codex"].includes(config.api)) {
+    throw new Error("input images require --api responses or codex")
+  }
 }
 
 function buildPayload(config, { prompt, count, inputImages }) {
+  if (config.api === "codex") {
+    return codexResponsesPayload({
+      model: config.coordinatorModel,
+      prompt,
+      size: config.size,
+      quality: config.quality,
+      outputFormat: config.outputFormat,
+      inputImages,
+    })
+  }
   return config.api === "responses"
     ? responsesPayload({ model: config.model, prompt, size: config.size, quality: config.quality, outputFormat: config.outputFormat, inputImages })
     : imagesPayload({ model: config.model, prompt, count, size: config.size, quality: config.quality, outputFormat: config.outputFormat })
 }
 
 async function generateAtomically({ attempt, prompt, count, inputImages, outputPaths, secretStore, force }) {
-  const apiKey = attempt.apiKey ?? (attempt.secretAlias ? await secretStore.get(attempt.secretAlias) : undefined)
-  if (!apiKey) {
+  const apiKey = attempt.api === "codex"
+    ? undefined
+    : attempt.apiKey ?? (attempt.secretAlias ? await secretStore.get(attempt.secretAlias) : undefined)
+  if (attempt.api !== "codex" && !apiKey) {
     throw new Error(`missing API key for provider ${attempt.provider}: configure a managed secret alias or OPENCODE_IMAGEGEN_API_KEY`)
   }
   await fs.mkdir(path.dirname(outputPaths[0]), { recursive: true })
@@ -363,8 +420,20 @@ async function generateAtomically({ attempt, prompt, count, inputImages, outputP
   const stagingPaths = outputPaths.map((outputPath) => path.join(stagingDir, path.basename(outputPath)))
   try {
     const payload = buildPayload(attempt, { prompt, count, inputImages })
-    const generation = attempt.api === "responses"
-      ? await generateResponsesImages({
+    const generation = attempt.api === "codex"
+      ? await generateCodexImages({
+          coordinatorModel: attempt.coordinatorModel,
+          codexEndpoint: attempt.codexEndpoint,
+          prompt,
+          size: attempt.size,
+          quality: attempt.quality,
+          outputFormat: attempt.outputFormat,
+          inputImages,
+          outputPaths: stagingPaths,
+          timeoutMs: attempt.timeoutMs,
+        })
+      : attempt.api === "responses"
+        ? await generateResponsesImages({
           apiKey,
           baseURL: attempt.baseURL,
           model: attempt.model,
@@ -376,7 +445,7 @@ async function generateAtomically({ attempt, prompt, count, inputImages, outputP
           outputPaths: stagingPaths,
           timeoutMs: attempt.timeoutMs,
         })
-      : await generateImages({
+        : await generateImages({
           apiKey,
           baseURL: attempt.baseURL,
           payload,
@@ -440,6 +509,7 @@ function profileListing(imagegen) {
   return {
     ok: true,
     default_profile: imagegen.defaultProfile,
+    default_route: imagegen.defaultRoute,
     profiles: Object.keys(profiles).sort(),
     routes: Object.fromEntries(Object.entries(routes).map(([name, route]) => [name, route.profiles ?? []])),
   }
@@ -532,6 +602,124 @@ async function generateResponsesImages({ apiKey, baseURL, model, prompt, size, q
     action ||= image.action
   }
   return { written, revisedPrompt, responseID, imageGenerationCallID, actualSize, action }
+}
+
+async function generateCodexImages({ coordinatorModel, codexEndpoint, prompt, size, quality, outputFormat, inputImages, outputPaths, timeoutMs }) {
+  if (outputFormat !== "png") {
+    const error = new Error("Codex Pro imagegen returns PNG; select a relay profile for JPEG or WebP output")
+    error.retryable = true
+    throw error
+  }
+
+  const accessToken = process.env.LABFLOW_IMAGEGEN_OPENAI_OAUTH_ACCESS
+  const accountID = process.env.LABFLOW_IMAGEGEN_OPENAI_ACCOUNT_ID
+  if (!accessToken) {
+    const error = new Error("OpenCode ChatGPT OAuth credentials are unavailable to the imagegen plugin")
+    error.retryable = true
+    throw error
+  }
+
+  const written = []
+  let actualSize
+  let revisedPrompt
+  let imageGenerationCallID
+  for (const outputPath of outputPaths) {
+    const image = await postCodexResponses(codexEndpoint, codexResponsesPayload({
+      model: coordinatorModel,
+      prompt,
+      size,
+      quality,
+      outputFormat,
+      inputImages,
+    }), accessToken, accountID, timeoutMs)
+    const bytes = await imageBytes({ b64_json: image.result }, timeoutMs)
+    await fs.writeFile(outputPath, bytes)
+    written.push(relativeToCwd(outputPath))
+    actualSize ||= imageSize(bytes)
+    revisedPrompt ||= image.revised_prompt
+    imageGenerationCallID ||= image.id
+  }
+  return {
+    written,
+    actualSize,
+    backendSize: size,
+    revisedPrompt,
+    imageGenerationCallID,
+    action: inputImages.length > 0 ? "edit" : "generate",
+  }
+}
+
+function codexResponsesPayload({ model, prompt, size, quality, outputFormat, inputImages }) {
+  const userContent = [
+    { type: "input_text", text: prompt },
+    ...inputImages.map((image) => ({ type: "input_image", image_url: image.dataURL })),
+  ]
+  return {
+    model,
+    instructions: "You are an image generation assistant running inside the Codex backend. Always satisfy the request by invoking the image_generation tool exactly once. Do not respond with text only.",
+    input: [{ role: "user", content: userContent }],
+    tools: [{ type: "image_generation", output_format: outputFormat, quality, ...(size ? { size } : {}) }],
+    tool_choice: { type: "image_generation" },
+    stream: true,
+    store: false,
+  }
+}
+
+async function postCodexResponses(endpoint, payload, accessToken, accountID, timeoutMs) {
+  let response
+  let body
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        ...(accountID ? { "ChatGPT-Account-Id": accountID } : {}),
+        originator: "opencode",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify(payload),
+      signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
+    })
+    body = await responseTextBounded(
+      response,
+      response.ok ? apiResponseLimit(1) : MAX_ERROR_RESPONSE_BYTES,
+      !response.ok,
+    )
+  } catch (error) {
+    if (error?.name === "TimeoutError" || error?.name === "AbortError") error.ambiguousTimeout = true
+    else if (error instanceof TypeError) error.retryable = true
+    throw error
+  }
+
+  if (!response.ok) {
+    const error = new Error(`Codex responses request failed (${response.status} ${response.statusText}): ${body.slice(0, 1600)}`)
+    error.retryable = [401, 403, 408, 429].includes(response.status) || response.status >= 500
+    throw error
+  }
+
+  return codexImageFromSse(body)
+}
+
+function imageSize(bytes) {
+  if (imageMimeType(bytes) !== "image/png" || bytes.length < 24) return undefined
+  return `${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`
+}
+
+function codexImageFromSse(body) {
+  for (const line of body.split(/\r?\n/)) {
+    if (!line.startsWith("data:")) continue
+    const data = line.slice(5).trim()
+    if (!data || data === "[DONE]") continue
+    try {
+      const event = JSON.parse(data)
+      const item = event?.item
+      if (event?.type === "response.output_item.done" && item?.type === "image_generation_call" && typeof item.result === "string" && item.result.length > 0) {
+        return item
+      }
+    } catch {}
+  }
+  throw new Error("Codex responses returned no image_generation result")
 }
 
 async function postJson(endpoint, apiKey, payload, timeoutMs, maxResponseBytes) {
@@ -696,6 +884,7 @@ async function readInputImages(rawSources) {
       source: inputImageDisplayPath(filePath),
       mime,
       bytes: bytes.length,
+      content: bytes,
       dataURL: `data:${mime};base64,${bytes.toString("base64")}`,
     })
   }
@@ -933,7 +1122,8 @@ function firstString(...values) {
   return undefined
 }
 
-function apiEndpoint(baseURL, api) {
+function apiEndpoint(baseURL, api, codexEndpoint = CODEX_RESPONSES_ENDPOINT) {
+  if (api === "codex") return codexEndpoint
   const trimmed = String(baseURL || "https://api.openai.com/v1").replace(/\/+$/, "")
   const apiBase = trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`
   return api === "responses" ? `${apiBase}/responses` : `${apiBase}/images/generations`
@@ -1155,8 +1345,8 @@ Options:
   --route ROUTE             Ordered fallback route; cannot use direct provider/model overrides
   --list-profiles           Print configured profiles and routes without generating
   --provider PROVIDER       OpenCode provider ID. Fallback: openai
-  --api API                 images | responses. Fallback: images
-  --input-image PATH        PNG, JPEG, or WebP reference; repeat up to ${MAX_INPUT_IMAGES} times (Responses only)
+  --api API                 images | responses | codex. Fallback: images
+  --input-image PATH        PNG, JPEG, or WebP reference; repeat up to ${MAX_INPUT_IMAGES} times (Responses or Codex)
   --model MODEL             Fallback: ${FALLBACK_MODEL}
   --size SIZE               Fallback: ${FALLBACK_SIZE}
   --quality QUALITY         low | medium | high | auto. Fallback: ${FALLBACK_QUALITY}
@@ -1176,6 +1366,7 @@ Config:
   then OPENCODE_IMAGEGEN_CONFIG.
   Environment overrides: OPENCODE_IMAGEGEN_PROVIDER, OPENCODE_IMAGEGEN_API_KEY,
   OPENCODE_IMAGEGEN_BASE_URL, OPENCODE_IMAGEGEN_API, OPENCODE_IMAGEGEN_MODEL,
+  OPENCODE_IMAGEGEN_COORDINATOR_MODEL, OPENCODE_IMAGEGEN_CODEX_ENDPOINT,
   OPENCODE_IMAGEGEN_PROFILE, OPENCODE_IMAGEGEN_ROUTE,
   OPENCODE_IMAGEGEN_SIZE, OPENCODE_IMAGEGEN_QUALITY,
   OPENCODE_IMAGEGEN_OUTPUT_FORMAT, OPENCODE_IMAGEGEN_OUT_DIR, OPENCODE_IMAGEGEN_N.

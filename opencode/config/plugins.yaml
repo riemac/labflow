@@ -5,6 +5,10 @@ plugins:
       maxDurationMs: 14400000
       maxTokens: 1000000
       minDelayMs: 5000
+      noContinueWhileChildrenActive: true
       registerTools: true
+      restrictedAgents:
+        - plan
+        - labflow-plan
   - opencode-pty
 bootstrap: {}

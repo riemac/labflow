@@ -19,6 +19,7 @@ const MAX_INPUT_IMAGE_BYTES = 20 * 1024 * 1024
 const MAX_TOTAL_INPUT_IMAGE_BYTES = 50 * 1024 * 1024
 const SUPPORTED_IMAGE_MIMES = new Set(["image/png", "image/jpeg", "image/webp"])
 type AttachedImageState = { images: Array<{ mime: string; url: string; filename?: string }> }
+type OpenCodeAuth = { type: string; access?: string; accountId?: string }
 const currentAttachedImagesBySession = new Map<string, AttachedImageState>()
 const latestAttachedImagesBySession = new Map<string, AttachedImageState>()
 
@@ -47,9 +48,10 @@ function readAgentExecutionOverride(value: unknown): Record<string, unknown> {
   return Object.fromEntries(allowed.filter((name) => source[name] !== undefined).map((name) => [name, source[name]]))
 }
 
-const imagegenTool = tool({
+function createImagegenTool(getOpenAIAuth: () => Promise<OpenCodeAuth | undefined>) {
+  return tool({
   description:
-    "Generate or edit raster images through labflow's configured OpenAI-compatible image API. Accepts workspace paths plus explicitly selected current-message or latest session attachments.",
+    "Generate or edit raster images through labflow's configured Codex Pro or OpenAI-compatible image backends. Accepts workspace paths plus explicitly selected current-message or latest session attachments.",
   args: {
     prompt: tool.schema.string().min(1).describe("Final image prompt to send to the image model"),
     inputImages: tool.schema
@@ -114,8 +116,15 @@ const imagegenTool = tool({
       attachedInputImages.length = 0
 
       const cliArgs = buildImagegenArgs({ ...args, inputImages: temporaryInputs.paths })
+      const openAIAuth = await getOpenAIAuth()
+      const childEnvironment = { ...process.env }
+      if (openAIAuth?.type === "oauth" && openAIAuth.access) {
+        childEnvironment.LABFLOW_IMAGEGEN_OPENAI_OAUTH_ACCESS = openAIAuth.access
+        if (openAIAuth.accountId) childEnvironment.LABFLOW_IMAGEGEN_OPENAI_ACCOUNT_ID = openAIAuth.accountId
+      }
       const { stdout } = await execFileAsync(NODE_BIN, [IMAGEGEN_SCRIPT, ...cliArgs], {
         cwd: context.directory,
+        env: childEnvironment,
         signal: context.abort,
         maxBuffer: 2 * 1024 * 1024,
       })
@@ -146,7 +155,8 @@ const imagegenTool = tool({
       }
     }
   },
-})
+  })
+}
 
 function buildImagegenArgs(args): string[] {
   const cliArgs = ["generate", "--prompt", args.prompt]
@@ -418,11 +428,20 @@ function formatExecError(error: unknown): string {
 
 export default async () => {
   const managedConfig = await readManagedConfig()
+  let openAIAuthGetter: (() => Promise<OpenCodeAuth | undefined>) | undefined
   const secretStore = new SecretStore({
     secretPath: path.join(managedConfig.configDir, "secrets.sops.yaml"),
   })
 
   return {
+  auth: {
+    provider: "openai",
+    methods: [],
+    async loader(getAuth) {
+      openAIAuthGetter = getAuth as () => Promise<OpenCodeAuth | undefined>
+      return {}
+    },
+  },
   dispose: async () => {
     secretStore.dispose()
     currentAttachedImagesBySession.clear()
@@ -435,7 +454,7 @@ export default async () => {
     captureAttachedImages(input.sessionID, output.parts)
   },
   tool: {
-    imagegen: imagegenTool,
+    imagegen: createImagegenTool(async () => openAIAuthGetter ? openAIAuthGetter() : undefined),
   },
   config(cfg) {
     applyManagedOpenCodeConfig(cfg, managedConfig, secretStore)

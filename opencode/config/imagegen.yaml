@@ -1,6 +1,16 @@
 version: 1
-defaultProfile: lucoo-gpt-image-2
+defaultRoute: openai-pro-first
 profiles:
+  openai-pro-codex:
+    provider: openai
+    api: codex
+    coordinatorModel: gpt-5.5
+    model: gpt-image-2
+    size: auto
+    quality: high
+    outputFormat: png
+    outDir: figures/imagegen
+    timeoutMs: 300000
   lucoo-gpt-image-2:
     provider: lucoo
     api: images
@@ -35,6 +45,18 @@ profiles:
     outDir: figures/imagegen
     timeoutMs: 180000
 routes:
+  openai-pro-first:
+    profiles:
+      - openai-pro-codex
+      - lucoo-gpt-image-2
+      - gmn-gpt-image-2
+    fallbackOnAmbiguousTimeout: false
+  relay-first:
+    profiles:
+      - lucoo-gpt-image-2
+      - gmn-gpt-image-2
+      - openai-pro-codex
+    fallbackOnAmbiguousTimeout: false
   preferred:
     profiles:
       - lucoo-gpt-image-2

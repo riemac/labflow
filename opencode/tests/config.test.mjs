@@ -24,7 +24,7 @@ test("native OpenAI OAuth exposes standard and fast GPT-5.6 modes", async () => 
   for (const model of ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]) {
     assert.equal(openai.whitelist.includes(model), true)
     assert.equal(openai.whitelist.includes(`${model}-fast`), true)
-    assert.equal(Object.hasOwn(openai.models, `${model}-fast`), false)
+    assert.deepEqual(openai.models[`${model}-fast`].limit, openai.models[model].limit)
   }
 })
 

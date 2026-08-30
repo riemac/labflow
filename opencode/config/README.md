@@ -7,7 +7,7 @@ This directory is the tracked source of truth for portable OpenCode configuratio
 - `defaults.yaml` contains portable OpenCode fields other than `provider` and `plugin`.
 - `providers/*.yaml` contains one provider per file. The `config` mapping follows the OpenCode provider shape; the optional `auth` mapping names encrypted aliases and their request-time header or query placement.
 - `plugins.yaml` contains third-party plugins that must be registered before the labflow plugin runs.
-- `imagegen.yaml` contains named imagegen profiles, the default profile, and optional ordered fallback routes.
+- `imagegen.yaml` contains named imagegen profiles plus configurable default and explicit ordered fallback routes.
 - `secrets.sops.yaml` is created by explicit migration and must remain encrypted. `secrets.sops.example.yaml` documents only its pre-encryption shape.
 
 The generated `~/.config/opencode/opencode.json` remains machine-local because its labflow `file://` URL contains the clone's absolute path. After migration it is a thin bootstrap containing only `$schema` and startup plugin registrations; the labflow plugin injects tracked defaults and providers with existing machine-local values taking precedence.
@@ -53,10 +53,12 @@ After the new device pulls that commit, run `./opencode/install.sh --doctor` and
 
 ## Imagegen Selection
 
-An explicit profile attempts only that profile. A route attempts its declared profiles in order and falls back only for network failures, HTTP 408/429/5xx, `model_unavailable`, or `no_available_channel`. Ambiguous post-send timeout fallback is disabled unless the route explicitly enables `fallbackOnAmbiguousTimeout`.
+An explicit profile attempts only that profile. `defaultRoute` selects the normal ordered route; change it between `openai-pro-first` and `relay-first` without editing tool code. The Codex profile receives the current ChatGPT OAuth credential from OpenCode's auth-loader hook and calls the hosted image-generation tool directly; it never reads `auth.json` or persists the token. A route falls back only for definitive authentication/availability failures, network failures, HTTP 408/429/5xx, `model_unavailable`, or `no_available_channel`. Ambiguous post-send timeout fallback is disabled unless the route explicitly enables `fallbackOnAmbiguousTimeout`.
 
 ```bash
 node opencode/scripts/imagegen.mjs generate --list-profiles
+node opencode/scripts/imagegen.mjs generate --route openai-pro-first --prompt "..."
+node opencode/scripts/imagegen.mjs generate --route relay-first --prompt "..."
 node opencode/scripts/imagegen.mjs generate --profile lucoo-gpt-image-2 --prompt "..."
 node opencode/scripts/imagegen.mjs generate --route preferred --prompt "..."
 ```
