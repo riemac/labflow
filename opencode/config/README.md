@@ -16,6 +16,8 @@ The tracked agent defaults disable OpenCode's built-in `explore` and `general` s
 
 Tracked startup plugins include `opencode-pty`, which exposes background PTY sessions after OpenCode restarts. Labflow global rules reserve long-running PTY ownership for the primary agent, while domain workers continue to use bounded shell commands unless an assignment grants a narrower exception.
 
+The tracked Goal plugin is pinned to the tested release. Its `/goal` command intentionally omits an `agent` override, so Build, `labflow-develop`, and `labflow-paper` retain their current primary-agent identity; `plan` and `labflow-plan` remain held by the plugin's `restrictedAgents` safety gate.
+
 ## Security Model
 
 Provider secrets are decrypted lazily in memory. The plugin injects a custom AI SDK `fetch` closure that replaces sentinel authentication immediately before a request; decrypted values are never inserted into the resolved OpenCode config, written to temporary files, or logged. `install.sh --doctor` decrypts the alias set and fails if `opencode debug config` contains any managed plaintext value.

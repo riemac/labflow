@@ -27,7 +27,6 @@ config:
         For completion during normal goal work, prefer final marker lines exactly like:
         [goal:evidence] verified evidence here
         [goal:complete]
-      agent: build
   agent:
     literature-worker:
       model: lucoo/gpt-5.6-terra

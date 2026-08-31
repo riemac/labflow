@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.2 - 2026-08-31
+
+- Kept `/goal` on the currently selected Build, Develop, or Paper primary agent instead of forcing every invocation through Build, while retaining the explicit Plan-agent execution hold.
+- Pinned `opencode-goal-plugin` 0.9.0 and made bootstrap deduplication replace stale versioned or unversioned npm specs by package identity so tracked child-session and Plan safety options actually load.
+
 ## 1.2.1 - 2026-08-31
 
 - Made Learning Forensics distinguish lightweight causal consultation from formal activation; activated cases now begin with a comprehensive maximum-useful-parallel blind round and then adaptively narrow to one to three focused lanes, primary-led convergence, or evidence-driven re-expansion.

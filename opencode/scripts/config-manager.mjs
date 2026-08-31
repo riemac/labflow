@@ -338,7 +338,9 @@ function uniquePlugins(entries) {
 }
 
 function pluginIdentity(entry) {
-  return typeof entry === "string" ? entry : Array.isArray(entry) && typeof entry[0] === "string" ? entry[0] : undefined
+  const spec = typeof entry === "string" ? entry : Array.isArray(entry) && typeof entry[0] === "string" ? entry[0] : undefined
+  if (!spec || spec.startsWith("file:") || path.isAbsolute(spec) || spec.startsWith(".")) return spec
+  return spec.match(/^(@[^/]+\/[^@]+|[^@/]+)(?:@.+)?$/)?.[1] ?? spec
 }
 
 function isPortablePlugin(entry) {

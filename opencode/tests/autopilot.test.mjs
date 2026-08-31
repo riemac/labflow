@@ -50,8 +50,10 @@ test("autopilot profiles are self-contained and preserve their domain boundaries
 
 test("Goal waits for background children and remains held in both Plan agents", async () => {
   const managed = await readManagedConfig()
-  const entry = managed.plugins.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === "opencode-goal-plugin")
+  const entry = managed.plugins.plugins.find((plugin) => Array.isArray(plugin) && plugin[0].startsWith("opencode-goal-plugin@"))
 
+  assert.equal(entry[0], "opencode-goal-plugin@0.9.0")
   assert.equal(entry[1].noContinueWhileChildrenActive, true)
   assert.deepEqual(entry[1].restrictedAgents, ["plan", "labflow-plan"])
+  assert.equal(managed.defaults.command.goal.agent, undefined)
 })

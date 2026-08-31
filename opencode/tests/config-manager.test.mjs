@@ -18,6 +18,50 @@ async function temporaryDirectory(t, prefix) {
   return directory
 }
 
+test("bootstrap pins managed plugins and replaces stale npm specs", async (t) => {
+  const root = await temporaryDirectory(t, "labflow-bootstrap-")
+  const configDir = path.join(root, "managed-config")
+  const globalDir = path.join(root, "global-config")
+  await Promise.all([
+    fs.mkdir(path.join(configDir, "providers"), { recursive: true }),
+    fs.mkdir(globalDir, { recursive: true }),
+  ])
+  await fs.writeFile(path.join(configDir, "defaults.yaml"), "version: 1\nconfig: {}\n")
+  await fs.writeFile(path.join(configDir, "imagegen.yaml"), "version: 1\nprofiles: {}\nroutes: {}\n")
+  await fs.writeFile(path.join(configDir, "plugins.yaml"), [
+    "version: 1",
+    "plugins:",
+    "  - [opencode-goal-plugin@0.9.0, {maxTurns: 20}]",
+    "  - opencode-pty",
+    "bootstrap: {}",
+    "",
+  ].join("\n"))
+  await fs.writeFile(path.join(globalDir, "opencode.json"), JSON.stringify({
+    plugin: [
+      ["opencode-goal-plugin", { maxTurns: 3 }],
+      "opencode-goal-plugin@0.4.0",
+      "custom-plugin",
+      "file:///old/opencode/plugins/labflow.ts",
+    ],
+  }))
+
+  await execFileAsync(process.execPath, [CONFIG_MANAGER, "bootstrap"], {
+    env: {
+      ...process.env,
+      LABFLOW_CONFIG_DIR: configDir,
+      OPENCODE_CONFIG_DIR: globalDir,
+    },
+    encoding: "utf8",
+  })
+
+  const bootstrap = JSON.parse(await fs.readFile(path.join(globalDir, "opencode.json"), "utf8"))
+  assert.deepEqual(bootstrap.plugin[0], ["opencode-goal-plugin@0.9.0", { maxTurns: 20 }])
+  assert.equal(bootstrap.plugin.filter((entry) => String(Array.isArray(entry) ? entry[0] : entry).startsWith("opencode-goal-plugin")).length, 1)
+  assert.equal(bootstrap.plugin.includes("opencode-pty"), true)
+  assert.equal(bootstrap.plugin.includes("custom-plugin"), true)
+  assert.equal(bootstrap.plugin.at(-1).endsWith("/opencode/plugins/labflow.ts"), true)
+})
+
 test("explicit migration encrypts file secrets, writes a thin bootstrap, and is idempotent", async (t) => {
   const root = await temporaryDirectory(t, "labflow-migration-")
   const home = path.join(root, "home")
