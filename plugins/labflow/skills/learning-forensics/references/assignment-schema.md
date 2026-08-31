@@ -1,6 +1,6 @@
 # Learning Worker Assignment Schema
 
-Use this contract for every new or resumed `learning-worker` task.
+Use this contract for every new or resumed `learning-worker` task inside a formally activated investigation.
 
 ```yaml
 case_root: <absolute dossier path>
@@ -14,6 +14,7 @@ worker_state:
   lane_owner: <unique lane path owner>
 
 phase: blind-audit | cross-examination | probe
+investigation_stage: comprehensive-first-pass | focused | re-expansion
 profile: fast | normal | deep
 language: <research language>
 
@@ -30,6 +31,7 @@ limits:
   max_external_sources: <integer>
 
 scope:
+  shared_evidence_bundle: <case-local evidence index, fact table, and common source pointers>
   include: <artifacts, code, mechanisms, populations, or systems>
   exclude: <explicit boundaries>
   authoritative_design_sources: <paths>
@@ -38,7 +40,17 @@ scope:
 write_targets:
   lane_audit: <case_root>/.learning/audit/lanes/<lens>.md
   probe_root: <case_root>/.learning/probes/<probe-id> or none
+
+worker_probe_reason: <why worker execution preserves material blindness or lane context, otherwise none>
 ```
+
+## Investigation Stage
+
+- `comprehensive-first-pass`: one assignment among the formally activated investigation's complete set of materially relevant, non-duplicate blind lenses. Use `normal` by default and launch the useful lanes concurrently.
+- `focused`: one of at most three active high-information lanes after the first round has narrowed the causal uncertainty.
+- `re-expansion`: a newly relevant non-duplicate lane opened by contradictory evidence or a new causal branch inside the same dossier.
+
+The stage controls orchestration breadth, while `phase` controls allowed actions and `profile` controls depth. A worker must not promote any of them itself.
 
 ## Profiles
 
@@ -56,7 +68,7 @@ Profile controls investigative depth. Phase controls whether experimentation is 
 
 For `blind-audit`, keep coordinator hypotheses and other worker findings outside the assignment. The worker reads the sealed case and listed authoritative sources; paths under `withheld_diagnosis_sources` remain outside scope. If an old diagnosis appears accidentally, mark the contamination and independently reconstruct the mechanism from primary evidence.
 
-For `cross-examination`, provide the competing claims and decisive evidence explicitly. For `probe`, provide a previously created probe root and complete safety contract.
+For `cross-examination`, provide the competing claims and decisive evidence explicitly. For `probe`, provide a previously created probe root, complete safety contract, and a non-empty `worker_probe_reason`; executable probes otherwise remain primary-owned.
 
 ## Return Contract
 
@@ -75,4 +87,4 @@ Write detailed recovery evidence to the assigned lane or probe artifact, but do 
 
 ## Continuation
 
-Record the returned task/thread handle in coordinator-owned `workers.json`. Resume the same worker for the same lens and evidence chain, including transitions from blind audit to cross-examination or probe. Start a new worker for a different lens, independent verification, or a stale/noisy context. The worker does not delegate further.
+Record the returned task/thread handle in coordinator-owned `workers.json`. Resume the same worker for the same lens and evidence chain, including transitions from blind audit to cross-examination or an exceptional worker probe. Start a new worker for a different lens, independent verification, or a stale/noisy context. Checkpoint, metric, hypothesis, and modest causal-focus drift remain in the same dossier; create a new numbered sealed case snapshot only when a later blind round needs materially updated facts. Create a new dossier only for a materially different learning object or decision, or at the user's request. The worker does not delegate further.

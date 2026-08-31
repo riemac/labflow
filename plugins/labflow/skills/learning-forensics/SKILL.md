@@ -1,6 +1,6 @@
 ---
 name: learning-forensics
-description: Use when a supervised, unsupervised, self-supervised, generative, reinforcement-learning, or robotics learning system plateaus, diverges, collapses, overfits, underperforms a baseline, behaves unexpectedly, or needs evidence-driven tuning. Builds a case-specific learning causal chain, coordinates hypothesis-blind parallel learning-worker investigations, identifies the earliest broken link, and designs bounded discriminative probes. Do not use for routine curve plotting, a simple known error, or autonomous large-scale hyperparameter sweeps.
+description: Use when a supervised, unsupervised, self-supervised, generative, reinforcement-learning, or robotics learning system plateaus, diverges, collapses, overfits, underperforms a baseline, behaves unexpectedly, or needs evidence-driven tuning. First judge whether direct primary-led debugging is sufficient; when formally activated, build a comprehensive causal case, coordinate hypothesis-blind parallel learning-worker investigations, then adaptively narrow or re-expand the investigation. Do not use for routine curve plotting, a simple known error, or autonomous large-scale hyperparameter sweeps.
 ---
 
 # Learning Forensics
@@ -21,19 +21,35 @@ This is a template, not a mandatory pipeline. Adapt, split, merge, or rename nod
 
 </mission>
 
+<engagement_gate>
+
+## Consult Before Formally Activating
+
+Loading or consulting this skill does not by itself require a dossier or worker round. The primary agent should first inspect the immediate symptom, known project contracts, available artifacts, decision cost, and the cheapest direct discriminator.
+
+Handle the problem directly when the likely causal span is local, the relevant facts are easy to inspect, a small script or bounded PTY probe can settle the question, and a wrong first action has low cost. The primary may still use ordinary read-heavy exploration and maximum useful parallelism without declaring a forensic case.
+
+Formally activate Learning Forensics when the earliest broken link plausibly spans multiple causal nodes, observations conflict, candidate explanations imply substantially different expensive actions, the system underperforms a baseline for unclear reasons, or designer confirmation bias materially threatens the decision. State why formal activation is warranted, then create or resume one dossier and follow the comprehensive first-round contract below.
+
+Direct handling and formal activation share the same causal discipline. The difference is the amount of blind delegation, persistence, and audit machinery, not the standard of reasoning.
+
+</engagement_gate>
+
 <coordinator_contract>
 
 The calling primary agent is the research lead and final evidence owner. It must:
 
 - independently inspect the project contracts, code, run artifacts, and current process state;
+- decide whether direct primary-led diagnosis is sufficient or formal activation is warranted;
 - frame the failed behavior and the decision the investigation must support;
 - construct the case-specific causal graph from objective facts;
 - keep facts, observations, hypotheses, inferences, proposed interventions, and accepted decisions distinct;
 - freeze a hypothesis-free casefile before the blind worker round;
-- choose genuinely useful primary lenses, launch workers in the background, and continue non-overlapping investigation;
+- on formal activation, cover the complete case-specific chain and launch every materially relevant, non-duplicate blind lens with maximum useful parallelism;
+- after the comprehensive first round, narrow, pause, or re-expand delegation according to evidence and expected information gain;
 - verify exact evidence that drives a diagnosis or code change;
 - resolve conflicts between workers and own every human-facing report;
-- select the smallest probe that distinguishes live hypotheses;
+- select and normally execute the smallest probe that distinguishes live hypotheses, using resource-safe maximum useful parallelism for independent probes;
 - ask before any formal, expensive, intrusive, or long-running experiment.
 
 Workers increase coverage and provide independent causal readings. They do not replace the primary agent's scientific reasoning, choose the final diagnosis, or write the researcher-facing synthesis.
@@ -75,7 +91,7 @@ A large loss, gradient, or update norm is not evidence of useful information. A 
 
 <case_protocol>
 
-## Create Or Resume A Dossier
+## Create Or Resume A Dossier After Formal Activation
 
 Read `references/dossier-layout.md`. Initialize or validate a local-only case directory with the standard-library helper:
 
@@ -85,6 +101,8 @@ python3 scripts/case.py validate --path <case-root> --json
 ```
 
 When invoked outside this skill directory, use the absolute path to `scripts/case.py`. The helper requires Python 3.9 or newer and owns deterministic structure only; it never diagnoses learning behavior or runs experiments.
+
+One dossier represents one continuing investigation identity. Reuse it across new checkpoints, metrics, local hypotheses, probes, and modest shifts in causal focus while the learning object and decision remain semantically the same. Create a new dossier only when the model/task/data object or core decision changes materially, or when the user explicitly requests a separate investigation.
 
 ## Build And Seal The Blind Casefile
 
@@ -102,13 +120,13 @@ Separate source classes explicitly:
 - `authoritative_design_sources`: project instructions, formulas, configs, schemas, source code, and distributed design prompts that define intended behavior;
 - `withheld_diagnosis_sources`: existing tuning notes, prior speculative reports, and coordinator hypotheses that blind workers should not read during their first pass.
 
-All first-round workers receive the same sealed case path and SHA-256. If material facts change, create and seal a new numbered case instead of editing the old one.
+All first-round workers receive the same sealed case path and SHA-256. Ordinary progress, worker returns, new metrics, and hypothesis refinement do not require another casefile. If a later blind round genuinely needs materially updated facts, create and seal the next numbered case snapshot inside the same dossier instead of editing the old one.
 
 </case_protocol>
 
 <parallel_investigation>
 
-## Select Primary Lenses
+## Cover The Comprehensive First Round
 
 The standard first-round candidate lenses are:
 
@@ -121,11 +139,13 @@ The standard first-round candidate lenses are:
 7. precision, accumulation, distributed execution, resume, cache, runtime, and systems infrastructure;
 8. evaluation validity, comparison fairness, checkpoint choice, and discriminative experiment design.
 
-These are lenses, not permanent departments. A lens defines emphasis rather than a prohibition on adjacent evidence. Remove irrelevant lenses, add a case-specific lens when needed, and avoid duplicate assignments. For a genuinely new and poorly understood learning failure, up to eight independent blind workers may run concurrently; later work should resume only the high-information lanes.
+These are lenses, not permanent departments. A lens defines emphasis rather than a prohibition on adjacent evidence. During the first round of a formally activated investigation, map the complete chain, remove only demonstrably irrelevant or semantically duplicate lenses, add case-specific lenses when needed, and launch every remaining independent blind lane concurrently when the runtime permits. Use `normal` by default, reserve `deep` for intrinsically multi-node or high-ambiguity questions, and keep the existing limit of eight workers. Comprehensive coverage means maximum useful causal breadth, not one worker per label or duplicate parsing of the same question.
+
+Build the shared fact bundle once: the sealed case, evidence index, authoritative source pointers, run identities, and already-derived objective values. Give every worker the same case identity and only the lane-specific source additions it needs. Continue primary-owned, non-overlapping investigation while the workers run.
 
 ## Delegate Blind First Passes
 
-Read `references/assignment-schema.md`. Each assignment must include the sealed case, worker ownership state, phase, primary lens, causal span, bounded question, decision connection, profile, scope, limits, write targets, and research language. Do not include the coordinator's preferred explanation.
+Read `references/assignment-schema.md`. Each assignment must include the sealed case, worker ownership state, phase, investigation stage, primary lens, causal span, bounded question, decision connection, profile, shared evidence bundle, scope, limits, write targets, research language, and any exceptional worker-probe reason. Do not include the coordinator's preferred explanation.
 
 Use Codex's native background-agent mechanism. Prefer the custom `learning-worker` installed from `plugins/labflow/agents/learning-worker.toml`. When it is unavailable, use the built-in `worker`; its spawn prompt must load `learning-forensics`, name the phase and lens, include the complete assignment schema, and restate the blind-input, hidden-write, bounded-probe, and return contracts. Spawn asynchronously, continue non-overlapping work, reuse the same agent thread for the same lens and evidence chain, and wait only at a real dependency barrier.
 
@@ -144,7 +164,23 @@ After the blind returns, compare mechanisms and evidence rather than counting ho
 
 Resume the relevant worker when its existing context remains useful. Provide competing evidence during `cross-examination`; do not preserve blindness after the first pass. Start a new worker only for a genuinely different lens or independent verification.
 
+Stop adding lanes when independent workers converge on the same decisive probe, the live uncertainty contracts to one or two causal links, or another return would only repeat known evidence.
+
 </parallel_investigation>
+
+<adaptive_operation>
+
+## Change Intensity As Evidence Changes
+
+After the mandatory comprehensive first round, choose the smallest investigation intensity that preserves the live causal distinctions:
+
+- **focused / lite:** resume or launch only the one to three learning-worker lanes that still have material information gain; let the primary own routine evaluation, synthesis, and probes;
+- **primary-led convergence:** the primary owns all experiments and decisions, while `learning-worker` remains available for an independent causal challenge and `explore-worker` may retrieve bounded read-heavy code, artifact, documentation, or source evidence;
+- **re-expansion:** when new contradictory evidence opens another causal branch, add the newly relevant non-duplicate lanes without restarting the dossier or mechanically repeating the original round.
+
+These are adaptive investigation stages, not user-selected modes or a one-way state machine. Downshift immediately when the evidence narrows; re-expand only when a new distinction can change the decision. Use `learning-worker` for causal analysis and `explore-worker` for retrieval support, not as interchangeable roles.
+
+</adaptive_operation>
 
 <probe_and_tuning>
 
@@ -160,9 +196,13 @@ Prefer probes that split competing explanations: deterministic formula checks, f
 
 Do not jump from a flat loss to a new optimizer, larger model, or longer training budget. First determine whether the failure lies in data or signal, observability, representation, function class, objective, gradient, update, runtime, or evaluation.
 
-## Bounded Worker Probes
+## Primary-Owned Probes By Default
 
-Read `references/probe-protocol.md`. Resume the original worker with `phase: probe` only after stating:
+The primary agent normally writes, launches, observes, and iterates every executable probe. Use ordinary bounded shell commands when they will finish within the tool timeout and PTY/background sessions for long, interactive, live, or formally tracked processes. Independent probes may run concurrently only after checking CPU, GPU memory, RAM, disk, output isolation, and expected duration; allocate the maximum useful parallel wave without oversubscribing shared resources.
+
+## Exceptional Worker Probes
+
+Read `references/probe-protocol.md`. Resume the original worker with `phase: probe` only when preserving worker blindness or lane-local context has material diagnostic value and the probe is safely self-contained. State:
 
 - the hypothesis being tested;
 - predictions if true and if false;
@@ -172,7 +212,7 @@ Read `references/probe-protocol.md`. Resume the original worker with `phase: pro
 - at most one GPU process;
 - stop and cleanup conditions.
 
-The worker uses ordinary shell execution with a hard timeout. It writes scripts, durable results, and disposable intermediates under `.learning/probes/<probe-id>/`. Project-source changes are returned as proposals for the primary agent. Formal runs, checkpoints, caches, commits, and formal training budgets remain outside the worker's ownership.
+The worker uses ordinary shell execution with a hard timeout. It writes scripts, durable results, and disposable intermediates under `.learning/probes/<probe-id>/`. Project-source changes are returned as proposals for the primary agent. PTY sessions, formal runs, checkpoints, caches, commits, and formal training budgets remain outside the worker's ownership.
 
 ## Long Or Formal Experiments
 
@@ -204,6 +244,8 @@ Read `references/topic-report.md`. Do not pre-create empty generic topics. A top
 
 Workers write only assigned files under `.learning/audit/lanes/` and `.learning/probes/`. The coordinator owns hidden central state, cross-examination, decision tree, record, and all human-facing files.
 
+Update the dossier at information-bearing transitions: a new sealed snapshot, a decisive worker return, a completed probe, a changed causal boundary, or an accepted decision. Do not turn every command, PTY status change, or intermediate thought into mandatory dossier maintenance.
+
 </synthesis_and_reporting>
 
 <routing>
@@ -223,13 +265,17 @@ Read only what the current phase requires:
 <anti_patterns>
 
 - Do not return a generic learning-rate, batch-size, depth, optimizer, and regularization checklist.
+- Do not treat consulting this skill as automatic formal activation.
 - Do not expose a favored hypothesis to every blind worker.
 - Do not launch eight workers with semantically duplicate questions.
+- Do not keep comprehensive delegation active after the evidence has narrowed.
 - Do not let worker agreement substitute for evidence.
 - Do not interpret raw loss without baseline, denominator, population, unit, and prediction behavior.
 - Do not infer information quality from gradient magnitude alone.
 - Do not treat a project-local diagnostic skill as interchangeable with this coordinator method.
 - Do not run a new formal budget before cheaper causal probes are exhausted.
+- Do not create a new dossier for ordinary checkpoint, metric, hypothesis, or causal-focus drift.
+- Do not route primary-owned PTY work through a worker merely because the investigation began with blind delegation.
 - Do not let workers write human-facing synthesis or shared central state.
 - Do not claim a simulation, visualization, or qualitative behavior passed without researcher inspection.
 

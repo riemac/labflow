@@ -32,6 +32,12 @@
         `-- processes.json
 ```
 
+## Investigation Identity And Continuity
+
+Create this dossier only after Learning Forensics is formally activated. One dossier follows one learning object and one stable decision semantics across new checkpoints, metrics, local hypotheses, probes, and modest shifts in causal focus. These ordinary developments update the existing dossier rather than creating sibling dossier roots.
+
+Sealed numbered casefiles are immutable blind-input snapshots inside that continuing investigation. Create the next snapshot only when a later blind round needs materially updated facts. Cross-examination, worker continuation, probe results, and narrowed hypotheses normally reuse the current dossier without another snapshot. Start a new dossier only when the model/task/data object or core decision changes materially, or when the user explicitly asks for separation.
+
 ## Human Layer
 
 - `README.md` is short navigation and status only.
@@ -51,6 +57,8 @@ The coordinator owns the human layer. Workers never draft or edit it.
 - each probe directory is isolated and tied to one sealed case digest;
 - `workers.json` is coordinator-owned task/thread ownership and continuation state.
 - `processes.json` is coordinator-owned PTY/background-process identity, command lineage, case digest, optional probe ID, GPU assignment, and completion state.
+
+Update central state and reports at information-bearing transitions such as a new sealed snapshot, decisive worker return, completed probe, changed causal boundary, or accepted decision. Command-by-command narration and routine PTY status changes are not required dossier events.
 
 ## Git Boundary
 

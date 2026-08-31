@@ -33,7 +33,7 @@ Main skill families:
 - Design / implementation support: `annotation`, `git-task-flow`,
   `obsidian-cli`, `self-update`, `neat-freak`.
 
-`learning-forensics` is a cross-platform ability backed by the `learning-worker` custom agent. Codex discovers custom agents only from project/global `.codex/agents/*.toml`; the local reload helper links `plugins/labflow/agents/learning-worker.toml` into `~/.codex/agents/` without replacing a user-owned file. The skill falls back to Codex's built-in `worker` when that custom role is unavailable. A primary agent freezes a fact-only casefile, assigns independent causal lenses, verifies decisive evidence, and owns the final diagnosis and researcher-facing topic reports.
+`learning-forensics` is a cross-platform ability backed by the `learning-worker` custom agent. Codex discovers custom agents only from project/global `.codex/agents/*.toml`; the local reload helper links `plugins/labflow/agents/learning-worker.toml` into `~/.codex/agents/` without replacing a user-owned file. The skill falls back to Codex's built-in `worker` when that custom role is unavailable. Consulting the skill may remain direct and primary-led; formal activation freezes a fact-only case, launches comprehensive maximum-useful-parallel blind coverage, then dynamically narrows or re-expands while primary-owned probe execution and one continuing dossier remain the defaults.
 
 ## Stage-Driven Development
 

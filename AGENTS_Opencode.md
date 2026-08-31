@@ -53,7 +53,7 @@ CLI and the hidden `literature-worker` subagent. The primary agent remains the
 research lead; workers own bounded topic artifacts, while the primary persists
 resumable task IDs in each project's ignored dossier state.
 
-`learning-forensics` is a cross-platform ability backed by the hidden `learning-worker`. The primary agent builds and seals a fact-only learning case, assigns independent causal lenses to parallel worker instances, verifies decisive evidence, and writes human-facing topic reports. The worker supports blind audit, cross-examination, and explicitly bounded short probes while long-running process ownership remains with the primary agent.
+`learning-forensics` is a cross-platform ability backed by the hidden `learning-worker`. Consulting the skill may remain a direct primary-led diagnosis; formal activation builds and seals a fact-only case, launches a comprehensive maximum-useful-parallel blind round, then dynamically narrows to one to three focused lanes, primary-led probes, or re-expansion as evidence changes. The same dossier survives ordinary checkpoint, metric, hypothesis, and causal-focus drift; new dossier roots require a materially different learning object or decision. Workers support blind audit, cross-examination, and exceptional bounded short probes, while primary-owned PTY execution remains the default.
 
 The tracked `opencode-pty` startup plugin provides optional PTY sessions for formal training, live services, and other long-running commands. Global rules assign each long job to one primary-owned session with completion notifications; ordinary background workers continue to use bounded shell commands.
 

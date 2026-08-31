@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-08-31
+
+- Made Learning Forensics distinguish lightweight causal consultation from formal activation; activated cases now begin with a comprehensive maximum-useful-parallel blind round and then adaptively narrow to one to three focused lanes, primary-led convergence, or evidence-driven re-expansion.
+- Moved executable probe ownership to the primary agent by default, including resource-safe parallel PTY waves, while retaining learning workers for independent causal challenge and exceptional blindness-preserving short probes and explore workers for bounded read-heavy retrieval.
+- Defined one continuing dossier identity across ordinary checkpoint, metric, hypothesis, and causal-focus drift, with new immutable case snapshots only when a later blind round needs materially updated facts.
+
 ## 1.2.0 - 2026-08-30
 
 - Added the OpenCode-only `autopilot` ability for explicitly authorized, no-question long-horizon Research, Coding, and Paper execution with lightweight topic-local contracts, evidence-guided iteration, resource-aware candidate waves, event-driven PTY/background continuation, and bounded Git/side-effect ownership.

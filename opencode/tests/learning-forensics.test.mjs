@@ -87,6 +87,8 @@ test("plugin registers the bounded learning worker and preserves user model over
     assert.equal(worker.permission[tool], "deny")
   }
   assert.match(worker.prompt, /<blindness_contract>/)
+  assert.match(worker.prompt, /`investigation_stage` controls orchestration breadth/)
+  assert.match(worker.prompt, /primary normally owns probes and PTY feedback/)
   assert.match(worker.prompt, /maximum of 600 wall-clock seconds/)
 
   const source = await fs.readFile(WORKER_PATH, "utf8")
@@ -134,7 +136,7 @@ test("Codex learning worker uses the documented custom-agent TOML schema", async
 test("repository and Codex plugin publish one learning-forensics version", async () => {
   const version = (await fs.readFile(path.join(REPO_DIR, "VERSION"), "utf8")).trim()
   const manifest = JSON.parse(await fs.readFile(CODEX_MANIFEST_PATH, "utf8"))
-  assert.equal(version, "1.2.0")
+  assert.equal(version, "1.2.1")
   assert.equal(manifest.version, version)
   assert.equal(manifest.keywords.includes("learning-forensics"), true)
 })
@@ -170,6 +172,34 @@ test("Codex and OpenCode share one scientific skill contract", async () => {
     normalizePlatformDelegation(await fs.readFile(OPENCODE_SKILL_CN, "utf8")),
     normalizePlatformDelegation(await fs.readFile(CODEX_SKILL_CN, "utf8")),
   )
+})
+
+
+test("learning-forensics starts comprehensive and then adapts investigation intensity", async () => {
+  const [skill, chinese, assignment, probe, dossier, codexWorker] = await Promise.all([
+    fs.readFile(OPENCODE_SKILL, "utf8"),
+    fs.readFile(OPENCODE_SKILL_CN, "utf8"),
+    fs.readFile(path.join(OPENCODE_REFERENCES, "assignment-schema.md"), "utf8"),
+    fs.readFile(path.join(OPENCODE_REFERENCES, "probe-protocol.md"), "utf8"),
+    fs.readFile(path.join(OPENCODE_REFERENCES, "dossier-layout.md"), "utf8"),
+    fs.readFile(CODEX_WORKER_PATH, "utf8"),
+  ])
+
+  assert.match(skill, /<engagement_gate>/)
+  assert.match(skill, /Loading or consulting this skill does not by itself require a dossier/)
+  assert.match(skill, /Cover The Comprehensive First Round/)
+  assert.match(skill, /launch every remaining independent blind lane concurrently/)
+  assert.match(skill, /one to three learning-worker lanes/)
+  assert.match(skill, /Primary-Owned Probes By Default/)
+  assert.match(skill, /learning-worker.*causal analysis and `explore-worker` for retrieval support/)
+  assert.match(chinese, /focused \/ lite.*1–3 条 learning-worker lanes/)
+  assert.match(assignment, /investigation_stage: comprehensive-first-pass \| focused \| re-expansion/)
+  assert.match(assignment, /one of at most three active high-information lanes/)
+  assert.match(probe, /The primary agent owns probe execution by default/)
+  assert.match(probe, /maximum useful parallel wave/)
+  assert.match(dossier, /Create the next snapshot only when a later blind round needs materially updated facts/)
+  assert.match(dossier, /Start a new dossier only when the model\/task\/data object or core decision changes materially/)
+  assert.match(codexWorker, /primary normally owns probes and PTY feedback/)
 })
 
 

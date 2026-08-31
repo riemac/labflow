@@ -121,7 +121,7 @@ Return a concise report directly to the parent and write detailed recovery evide
 1. Load the `learning-forensics` skill.
 2. Read the sealed casefile, assignment-listed authoritative sources, and references named by the coordinator. Apply project instructions already present in the session; avoid proactively opening diagnostic notes outside the assignment. The casefile and assignment provide the blind-round question and language; `.learning/brief.md` remains coordinator-only.
 3. Verify the casefile against the assigned SHA-256 sidecar.
-4. Parse `phase`, `profile`, `language`, `primary_lens`, `causal_span`, question, decision connection, limits, source boundaries, worker ownership, and exact write targets.
+4. Parse `phase`, `investigation_stage`, `profile`, `language`, `primary_lens`, `causal_span`, question, decision connection, limits, the shared evidence bundle, source boundaries, worker ownership, exact write targets, and any worker-probe reason.
 5. Use the assigned language for prose. Preserve official identifiers and source symbols when translation reduces precision.
 6. If a scientific boundary, case identity, or write target is missing, return the blocker to the coordinator instead of asking the user.
 
@@ -132,6 +132,8 @@ Return a concise report directly to the parent and write detailed recovery evide
 - `deep`: systematically challenge alternative mechanisms, boundary cases, cross-node dependencies, and counterexamples within the assigned lens.
 
 Profile controls depth. Phase controls allowed actions. Preserve both until the coordinator explicitly changes them in a resumed assignment.
+
+`investigation_stage` controls orchestration breadth. In `comprehensive-first-pass`, provide one independent blind reading within the coordinator's complete causal coverage. In `focused`, remain one of at most three active high-information causal lanes. In `re-expansion`, investigate only the newly opened distinction without repeating the original round. Do not change stage yourself.
 
 </assignment_intake>
 
@@ -165,7 +167,7 @@ Read competing claims supplied by the coordinator. Identify incompatible assumpt
 
 ## Probe
 
-Read the assigned probe manifest and `references/probe-protocol.md`. Confirm a sealed case, prior true/false predictions, a maximum of 600 wall-clock seconds, at most one GPU process, explicit write roots, and cleanup conditions. Use ordinary shell execution with a hard timeout. Store durable scripts, results, and disposable intermediates inside the probe directory.
+Worker execution is exceptional because the primary normally owns probes and PTY feedback. Read the assigned probe manifest and `references/probe-protocol.md`. Confirm a non-empty reason that worker blindness or lane-local context materially matters, a sealed case, prior true/false predictions, a maximum of 600 wall-clock seconds, at most one GPU process, explicit write roots, and cleanup conditions. Use ordinary shell execution with a hard timeout. Store durable scripts, results, and disposable intermediates inside the probe directory.
 
 Stop when the probe exceeds scope, needs another device, requires a formal budget, changes a formal run, or needs project-source changes. Return the escalation to the coordinator.
 
@@ -216,7 +218,7 @@ Keep task IDs, retrieval narration, command chatter, raw logs, and failed search
 
 <stop_rules>
 
-Return when the assigned profile is satisfied, retrieval repeats known evidence, the uncertainty requires a new phase or user choice, the probe reaches its limit, or context growth threatens timeliness. A bounded answer with an explicit gap is preferable to a late exhaustive dump.
+Return when the assigned profile is satisfied, retrieval repeats known evidence, the lane identifies the same decisive probe as other supplied evidence, the uncertainty requires a new phase or user choice, the probe reaches its limit, or context growth threatens timeliness. A bounded answer with an explicit gap is preferable to a late exhaustive dump.
 
 Do not delegate or ask the user directly. Resume through the coordinator for additional evidence, cross-examination, or a bounded probe.
 
