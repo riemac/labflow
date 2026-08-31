@@ -53,7 +53,12 @@ test("Goal waits for background children and remains held in both Plan agents", 
   const entry = managed.plugins.plugins.find((plugin) => Array.isArray(plugin) && plugin[0].startsWith("opencode-goal-plugin@"))
 
   assert.equal(entry[0], "opencode-goal-plugin@0.9.0")
+  assert.equal(entry[1].maxTurns, 1000)
+  assert.equal(entry[1].maxDurationMs, 144000000)
+  assert.equal(entry[1].maxTokens, 100000000)
+  assert.equal(entry[1].minDelayMs, 5000)
   assert.equal(entry[1].noContinueWhileChildrenActive, true)
+  assert.equal(entry[1].sessionTitleStatus, true)
   assert.deepEqual(entry[1].restrictedAgents, ["plan", "labflow-plan"])
   assert.equal(managed.defaults.command.goal.agent, undefined)
 })

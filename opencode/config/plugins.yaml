@@ -1,12 +1,13 @@
 version: 1
 plugins:
   - - opencode-goal-plugin@0.9.0
-    - maxTurns: 20
-      maxDurationMs: 14400000
-      maxTokens: 1000000
+    - maxTurns: 1000
+      maxDurationMs: 144000000
+      maxTokens: 100000000
       minDelayMs: 5000
       noContinueWhileChildrenActive: true
       registerTools: true
+      sessionTitleStatus: true
       restrictedAgents:
         - plan
         - labflow-plan

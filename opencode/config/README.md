@@ -18,6 +18,8 @@ Tracked startup plugins include `opencode-pty`, which exposes background PTY ses
 
 The tracked Goal plugin is pinned to the tested release. Its `/goal` command intentionally omits an `agent` override, so Build, `labflow-develop`, and `labflow-paper` retain their current primary-agent identity; `plan` and `labflow-plan` remain held by the plugin's `restrictedAgents` safety gate.
 
+Goal defaults permit up to 1000 automatic continuations and 40 active hours with a deliberately non-binding 100-million context-token ceiling, while retaining the five-second cooldown and child-session gate. `sessionTitleStatus` is enabled so the current objective, turn count, active duration, and context budget remain visible in the session title.
+
 ## Security Model
 
 Provider secrets are decrypted lazily in memory. The plugin injects a custom AI SDK `fetch` closure that replaces sentinel authentication immediately before a request; decrypted values are never inserted into the resolved OpenCode config, written to temporary files, or logged. `install.sh --doctor` decrypts the alias set and fails if `opencode debug config` contains any managed plaintext value.

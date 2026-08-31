@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.3 - 2026-08-31
+
+- Persisted the user-selected Goal defaults of 1000 auto-continues, 40 active hours, a 100-million context-token ceiling, and a five-second cooldown in the portable tracked plugin configuration without weakening Plan or child-session gates.
+- Enabled Goal session-title status so active objectives expose compact turn, duration, and context-budget progress without restoring the former expanded command prompt.
+
 ## 1.2.2 - 2026-08-31
 
 - Kept `/goal` on the currently selected Build, Develop, or Paper primary agent instead of forcing every invocation through Build, while retaining the explicit Plan-agent execution hold.
