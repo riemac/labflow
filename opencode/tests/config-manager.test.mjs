@@ -3,7 +3,7 @@ import { execFile } from "node:child_process"
 import * as fs from "node:fs/promises"
 import * as os from "node:os"
 import * as path from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { promisify } from "node:util"
 import test from "node:test"
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml"
@@ -60,6 +60,106 @@ test("bootstrap pins managed plugins and replaces stale npm specs", async (t) =>
   assert.equal(bootstrap.plugin.includes("opencode-pty"), true)
   assert.equal(bootstrap.plugin.includes("custom-plugin"), true)
   assert.equal(bootstrap.plugin.at(-1).endsWith("/opencode/plugins/labflow.ts"), true)
+})
+
+test("bootstrap can opt into and roll back machine-local Goal and PTY plugins", async (t) => {
+  const root = await temporaryDirectory(t, "labflow-local-plugins-")
+  const configDir = path.join(root, "managed-config")
+  const globalDir = path.join(root, "global-config")
+  const localDir = path.join(root, "local-plugins")
+  await Promise.all([
+    fs.mkdir(path.join(configDir, "providers"), { recursive: true }),
+    fs.mkdir(globalDir, { recursive: true }),
+    fs.mkdir(localDir, { recursive: true }),
+  ])
+  await fs.writeFile(path.join(configDir, "defaults.yaml"), "version: 1\nconfig: {}\n")
+  await fs.writeFile(path.join(configDir, "imagegen.yaml"), "version: 1\nprofiles: {}\nroutes: {}\n")
+  await fs.writeFile(path.join(configDir, "plugins.yaml"), [
+    "version: 1",
+    "plugins:",
+    "  - [opencode-goal-plugin@0.9.0, {maxTurns: 1000, sessionTitleStatus: true}]",
+    "  - opencode-pty",
+    "bootstrap: {}",
+    "",
+  ].join("\n"))
+  const goalPath = path.join(localDir, "goal.js")
+  const ptyPath = path.join(localDir, "pty.js")
+  const integrationPath = path.join(localDir, "integration.js")
+  await Promise.all([
+    fs.writeFile(goalPath, "export const GoalPlugin = async () => ({})\n"),
+    fs.writeFile(ptyPath, "export const PTYPlugin = async () => ({})\n"),
+    fs.writeFile(integrationPath, "export const listPtySessions = () => []\n"),
+  ])
+  const overridePath = path.join(globalDir, "labflow-plugin-overrides.json")
+  const override = {
+    version: 1,
+    enabled: true,
+    goalPluginUrl: pathToFileURL(goalPath).href,
+    ptyPluginUrl: pathToFileURL(ptyPath).href,
+    ptyIntegrationUrl: pathToFileURL(integrationPath).href,
+  }
+  await fs.writeFile(overridePath, JSON.stringify(override, null, 2))
+  await fs.writeFile(path.join(globalDir, "opencode.json"), JSON.stringify({
+    plugin: [
+      "opencode-goal-plugin@0.4.0",
+      "opencode-pty",
+      "custom-plugin",
+      "file:///old/opencode/plugins/goal-pty-adapter.ts",
+    ],
+  }))
+  const environment = {
+    ...process.env,
+    LABFLOW_CONFIG_DIR: configDir,
+    LABFLOW_PLUGIN_OVERRIDES_FILE: overridePath,
+    OPENCODE_CONFIG_DIR: globalDir,
+  }
+
+  await execFileAsync(process.execPath, [CONFIG_MANAGER, "bootstrap"], {
+    env: environment,
+    encoding: "utf8",
+  })
+  let bootstrap = JSON.parse(await fs.readFile(path.join(globalDir, "opencode.json"), "utf8"))
+  assert.match(bootstrap.plugin[0][0], /\/opencode\/plugins\/goal-pty-adapter\.ts$/)
+  assert.equal(bootstrap.plugin[0][1].goalPluginUrl, override.goalPluginUrl)
+  assert.equal(bootstrap.plugin[0][1].ptyIntegrationUrl, override.ptyIntegrationUrl)
+  assert.deepEqual(bootstrap.plugin[0][1].goalOptions, {
+    maxTurns: 1000,
+    sessionTitleStatus: true,
+  })
+  assert.equal(bootstrap.plugin[1], override.ptyPluginUrl)
+  assert.equal(bootstrap.plugin.includes("custom-plugin"), true)
+  assert.equal(JSON.stringify(bootstrap.plugin).includes("opencode-goal-plugin@0.4.0"), false)
+
+  override.enabled = false
+  await fs.writeFile(overridePath, JSON.stringify(override, null, 2))
+  await execFileAsync(process.execPath, [CONFIG_MANAGER, "bootstrap"], {
+    env: environment,
+    encoding: "utf8",
+  })
+  bootstrap = JSON.parse(await fs.readFile(path.join(globalDir, "opencode.json"), "utf8"))
+  assert.deepEqual(bootstrap.plugin[0], [
+    "opencode-goal-plugin@0.9.0",
+    { maxTurns: 1000, sessionTitleStatus: true },
+  ])
+  assert.equal(bootstrap.plugin[1], "opencode-pty")
+  assert.equal(JSON.stringify(bootstrap.plugin).includes("goal-pty-adapter.ts"), false)
+  assert.equal(JSON.stringify(bootstrap.plugin).includes(override.ptyPluginUrl), false)
+
+  const beforeInvalidBootstrap = await fs.readFile(path.join(globalDir, "opencode.json"), "utf8")
+  override.enabled = true
+  override.ptyPluginUrl = pathToFileURL(path.join(localDir, "missing.js")).href
+  await fs.writeFile(overridePath, JSON.stringify(override, null, 2))
+  await assert.rejects(
+    execFileAsync(process.execPath, [CONFIG_MANAGER, "bootstrap"], {
+      env: environment,
+      encoding: "utf8",
+    }),
+    /ptyPluginUrl does not exist/,
+  )
+  assert.equal(
+    await fs.readFile(path.join(globalDir, "opencode.json"), "utf8"),
+    beforeInvalidBootstrap,
+  )
 })
 
 test("explicit migration encrypts file secrets, writes a thin bootstrap, and is idempotent", async (t) => {

@@ -22,6 +22,8 @@ const CONFIG_DIR = process.env.LABFLOW_CONFIG_DIR ?? MANAGED_CONFIG_DIR
 const GLOBAL_CONFIG_DIR = process.env.OPENCODE_CONFIG_DIR ?? path.join(homeDir(), ".config", "opencode")
 const GLOBAL_CONFIG_FILE = path.join(GLOBAL_CONFIG_DIR, "opencode.json")
 const PLUGIN_ENTRY = pathToFileURL(path.join(OPENCODE_DIR, "plugins", "labflow.ts")).href
+const GOAL_PTY_ADAPTER_ENTRY = pathToFileURL(path.join(OPENCODE_DIR, "plugins", "goal-pty-adapter.ts")).href
+const LOCAL_PLUGIN_OVERRIDES_FILE = process.env.LABFLOW_PLUGIN_OVERRIDES_FILE ?? path.join(GLOBAL_CONFIG_DIR, "labflow-plugin-overrides.json")
 const AGE_KEY_FILE = process.env.SOPS_AGE_KEY_FILE ?? path.join(homeDir(), ".config", "sops", "age", "keys.txt")
 const SOPS_CONFIG_FILE = path.join(REPO_DIR, ".sops.yaml")
 const SECRETS_FILE = path.join(CONFIG_DIR, "secrets.sops.yaml")
@@ -44,13 +46,22 @@ async function main() {
 async function syncBootstrap() {
   const managed = await readManagedConfig(CONFIG_DIR)
   const current = await readJsoncOptional(GLOBAL_CONFIG_FILE)
-  const declaredPlugins = managedPluginEntries(managed.plugins)
-  const currentPlugins = normalizePluginList(current.plugin).filter((entry) => !isLabflowPlugin(entry))
+  const managedPlugins = managedPluginEntries(managed.plugins)
+  const localOverrides = await readLocalPluginOverrides()
+  const declaredPlugins = applyLocalPluginOverrides(managedPlugins, localOverrides)
+  const replacedIdentities = new Set(managedPlugins.map(pluginIdentity).filter(Boolean))
+  replacedIdentities.add(GOAL_PTY_ADAPTER_ENTRY)
+  if (localOverrides?.ptyPluginUrl) replacedIdentities.add(localOverrides.ptyPluginUrl)
+  const currentPlugins = normalizePluginList(current.plugin).filter((entry) => {
+    const identity = pluginIdentity(entry)
+    return !isLabflowPlugin(entry) && !isGoalPtyAdapter(entry) && !replacedIdentities.has(identity)
+  })
   const plugins = uniquePlugins([...declaredPlugins, ...currentPlugins, PLUGIN_ENTRY])
   const next = { ...current, $schema: "https://opencode.ai/config.json", plugin: plugins }
   await fs.mkdir(GLOBAL_CONFIG_DIR, { recursive: true })
   await writeFileAtomic(GLOBAL_CONFIG_FILE, `${JSON.stringify(next, null, 2)}\n`, 0o600)
   console.log(`Synchronized labflow bootstrap in ${GLOBAL_CONFIG_FILE}`)
+  if (localOverrides?.enabled) console.log(`Using local Goal/PTY plugins from ${LOCAL_PLUGIN_OVERRIDES_FILE}`)
 }
 
 async function migrateConfig() {
@@ -235,6 +246,7 @@ async function doctor() {
   }
 
   const managed = await readManagedConfig(CONFIG_DIR)
+  await readLocalPluginOverrides()
   assertNoUnsupportedSecrets(managed.defaults, "defaults")
   for (const [id, provider] of Object.entries(managed.providers)) {
     assertNoUnsupportedSecrets(provider.config, `provider.${id}`)
@@ -323,8 +335,79 @@ function managedPluginEntries(document) {
   return Array.isArray(document.plugins) ? document.plugins : []
 }
 
+async function readLocalPluginOverrides() {
+  const document = await readJsoncOptional(LOCAL_PLUGIN_OVERRIDES_FILE)
+  if (Object.keys(document).length === 0) return null
+  if (document.version !== 1) throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE} must declare version 1`)
+  if (document.enabled !== true && document.enabled !== false) {
+    throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE} must declare enabled as true or false`)
+  }
+  const fields = ["goalPluginUrl", "ptyPluginUrl", "ptyIntegrationUrl"]
+  for (const field of fields) {
+    if (document[field] !== undefined && typeof document[field] !== "string") {
+      throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} must be a file URL`)
+    }
+  }
+  if (!document.enabled) return document
+  for (const field of fields) {
+    if (!document[field]) throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} is required when enabled`)
+    await requireLocalPluginFile(document[field], field)
+  }
+  await requireLocalPluginFile(GOAL_PTY_ADAPTER_ENTRY, "goalPtyAdapter")
+  return document
+}
+
+async function requireLocalPluginFile(specifier, field) {
+  let filePath
+  try {
+    const url = new URL(specifier)
+    if (url.protocol !== "file:") throw new Error("not a file URL")
+    filePath = fileURLToPath(url)
+  } catch {
+    throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} must be an absolute file URL`)
+  }
+  const info = await fs.stat(filePath).catch((error) => {
+    if (error?.code === "ENOENT") throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} does not exist: ${filePath}`)
+    throw error
+  })
+  if (!info.isFile()) throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} is not a file: ${filePath}`)
+}
+
+function applyLocalPluginOverrides(entries, localOverrides) {
+  if (!localOverrides?.enabled) return entries
+  let goalFound = false
+  let ptyFound = false
+  const replaced = entries.map((entry) => {
+    const identity = pluginIdentity(entry)
+    if (identity === "opencode-goal-plugin") {
+      goalFound = true
+      const goalOptions = Array.isArray(entry) && isPlainObject(entry[1]) ? structuredClone(entry[1]) : {}
+      return [
+        GOAL_PTY_ADAPTER_ENTRY,
+        {
+          goalPluginUrl: localOverrides.goalPluginUrl,
+          ptyIntegrationUrl: localOverrides.ptyIntegrationUrl,
+          goalOptions,
+        },
+      ]
+    }
+    if (identity === "opencode-pty") {
+      ptyFound = true
+      return localOverrides.ptyPluginUrl
+    }
+    return entry
+  })
+  if (!goalFound) throw new Error("local Goal/PTY override requires a managed opencode-goal-plugin entry")
+  if (!ptyFound) throw new Error("local Goal/PTY override requires a managed opencode-pty entry")
+  return replaced
+}
+
 function normalizePluginList(value) {
   return Array.isArray(value) ? value : []
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
 
 function uniquePlugins(entries) {
@@ -354,6 +437,17 @@ function isLabflowPlugin(entry) {
   if (identity === PLUGIN_ENTRY) return true
   try {
     return identity.startsWith("file:") && fileURLToPath(identity).replaceAll("\\", "/").endsWith("/opencode/plugins/labflow.ts")
+  } catch {
+    return false
+  }
+}
+
+function isGoalPtyAdapter(entry) {
+  const identity = pluginIdentity(entry)
+  if (!identity) return false
+  if (identity === GOAL_PTY_ADAPTER_ENTRY) return true
+  try {
+    return identity.startsWith("file:") && fileURLToPath(identity).replaceAll("\\", "/").endsWith("/opencode/plugins/goal-pty-adapter.ts")
   } catch {
     return false
   }
