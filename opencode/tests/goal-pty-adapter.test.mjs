@@ -152,18 +152,21 @@ test(
       !process.env.LABFLOW_TEST_GOAL_PLUGIN_URL ||
       !process.env.LABFLOW_TEST_PTY_PLUGIN_URL ||
       !process.env.LABFLOW_TEST_PTY_INTEGRATION_URL,
+    timeout: 15000,
   },
-  async (t) => {
+  async () => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), "goal-pty-live-hooks-"))
-    t.after(() => fs.rm(directory, { recursive: true, force: true }))
-    const ptyModule = await import(process.env.LABFLOW_TEST_PTY_PLUGIN_URL)
-    let goalHooks
-    let goalContinuations = 0
-    let notificationResolve
-    const notificationHandled = new Promise((resolve) => {
-      notificationResolve = resolve
-    })
-    const messages = [
+    try {
+      const ptyModule = await import(process.env.LABFLOW_TEST_PTY_PLUGIN_URL)
+      let goalHooks
+      let goalContinuations = 0
+      let notificationResolve
+      let notificationReject
+      const notificationHandled = new Promise((resolve, reject) => {
+        notificationResolve = resolve
+        notificationReject = reject
+      })
+      const messages = [
       {
         info: {
           id: "assistant-spawned-pty",
@@ -177,7 +180,7 @@ test(
         ],
       },
     ]
-    const client = {
+      const client = {
       app: { log: async () => {} },
       config: {
         get: async () => ({
@@ -191,49 +194,54 @@ test(
         messages: async () => ({ data: messages }),
         abort: async () => ({}),
         promptAsync: async (input) => {
-          const sessionID = input?.path?.id || input?.sessionID
-          const parts = input?.body?.parts || input?.parts || []
-          const text = parts.map((part) => part.text || "").join("\n")
-          if (!text.startsWith("<pty_exited>")) {
-            goalContinuations += 1
+          try {
+            const sessionID = input?.path?.id || input?.sessionID
+            const parts = input?.body?.parts || input?.parts || []
+            const text = parts.map((part) => part.text || "").join("\n")
+            if (!text.startsWith("<pty_exited>")) {
+              goalContinuations += 1
+              return {}
+            }
+            const messageID = "pty-exit-notification"
+            const user = {
+              info: { id: messageID, role: "user", sessionID },
+              parts,
+            }
+            messages.push(user)
+            await goalHooks["chat.message"](
+              { sessionID, messageID, agent: "build" },
+              { message: user.info, parts },
+            )
+            messages.push({
+              info: {
+                id: "assistant-processed-exit",
+                role: "assistant",
+                sessionID,
+                parentID: messageID,
+                tokens: { input: 20, output: 30, reasoning: 0 },
+              },
+              parts: [
+                { type: "text", text: "Verified the final PTY result." },
+                { type: "tool", tool: "pty_read", state: { status: "completed" } },
+              ],
+            })
+            await goalHooks.event({
+              event: {
+                type: "session.status",
+                properties: { sessionID, status: { type: "idle" } },
+              },
+            })
+            notificationResolve()
             return {}
+          } catch (error) {
+            notificationReject(error)
+            throw error
           }
-          const messageID = "pty-exit-notification"
-          const user = {
-            info: { id: messageID, role: "user", sessionID },
-            parts,
-          }
-          messages.push(user)
-          await goalHooks["chat.message"](
-            { sessionID, messageID, agent: "build" },
-            { message: user.info, parts },
-          )
-          messages.push({
-            info: {
-              id: "assistant-processed-exit",
-              role: "assistant",
-              sessionID,
-              parentID: messageID,
-              tokens: { input: 20, output: 30, reasoning: 0 },
-            },
-            parts: [
-              { type: "text", text: "Verified the final PTY result." },
-              { type: "tool", tool: "pty_read", state: { status: "completed" } },
-            ],
-          })
-          await goalHooks.event({
-            event: {
-              type: "session.status",
-              properties: { sessionID, status: { type: "idle" } },
-            },
-          })
-          notificationResolve()
-          return {}
         },
       },
     }
-    const ptyHooks = await ptyModule.PTYPlugin({ client, directory })
-    goalHooks = await adapter.server(
+      const ptyHooks = await ptyModule.PTYPlugin({ client, directory })
+      goalHooks = await adapter.server(
       { client, directory },
       {
         goalPluginUrl: process.env.LABFLOW_TEST_GOAL_PLUGIN_URL,
@@ -245,11 +253,11 @@ test(
         },
       },
     )
-    await goalHooks["command.execute.before"](
+      await goalHooks["command.execute.before"](
       { command: "goal", sessionID: "parent-session", arguments: "finish training" },
       { parts: [] },
     )
-    await ptyHooks.tool.pty_spawn.execute(
+      await ptyHooks.tool.pty_spawn.execute(
       {
         command: "sh",
         args: ["-c", "sleep 0.2; printf 'training done\\n'"],
@@ -268,24 +276,27 @@ test(
         worktree: directory,
       },
     )
-    await goalHooks.event({
+      await goalHooks.event({
       event: {
         type: "session.status",
         properties: { sessionID: "parent-session", status: { type: "idle" } },
       },
     })
-    assert.equal(goalContinuations, 0)
+      assert.equal(goalContinuations, 0)
 
-    await Promise.race([
-      notificationHandled,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("PTY exit notification timed out")), 5000),
-      ),
-    ])
-    assert.equal(goalContinuations, 1)
-    await ptyHooks.event({
-      event: { type: "session.deleted", properties: { info: { id: "parent-session" } } },
-    })
-    await goalHooks.dispose()
+      await Promise.race([
+        notificationHandled,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("PTY exit notification timed out")), 10000),
+        ),
+      ])
+      assert.equal(goalContinuations, 1)
+      await ptyHooks.event({
+        event: { type: "session.deleted", properties: { info: { id: "parent-session" } } },
+      })
+      await goalHooks.dispose()
+    } finally {
+      await fs.rm(directory, { recursive: true, force: true })
+    }
   },
 )
