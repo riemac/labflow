@@ -28,7 +28,8 @@ opencode/
 │   ├── labflow-paper.md      # primary paper preparation and evidence alignment
 │   ├── explore-worker.md     # hidden read-only local/external exploration worker
 │   ├── literature-worker.md  # hidden prior-art evidence worker
-│   └── learning-worker.md    # hidden learning-system causal evidence worker
+│   ├── learning-worker.md    # hidden learning-system causal evidence worker
+│   └── autopilot-reviewer.md # hidden independent Autopilot convergence reviewer
 ├── skills/                   # adapted ability skills (de-Codex'd copies)
 └── install.sh                # bootstrap registration and explicit encrypted migration entry point
 ```
@@ -57,7 +58,7 @@ resumable task IDs in each project's ignored dossier state.
 
 The tracked `opencode-pty` startup plugin provides optional PTY sessions for formal training, live services, and other long-running commands. Global rules assign each long job to one primary-owned session with completion notifications; ordinary background workers continue to use bounded shell commands.
 
-`autopilot` is an OpenCode-only, explicitly activated long-horizon ability. It freezes one user-approved contract, selects one self-contained Research/Coding/Paper profile, uses resource-aware candidate waves, PTY and background-child completion notifications, and maintains only `contract.md` plus a living `autopilot.md` under the user-selected topic root. It never controls Goal itself; tracked Goal configuration holds both Plan agents, defers continuation while background child sessions remain active, and leaves the `/goal` command's `agent` unset so Build, Develop, and Paper retain the currently selected primary agent.
+`autopilot` is an OpenCode-only, explicitly activated long-horizon ability. It seals one local-only human agreement and execution envelope per run, controls one persistent Goal through adaptive semantic phases, uses resource-aware candidate waves plus Goal-aware PTY and background-child completion, and requires one persistent independent `autopilot-reviewer` before finalization. Dossier state changes only at semantic boundaries; native Goal, TODO, PTY, child-session, Git, and artifact state remain the operational sources of truth. The visible upstream `goal` primary agent is disabled, while `/goal` keeps its `agent` unset so Build, Develop, and Paper retain the selected primary agent.
 
 General read-heavy or retrieval-heavy delegation uses the hidden `explore-worker` with explicit `fast`, `normal`, or `deep` scope profiles; `normal` is the default. The worker is read-only, cannot delegate, and covers both local and external evidence. Its prompt and permissions live in `agents/explore-worker.md`; the portable default model and reasoning options live in `config/defaults.yaml`, where built-in `explore` and `general` are disabled. The plugin merges user agent config last so users may replace the provider/model/options without forking the worker behavior.
 

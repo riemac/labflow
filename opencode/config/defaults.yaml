@@ -14,20 +14,27 @@ config:
         Handle this command using the goal tools. Do not treat bare words like `status`, `pause`, `resume`, or `clear` as coding tasks, and do not run shell commands just because the argument is `status`.
 
         Dispatch rules:
-        - Empty, `status`, `show`, or `current`: call `get_goal`, then briefly report the current goal state.
+        - Empty, `status`, `show`, or `current`: call `goal_status`, then briefly report the current goal state.
         - `history`: call `get_goal_history`, then briefly report lifecycle history and latest checkpoint.
-        - `pause`: call `update_goal` with status `paused`, then report the result.
-        - `resume`: call `update_goal` with status `resumed`, then continue working toward the goal.
+        - `pause`: call `goal_pause`, then report the result.
+        - `resume`: call `goal_resume`, then continue working toward the goal.
         - `clear`, `stop`, `off`, `reset`, `none`, or `cancel`: call `clear_goal`, then report that the goal was cleared.
         - `edit <objective>`: call `update_goal` with the new objective.
-        - `complete <evidence>` or `done <evidence>`: call `update_goal` with status `complete` and evidence only after checking the goal is actually satisfied.
-        - `blocked <reason>` or `unmet <reason>`: call `update_goal` with status `blocked` and blocker.
-        - Otherwise: call `set_goal` with the full arguments as the objective, then start working toward it.
+        - `complete <evidence>` or `done <evidence>`: call `goal_complete` with a structured summary and checks only after verifying the goal is actually satisfied.
+        - `blocked <reason>` or `unmet <reason>`: call `goal_block` with the concrete blocker.
+        - Otherwise: call `goal_set` with the full arguments as the objective, then start working toward it.
 
         For completion during normal goal work, prefer final marker lines exactly like:
         [goal:evidence] verified evidence here
         [goal:complete]
   agent:
+    goal:
+      disable: true
+    autopilot-reviewer:
+      model: openai/gpt-5.6-sol
+      options:
+        reasoningEffort: max
+        store: false
     literature-worker:
       model: lucoo/gpt-5.6-terra
     build:

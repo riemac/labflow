@@ -1,3 +1,9 @@
+import { execFile } from "node:child_process"
+import * as fs from "node:fs/promises"
+import * as path from "node:path"
+import { fileURLToPath } from "node:url"
+import { promisify } from "node:util"
+
 type PtyStatus = "running" | "exited" | "killing" | "killed"
 
 type PtySession = {
@@ -35,6 +41,9 @@ const ACTIVE_STATUSES = new Set<PtyStatus>(["running", "killing"])
 const TERMINAL_STATUSES = new Set<PtyStatus>(["exited", "killed"])
 const MAX_REMEMBERED_SESSIONS = 4096
 const PTY_EXIT_ID = /^ID:\s*(pty_[A-Za-z0-9]+)\s*$/m
+const AUTOPILOT_DOSSIER = /^Autopilot dossier:\s*(\/[^\r\n]+)\s*$/m
+const AUTOPILOT_CLI = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../skills/autopilot/scripts/autopilot.py")
+const execFileAsync = promisify(execFile)
 
 function validateIntegration(value: unknown): asserts value is PtyIntegration {
   const candidate = value as Partial<PtyIntegration> | undefined
@@ -131,6 +140,163 @@ export function createPtyActivityProvider(integration: PtyIntegration) {
   }
 }
 
+function toolResultText(result: unknown): string {
+  if (typeof result !== "string") return ""
+  try {
+    const parsed = JSON.parse(result)
+    return typeof parsed?.message === "string" ? parsed.message : result
+  } catch {
+    return result
+  }
+}
+
+function autopilotRunFromText(text: string): string {
+  const candidate = text.match(AUTOPILOT_DOSSIER)?.[1]?.trim()
+  return candidate && path.isAbsolute(candidate) ? path.resolve(candidate) : ""
+}
+
+async function completionBlockersForRun(run: string) {
+  try {
+    const { stdout } = await execFileAsync(
+      "python3",
+      [AUTOPILOT_CLI, "run", "validate", "--run", run, "--json"],
+      { timeout: 30_000, maxBuffer: 1024 * 1024 },
+    )
+    const validation = JSON.parse(stdout)
+    if (validation?.ok !== true || validation?.data?.status !== "finalized") {
+      throw new Error("validated dossier is not finalized")
+    }
+    return []
+  } catch (error) {
+    const candidate = error as { stdout?: string; stderr?: string; message?: string }
+    let message = candidate?.stderr?.trim() || candidate?.stdout?.trim() || candidate?.message || String(error)
+    try {
+      const parsed = JSON.parse(candidate?.stdout || "")
+      if (typeof parsed?.message === "string") message = parsed.message
+    } catch {
+      // Keep the bounded process diagnostic.
+    }
+    return [{
+      id: `autopilot-integrity:${path.basename(run) || "unknown"}`,
+      label: `Autopilot dossier is not finalized or cannot be verified: ${message.slice(0, 160)}`,
+      kind: "workflow integrity",
+    }]
+  }
+}
+
+async function autopilotRunIsFinalized(run: string): Promise<boolean> {
+  return (await completionBlockersForRun(run)).length === 0
+}
+
+function rejectedGoalToolResult(name: string, message: string): string {
+  if (name.startsWith("goal_")) {
+    return JSON.stringify({
+      version: 1,
+      operation: name.slice("goal_".length),
+      ok: false,
+      error: "autopilot_goal_bound",
+      message,
+    })
+  }
+  return message
+}
+
+function bindAutopilotRunFromGoalTools(
+  hooks: Record<string, unknown>,
+  runsBySession: Map<string, string>,
+) {
+  const tools = hooks.tool as Record<string, { execute?: (args: unknown, context: { sessionID?: string }) => Promise<unknown> }> | undefined
+  if (!tools) return
+  for (const name of ["goal_set", "set_goal", "update_goal", "goal_status", "get_goal"]) {
+    const definition = tools[name]
+    if (typeof definition?.execute !== "function") continue
+    const execute = definition.execute
+    definition.execute = async (args, context) => {
+      const sessionID = context?.sessionID
+      const objective = typeof (args as { objective?: unknown })?.objective === "string"
+        ? (args as { objective: string }).objective
+        : ""
+      const requestedRun = autopilotRunFromText(objective)
+      const boundRun = sessionID ? runsBySession.get(sessionID) : ""
+      if (boundRun && ["goal_set", "set_goal"].includes(name)) {
+        const finalized = await autopilotRunIsFinalized(boundRun)
+        if (!finalized) {
+          return rejectedGoalToolResult(
+            name,
+            "Cannot replace the focused Goal while its Autopilot dossier is active. Update the same run objective, or finalize or explicitly stop that run first.",
+          )
+        }
+        runsBySession.delete(sessionID!)
+      }
+      if (boundRun && name === "update_goal" && objective) {
+        if (!(await autopilotRunIsFinalized(boundRun)) && requestedRun !== boundRun) {
+          return "Cannot move the focused Goal away from its active Autopilot dossier. Use the CLI-rendered objective for the same run."
+        }
+      }
+      const result = await execute(args, context)
+      if (!sessionID) return result
+      const resultText = toolResultText(result)
+      const run = requestedRun || autopilotRunFromText(resultText)
+      if (run) runsBySession.set(sessionID, run)
+      if (!run && /No active goal/i.test(resultText)) runsBySession.delete(sessionID)
+      return result
+    }
+  }
+  for (const name of ["clear_goal"]) {
+    const definition = tools[name]
+    if (typeof definition?.execute !== "function") continue
+    const execute = definition.execute
+    definition.execute = async (args, context) => {
+      const boundRun = context?.sessionID ? runsBySession.get(context.sessionID) : ""
+      if (boundRun && !(await autopilotRunIsFinalized(boundRun))) {
+        return "Cannot clear the focused Goal while its Autopilot dossier is active. Finalize or explicitly stop that run first."
+      }
+      const result = await execute(args, context)
+      if (context?.sessionID && /Goal cleared/i.test(toolResultText(result))) {
+        runsBySession.delete(context.sessionID)
+      }
+      return result
+    }
+  }
+}
+
+function guardAutopilotGoalCommands(
+  hooks: Record<string, unknown>,
+  runsBySession: Map<string, string>,
+  commandName: string,
+) {
+  const original = hooks["command.execute.before"] as
+    | ((input: { command?: string; sessionID?: string; arguments?: string }, output: unknown) => Promise<unknown>)
+    | undefined
+  if (typeof original !== "function") return
+  hooks["command.execute.before"] = async (
+    input: { command?: string; sessionID?: string; arguments?: string },
+    output: unknown,
+  ) => {
+    const sessionID = input?.sessionID
+    const boundRun = sessionID ? runsBySession.get(sessionID) : ""
+    if (boundRun && input?.command === commandName) {
+      if (await autopilotRunIsFinalized(boundRun)) {
+        runsBySession.delete(sessionID!)
+      } else {
+        const action = String(input.arguments || "").trim().split(/\s+/, 1)[0].toLowerCase()
+        const allowed = new Set(["", "status", "show", "current", "history", "list", "pause", "resume"])
+        if (!allowed.has(action)) {
+          throw new Error(
+            "Cannot replace, edit, focus, add, sequence, or clear a Goal through /goal while an Autopilot dossier is active.",
+          )
+        }
+      }
+    }
+    const result = await original(input, output)
+    if (sessionID) {
+      const run = autopilotRunFromText(String(input.arguments || ""))
+      if (run) runsBySession.set(sessionID, run)
+    }
+    return result
+  }
+}
+
 async function importFileModule(specifier: string, label: string): Promise<Record<string, unknown>> {
   let url: URL
   try {
@@ -178,27 +344,46 @@ async function GoalPtyAdapter(context: unknown, options: AdapterOptions) {
   if (typeof goalPlugin !== "function") {
     throw new TypeError("Goal module does not export GoalPlugin")
   }
-  let provider: ReturnType<typeof createPtyActivityProvider> | undefined
+  const runsBySession = new Map<string, string>()
+  let ptyProvider: ReturnType<typeof createPtyActivityProvider> | undefined
   if (settings.enabled) {
     const ptyModule = await importFileModule(settings.ptyIntegrationUrl, "ptyIntegrationUrl")
     validateIntegration(ptyModule)
-    provider = createPtyActivityProvider(ptyModule as unknown as PtyIntegration)
+    ptyProvider = createPtyActivityProvider(ptyModule as unknown as PtyIntegration)
+  }
+  const provider = {
+    listActive: (sessionID: string) => ptyProvider?.listActive(sessionID) ?? [],
+    classifyNotification: (input: { sessionID: string; messageID: string; text: string }) =>
+      ptyProvider?.classifyNotification(input) ?? false,
+    listCompletionBlockers: async (sessionID: string) => {
+      const run = runsBySession.get(sessionID)
+      return run ? completionBlockersForRun(run) : []
+    },
+    dispose() {
+      ptyProvider?.dispose()
+      runsBySession.clear()
+    },
   }
   try {
     const hooks = await goalPlugin(context, {
       ...(options.goalOptions ?? {}),
-      ...(provider ? { externalActivityProvider: provider } : {}),
+      externalActivityProvider: provider,
     }) as Record<string, unknown>
+    bindAutopilotRunFromGoalTools(hooks, runsBySession)
+    const configuredCommandName = typeof options.goalOptions?.commandName === "string"
+      ? options.goalOptions.commandName.replace(/^\/+/, "").trim() || "goal"
+      : "goal"
+    guardAutopilotGoalCommands(hooks, runsBySession, configuredCommandName)
     const dispose = hooks.dispose
     return {
       ...hooks,
       async dispose() {
-        provider?.dispose()
+        provider.dispose()
         if (typeof dispose === "function") await dispose()
       },
     }
   } catch (error) {
-    provider?.dispose()
+    provider.dispose()
     throw error
   }
 }
@@ -207,4 +392,3 @@ export default {
   id: "labflow-goal-pty-adapter",
   server: GoalPtyAdapter,
 }
-import * as fs from "node:fs/promises"
