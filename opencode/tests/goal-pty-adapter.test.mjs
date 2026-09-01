@@ -128,7 +128,7 @@ test("adapter composes local Goal and PTY modules without a package dependency",
     "",
   ].join("\n"))
 
-  const hooks = await adapter({}, {
+  const hooks = await adapter.server({}, {
     goalPluginUrl: pathToFileURL(goalModule).href,
     ptyIntegrationUrl: pathToFileURL(ptyModule).href,
     goalOptions: { maxTurns: 1000 },
@@ -228,7 +228,7 @@ test(
       },
     }
     const ptyHooks = await ptyModule.PTYPlugin({ client, directory })
-    goalHooks = await adapter(
+    goalHooks = await adapter.server(
       { client, directory },
       {
         goalPluginUrl: process.env.LABFLOW_TEST_GOAL_PLUGIN_URL,

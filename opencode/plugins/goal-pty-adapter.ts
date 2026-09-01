@@ -132,7 +132,7 @@ async function importFileModule(specifier: string, label: string): Promise<Recor
   return import(url.href)
 }
 
-export default async (context: unknown, options: AdapterOptions) => {
+async function GoalPtyAdapter(context: unknown, options: AdapterOptions) {
   if (!options || typeof options !== "object") {
     throw new TypeError("Goal-PTY adapter options are required")
   }
@@ -163,4 +163,9 @@ export default async (context: unknown, options: AdapterOptions) => {
     provider.dispose()
     throw error
   }
+}
+
+export default {
+  id: "labflow-goal-pty-adapter",
+  server: GoalPtyAdapter,
 }
