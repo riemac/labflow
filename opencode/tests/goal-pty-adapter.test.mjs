@@ -57,6 +57,11 @@ function exitMessage(id) {
   ].join("\n")
 }
 
+test("adapter exports the OpenCode v1 plugin module shape", () => {
+  assert.equal(adapter.id, "labflow-goal-pty-adapter")
+  assert.equal(typeof adapter.server, "function")
+})
+
 test("PTY activity provider blocks only notifying work owned by the session", async () => {
   const api = integration([
     pty("pty_training", "parent-1"),
