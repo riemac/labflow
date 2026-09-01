@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.4 - 2026-09-02
+
+- Reworked OpenCode Autopilot around one sealed, local-only human agreement per run, adaptive semantic phases projected into one persistent Goal, low-intrusion native operational state, and explicit interruption/amendment semantics.
+- Added a zero-dependency nested Autopilot dossier CLI with deterministic manifests, SHA-256 authority and amendment chains, strict lifecycle transitions, bounded Goal projection, fail-closed validation, convergence review identities, and finalization gates.
+- Added the hidden Sol/max `autopilot-reviewer` with one persistent reviewer identity per run, host-attested task ownership, structured verdicts, optional cumulative-budget probe sandboxing, and mandatory approval before Autopilot completion.
+- Integrated Goal with notifying PTYs and completion-only Autopilot guards through machine-local runtime-selectable forks, while preserving Build/Develop/Paper ownership, disabling the redundant visible Goal primary agent, and allowing read-only exploration across explicitly scoped external directories.
+
 ## 1.2.3 - 2026-08-31
 
 - Persisted the user-selected Goal defaults of 1000 auto-continues, 40 active hours, a 100-million context-token ceiling, and a five-second cooldown in the portable tracked plugin configuration without weakening Plan or child-session gates.
