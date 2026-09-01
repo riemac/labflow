@@ -62,7 +62,7 @@ test("bootstrap pins managed plugins and replaces stale npm specs", async (t) =>
   assert.equal(bootstrap.plugin.at(-1).endsWith("/opencode/plugins/labflow.ts"), true)
 })
 
-test("bootstrap can opt into and roll back machine-local Goal and PTY plugins", async (t) => {
+test("bootstrap registers machine-local Goal and PTY plugins with a runtime toggle", async (t) => {
   const root = await temporaryDirectory(t, "labflow-local-plugins-")
   const configDir = path.join(root, "managed-config")
   const globalDir = path.join(root, "global-config")
@@ -120,8 +120,7 @@ test("bootstrap can opt into and roll back machine-local Goal and PTY plugins", 
   })
   let bootstrap = JSON.parse(await fs.readFile(path.join(globalDir, "opencode.json"), "utf8"))
   assert.match(bootstrap.plugin[0][0], /\/opencode\/plugins\/goal-pty-adapter\.ts$/)
-  assert.equal(bootstrap.plugin[0][1].goalPluginUrl, override.goalPluginUrl)
-  assert.equal(bootstrap.plugin[0][1].ptyIntegrationUrl, override.ptyIntegrationUrl)
+  assert.equal(bootstrap.plugin[0][1].runtimeConfigPath, overridePath)
   assert.deepEqual(bootstrap.plugin[0][1].goalOptions, {
     maxTurns: 1000,
     sessionTitleStatus: true,
@@ -137,13 +136,9 @@ test("bootstrap can opt into and roll back machine-local Goal and PTY plugins", 
     encoding: "utf8",
   })
   bootstrap = JSON.parse(await fs.readFile(path.join(globalDir, "opencode.json"), "utf8"))
-  assert.deepEqual(bootstrap.plugin[0], [
-    "opencode-goal-plugin@0.9.0",
-    { maxTurns: 1000, sessionTitleStatus: true },
-  ])
-  assert.equal(bootstrap.plugin[1], "opencode-pty")
-  assert.equal(JSON.stringify(bootstrap.plugin).includes("goal-pty-adapter.ts"), false)
-  assert.equal(JSON.stringify(bootstrap.plugin).includes(override.ptyPluginUrl), false)
+  assert.match(bootstrap.plugin[0][0], /\/opencode\/plugins\/goal-pty-adapter\.ts$/)
+  assert.equal(bootstrap.plugin[0][1].runtimeConfigPath, overridePath)
+  assert.equal(bootstrap.plugin[1], override.ptyPluginUrl)
 
   const beforeInvalidBootstrap = await fs.readFile(path.join(globalDir, "opencode.json"), "utf8")
   override.enabled = true

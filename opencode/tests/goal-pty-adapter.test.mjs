@@ -145,6 +145,44 @@ test("adapter composes local Goal and PTY modules without a package dependency",
   await hooks.dispose()
 })
 
+test("runtime config toggles PTY gating on restart without regenerating bootstrap", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "goal-pty-runtime-toggle-"))
+  t.after(() => fs.rm(directory, { recursive: true, force: true }))
+  const goalModule = path.join(directory, "goal.mjs")
+  const ptyModule = path.join(directory, "pty.mjs")
+  const runtimeConfigPath = path.join(directory, "runtime.json")
+  await fs.writeFile(goalModule, [
+    "export async function GoalPlugin(_context, options) {",
+    "  return { hasExternalProvider: Boolean(options.externalActivityProvider), dispose: async () => {} }",
+    "}",
+    "",
+  ].join("\n"))
+  await fs.writeFile(ptyModule, [
+    "export const listPtySessions = () => []",
+    "export const getPtySession = () => null",
+    "export const subscribePtySessionUpdates = () => () => {}",
+    "",
+  ].join("\n"))
+  const runtimeConfig = {
+    version: 1,
+    enabled: false,
+    goalPluginUrl: pathToFileURL(goalModule).href,
+    ptyPluginUrl: pathToFileURL(ptyModule).href,
+    ptyIntegrationUrl: pathToFileURL(ptyModule).href,
+  }
+  await fs.writeFile(runtimeConfigPath, JSON.stringify(runtimeConfig))
+
+  let hooks = await adapter.server({}, { runtimeConfigPath })
+  assert.equal(hooks.hasExternalProvider, false)
+  await hooks.dispose()
+
+  runtimeConfig.enabled = true
+  await fs.writeFile(runtimeConfigPath, JSON.stringify(runtimeConfig))
+  hooks = await adapter.server({}, { runtimeConfigPath })
+  assert.equal(hooks.hasExternalProvider, true)
+  await hooks.dispose()
+})
+
 test(
   "local forks defer Goal until a real PTY exit turn finishes",
   {

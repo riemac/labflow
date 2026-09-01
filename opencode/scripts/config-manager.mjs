@@ -61,7 +61,9 @@ async function syncBootstrap() {
   await fs.mkdir(GLOBAL_CONFIG_DIR, { recursive: true })
   await writeFileAtomic(GLOBAL_CONFIG_FILE, `${JSON.stringify(next, null, 2)}\n`, 0o600)
   console.log(`Synchronized labflow bootstrap in ${GLOBAL_CONFIG_FILE}`)
-  if (localOverrides?.enabled) console.log(`Using local Goal/PTY plugins from ${LOCAL_PLUGIN_OVERRIDES_FILE}`)
+  if (localOverrides) {
+    console.log(`Registered local Goal/PTY plugins; runtime integration is ${localOverrides.enabled ? "enabled" : "disabled"} in ${LOCAL_PLUGIN_OVERRIDES_FILE}`)
+  }
 }
 
 async function migrateConfig() {
@@ -348,9 +350,8 @@ async function readLocalPluginOverrides() {
       throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} must be a file URL`)
     }
   }
-  if (!document.enabled) return document
   for (const field of fields) {
-    if (!document[field]) throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} is required when enabled`)
+    if (!document[field]) throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.${field} is required`)
     await requireLocalPluginFile(document[field], field)
   }
   await requireLocalPluginFile(GOAL_PTY_ADAPTER_ENTRY, "goalPtyAdapter")
@@ -374,7 +375,7 @@ async function requireLocalPluginFile(specifier, field) {
 }
 
 function applyLocalPluginOverrides(entries, localOverrides) {
-  if (!localOverrides?.enabled) return entries
+  if (!localOverrides) return entries
   let goalFound = false
   let ptyFound = false
   const replaced = entries.map((entry) => {
@@ -385,8 +386,7 @@ function applyLocalPluginOverrides(entries, localOverrides) {
       return [
         GOAL_PTY_ADAPTER_ENTRY,
         {
-          goalPluginUrl: localOverrides.goalPluginUrl,
-          ptyIntegrationUrl: localOverrides.ptyIntegrationUrl,
+          runtimeConfigPath: LOCAL_PLUGIN_OVERRIDES_FILE,
           goalOptions,
         },
       ]

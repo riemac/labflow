@@ -16,9 +16,19 @@ type PtyIntegration = {
 }
 
 type AdapterOptions = {
-  goalPluginUrl: string
-  ptyIntegrationUrl: string
+  runtimeConfigPath?: string
+  enabled?: boolean
+  goalPluginUrl?: string
+  ptyIntegrationUrl?: string
   goalOptions?: Record<string, unknown>
+}
+
+type RuntimeConfig = {
+  version: number
+  enabled: boolean
+  goalPluginUrl: string
+  ptyPluginUrl: string
+  ptyIntegrationUrl: string
 }
 
 const ACTIVE_STATUSES = new Set<PtyStatus>(["running", "killing"])
@@ -132,35 +142,63 @@ async function importFileModule(specifier: string, label: string): Promise<Recor
   return import(url.href)
 }
 
+async function resolveAdapterSettings(options: AdapterOptions) {
+  if (!options.runtimeConfigPath) {
+    return {
+      enabled: options.enabled !== false,
+      goalPluginUrl: options.goalPluginUrl,
+      ptyIntegrationUrl: options.ptyIntegrationUrl,
+    }
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(await fs.readFile(options.runtimeConfigPath, "utf8"))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Could not read Goal-PTY runtime config ${options.runtimeConfigPath}: ${message}`)
+  }
+  const config = parsed as Partial<RuntimeConfig>
+  if (config.version !== 1 || typeof config.enabled !== "boolean") {
+    throw new TypeError("Goal-PTY runtime config must declare version 1 and boolean enabled")
+  }
+  return config
+}
+
 async function GoalPtyAdapter(context: unknown, options: AdapterOptions) {
   if (!options || typeof options !== "object") {
     throw new TypeError("Goal-PTY adapter options are required")
   }
-  const [goalModule, ptyModule] = await Promise.all([
-    importFileModule(options.goalPluginUrl, "goalPluginUrl"),
-    importFileModule(options.ptyIntegrationUrl, "ptyIntegrationUrl"),
-  ])
+  const settings = await resolveAdapterSettings(options)
+  if (!settings.goalPluginUrl) throw new TypeError("goalPluginUrl is required")
+  if (settings.enabled && !settings.ptyIntegrationUrl) {
+    throw new TypeError("ptyIntegrationUrl is required when Goal-PTY integration is enabled")
+  }
+  const goalModule = await importFileModule(settings.goalPluginUrl, "goalPluginUrl")
   const goalPlugin = goalModule.GoalPlugin
   if (typeof goalPlugin !== "function") {
     throw new TypeError("Goal module does not export GoalPlugin")
   }
-  validateIntegration(ptyModule)
-  const provider = createPtyActivityProvider(ptyModule as unknown as PtyIntegration)
+  let provider: ReturnType<typeof createPtyActivityProvider> | undefined
+  if (settings.enabled) {
+    const ptyModule = await importFileModule(settings.ptyIntegrationUrl, "ptyIntegrationUrl")
+    validateIntegration(ptyModule)
+    provider = createPtyActivityProvider(ptyModule as unknown as PtyIntegration)
+  }
   try {
     const hooks = await goalPlugin(context, {
       ...(options.goalOptions ?? {}),
-      externalActivityProvider: provider,
+      ...(provider ? { externalActivityProvider: provider } : {}),
     }) as Record<string, unknown>
     const dispose = hooks.dispose
     return {
       ...hooks,
       async dispose() {
-        provider.dispose()
+        provider?.dispose()
         if (typeof dispose === "function") await dispose()
       },
     }
   } catch (error) {
-    provider.dispose()
+    provider?.dispose()
     throw error
   }
 }
@@ -169,3 +207,4 @@ export default {
   id: "labflow-goal-pty-adapter",
   server: GoalPtyAdapter,
 }
+import * as fs from "node:fs/promises"
