@@ -100,6 +100,7 @@ test("plugin registers the bounded explore worker and preserves model overrides"
   assert.equal(defaults.agent["explore-worker"].hidden, true)
   assert.match(defaults.agent["explore-worker"].prompt, /If `profile` is omitted, use `normal`/)
   assert.equal(defaults.agent["explore-worker"].permission.edit, "deny")
+  assert.equal(defaults.agent["explore-worker"].permission.external_directory, "allow")
   assert.equal(defaults.agent["explore-worker"].permission.task, "deny")
   assert.equal(defaults.agent["explore-worker"].permission.question, "deny")
 

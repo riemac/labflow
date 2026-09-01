@@ -33,6 +33,7 @@ permission:
     "gh release view*": allow
   webfetch: allow
   websearch: allow
+  external_directory: allow
   skill: allow
   deepwiki_*: allow
   pdf-reader_*: allow
