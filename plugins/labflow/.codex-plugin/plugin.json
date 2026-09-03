@@ -1,6 +1,6 @@
 {
   "name": "labflow",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Codex-native research coding skill toolbox with stage-driven discussion, learning forensics, codebase and external research, git task flow, Obsidian, PDF, and MCP support.",
   "author": {
     "name": "hac",

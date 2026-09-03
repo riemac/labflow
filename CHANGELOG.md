@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.5 - 2026-09-03
+
+- Slimmed OpenCode Autopilot to an explicitly activated, adaptive workflow centered on one maintained Goal plus native TODO, PTY, Git, and artifact state; project documentation is now task-driven rather than mandatory workflow maintenance.
+- Removed the fixed Autopilot dossier, Python lifecycle CLI, semantic-phase records, dedicated convergence reviewer, reviewer host tools, and dossier-backed Goal completion guard while retaining the Research, Coding, and Paper evidence profiles.
+- Made machine-local Goal options runtime-authoritative, seeded new autonomous work from the configured long-run defaults unless a Plan explicitly overrides them, and added the local fork's configurable `maxGoalTextCharacters` limit for rich Goal context.
+
 ## 1.2.4 - 2026-09-02
 
 - Reworked OpenCode Autopilot around one sealed, local-only human agreement per run, adaptive semantic phases projected into one persistent Goal, low-intrusion native operational state, and explicit interruption/amendment semantics.

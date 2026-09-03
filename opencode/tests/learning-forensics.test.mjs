@@ -136,7 +136,7 @@ test("Codex learning worker uses the documented custom-agent TOML schema", async
 test("repository and Codex plugin publish one learning-forensics version", async () => {
   const version = (await fs.readFile(path.join(REPO_DIR, "VERSION"), "utf8")).trim()
   const manifest = JSON.parse(await fs.readFile(CODEX_MANIFEST_PATH, "utf8"))
-  assert.equal(version, "1.2.4")
+  assert.equal(version, "1.2.5")
   assert.equal(manifest.version, version)
   assert.equal(manifest.keywords.includes("learning-forensics"), true)
 })
