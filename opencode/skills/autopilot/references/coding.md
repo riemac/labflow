@@ -2,11 +2,11 @@
 
 Use this profile when the primary outcome is correct, maintainable, verified software behavior: a feature, fix, migration implementation, performance improvement, cleanup, or engineering delivery.
 
-## Engineering Contract
+## Engineering Boundary
 
 Identify observable acceptance criteria, affected users/callers, compatibility expectations, writable scope, forbidden side effects, and the commands that establish the current baseline. Inspect distributed prompts, tests, schemas, registration paths, and similar implementations before choosing an approach.
 
-Ordinary source edits, tests, internal refactors, and related engineering repairs are autonomous inside the contract. New dependencies, public API or schema changes, persisted-data migration, credential handling, deployment, and production effects are forbidden unless preflight explicitly authorizes them.
+Ordinary source edits, tests, internal refactors, and related engineering repairs are autonomous inside the approved scope. New dependencies, public API or schema changes, persisted-data migration, credential handling, deployment, and production effects are forbidden unless preflight explicitly authorizes them.
 
 ## Choose The Work Shape
 
@@ -30,6 +30,6 @@ Do not hide failures, weaken tests to fit an implementation, or treat compilatio
 
 Keep changes that satisfy acceptance with an acceptable complexity and compatibility cost. Revert owned failed candidates without touching pre-existing work. Preserve useful infrastructure fixes or test improvements separately when they are valid independent of the rejected route.
 
-Create meaningful checkpoint commits for recoverable, validated milestones. Do not perform version release closure, tags, push, deployment, or publication during the Autopilot run.
+Create meaningful checkpoint commits for recoverable, validated milestones when the user has authorized commits. Do not perform version release closure, tags, push, deployment, or publication during autonomous execution unless that side effect was explicitly authorized.
 
 Update existing implementation docs, README/AGENTS guidance, generated artifacts, or migration notes only when the code change makes them stale. End with exact acceptance evidence, retained commits, API/compatibility implications, performance results, limitations, and reproducible verification commands.

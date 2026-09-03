@@ -2,9 +2,9 @@
 
 Use this profile when the primary outcome is a stronger, evidence-aligned, compilable research manuscript, response, supplement, or submission package.
 
-## Manuscript Contract
+## Manuscript Boundary
 
-Identify the intended venue/audience, central contribution, editable manuscript scope, authoritative evidence, citation sources, figure/table inputs, style constraints, and claims that require human scientific judgment. Associated research code is read-only unless the frozen contract explicitly authorizes edits.
+Identify the intended venue/audience, central contribution, editable manuscript scope, authoritative evidence, citation sources, figure/table inputs, style constraints, and claims that require human scientific judgment. Associated research code is read-only unless the approved task scope explicitly authorizes edits.
 
 Paper work may include literature retrieval, PDF reading, data checks, analysis scripts, figure generation, small probes, and compilation inside the manuscript or approved analysis directories. It does not authorize changing the associated research implementation by default.
 

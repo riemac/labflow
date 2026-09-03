@@ -344,6 +344,9 @@ async function readLocalPluginOverrides() {
   if (document.enabled !== true && document.enabled !== false) {
     throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE} must declare enabled as true or false`)
   }
+  if (document.goalOptions !== undefined && !isPlainObject(document.goalOptions)) {
+    throw new Error(`${LOCAL_PLUGIN_OVERRIDES_FILE}.goalOptions must be a mapping`)
+  }
   const fields = ["goalPluginUrl", "ptyPluginUrl", "ptyIntegrationUrl"]
   for (const field of fields) {
     if (document[field] !== undefined && typeof document[field] !== "string") {

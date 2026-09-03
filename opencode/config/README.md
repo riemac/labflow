@@ -20,6 +20,8 @@ The tracked Goal plugin is pinned to the tested release. Its `/goal` command int
 
 Goal defaults permit up to 1000 automatic continuations and 40 active hours with a deliberately non-binding 100-million context-token ceiling, while retaining the five-second cooldown and child-session gate. `sessionTitleStatus` is enabled so the current objective, turn count, active duration, and context budget remain visible in the session title.
 
+When a machine-local Goal/PTY fork is active, `~/.config/opencode/labflow-plugin-overrides.json.goalOptions` is the runtime-authoritative layer over the tracked Goal defaults copied into the bootstrap tuple. Keep `maxTurns`, `maxDurationMs`, and `maxTokens` there so a stale bootstrap cannot silently restore upstream limits; per-Goal values explicitly approved in a Plan may still override these defaults. The local fork also accepts `maxGoalTextCharacters` as a unified limit for the objective, success criteria, and constraints in the static Goal block injected into model requests.
+
 ## Security Model
 
 Provider secrets are decrypted lazily in memory. The plugin injects a custom AI SDK `fetch` closure that replaces sentinel authentication immediately before a request; decrypted values are never inserted into the resolved OpenCode config, written to temporary files, or logged. `install.sh --doctor` decrypts the alias set and fails if `opencode debug config` contains any managed plaintext value.

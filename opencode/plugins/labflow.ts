@@ -8,11 +8,10 @@ import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { tool } from "@opencode-ai/plugin"
 import { parse as parseYaml } from "yaml"
-import { applyManagedOpenCodeConfig, readManagedConfig, SecretStore, writeFilesTransaction } from "../scripts/config.mjs"
+import { applyManagedOpenCodeConfig, readManagedConfig, SecretStore } from "../scripts/config.mjs"
 
 const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..") // opencode/ root
 const IMAGEGEN_SCRIPT = path.join(ASSETS, "scripts", "imagegen.mjs")
-const AUTOPILOT_SCRIPT = path.join(ASSETS, "skills", "autopilot", "scripts", "autopilot.py")
 const NODE_BIN = process.env.LABFLOW_IMAGEGEN_NODE || "node"
 const execFileAsync = promisify(execFile)
 const MAX_INPUT_IMAGES = 4
@@ -47,12 +46,6 @@ function readAgentExecutionOverride(value: unknown): Record<string, unknown> {
   const source = value as Record<string, unknown>
   const allowed = ("model variant temperature top_p steps options disable" as const).split(" ")
   return Object.fromEntries(allowed.filter((name) => source[name] !== undefined).map((name) => [name, source[name]]))
-}
-
-function readRequiredReviewerExecutionOverride(value: unknown): Record<string, unknown> {
-  const override = readAgentExecutionOverride(value)
-  delete override.disable
-  return override
 }
 
 function createImagegenTool(getOpenAIAuth: () => Promise<OpenCodeAuth | undefined>) {
@@ -433,110 +426,6 @@ function formatExecError(error: unknown): string {
   return detail.slice(0, 2000)
 }
 
-function requireAutopilotReviewer(context: { agent?: string }) {
-  if (context.agent !== "autopilot-reviewer") {
-    throw new Error("Autopilot review tools are restricted to the autopilot-reviewer agent")
-  }
-}
-
-async function runAutopilotCli(args: string[], timeout: number) {
-  try {
-    const { stdout } = await execFileAsync("python3", [AUTOPILOT_SCRIPT, ...args], {
-      timeout,
-      maxBuffer: 1024 * 1024,
-    })
-    return stdout.trim()
-  } catch (error) {
-    throw new Error(formatExecError(error))
-  }
-}
-
-function createAutopilotReviewAttestTool() {
-  return tool({
-    description: "Attest the current hidden autopilot-reviewer session against one open convergence review. Validates the dossier and permanently binds this actual reviewer task identity; not callable by primary agents.",
-    args: {
-      run: tool.schema.string().min(1).describe("Absolute Autopilot run directory"),
-      reviewId: tool.schema.string().regex(/^R\d{4}$/).describe("Open convergence review ID"),
-      reviewNonce: tool.schema.string().regex(/^[0-9a-f]{32}$/).describe("Nonce returned by review open"),
-    },
-    async execute(args, context) {
-      requireAutopilotReviewer(context)
-      await runAutopilotCli(["run", "validate", "--run", args.run, "--json"], 30_000)
-      const run = path.resolve(args.run)
-      const manifestPath = path.join(run, "manifest.json")
-      const info = await fs.promises.lstat(manifestPath)
-      if (!info.isFile() || info.isSymbolicLink() || info.size > 2 * 1024 * 1024) {
-        throw new Error("Autopilot manifest is not a bounded regular file")
-      }
-      const manifest = JSON.parse(await fs.promises.readFile(manifestPath, "utf8"))
-      const opened = manifest?.review?.open
-      if (
-        manifest?.schemaVersion !== 1 ||
-        manifest?.runId !== path.basename(run) ||
-        manifest?.status !== "reviewing" ||
-        opened?.id !== args.reviewId ||
-        opened?.nonce !== args.reviewNonce
-      ) {
-        throw new Error("Autopilot review attestation does not match the open review")
-      }
-      const existing = manifest.review.taskId
-      if (existing && existing !== context.sessionID) {
-        throw new Error(`Autopilot run is already bound to reviewer task ${existing}`)
-      }
-      manifest.review.taskId = context.sessionID
-      opened.taskId = context.sessionID
-      manifest.updatedAt = new Date().toISOString()
-      await writeFilesTransaction([
-        {
-          filePath: manifestPath,
-          content: JSON.stringify(manifest, null, 2) + "\n",
-          mode: 0o600,
-        },
-      ])
-      return JSON.stringify({
-        version: 1,
-        operation: "review.attest",
-        ok: true,
-        message: `Attested reviewer task ${context.sessionID}.`,
-        data: { reviewId: args.reviewId, taskId: context.sessionID },
-      })
-    },
-  })
-}
-
-function createAutopilotReviewProbeTool() {
-  return tool({
-    description: "Run one bounded Autopilot convergence probe in a bubblewrap sandbox with a read-only host filesystem, no network, disposable /tmp, and writes restricted to this review's probe root. The run enforces a cumulative 600-second budget.",
-    args: {
-      run: tool.schema.string().min(1).describe("Absolute Autopilot run directory"),
-      reviewId: tool.schema.string().regex(/^R\d{4}$/).describe("Open convergence review ID"),
-      reviewNonce: tool.schema.string().regex(/^[0-9a-f]{32}$/).describe("Nonce returned by review open"),
-      command: tool.schema.array(tool.schema.string()).min(1).describe("Executable followed by literal arguments; no shell is added"),
-      timeoutSeconds: tool.schema.number().int().min(1).max(600).describe("Hard wall timeout charged to the review budget"),
-    },
-    async execute(args, context) {
-      requireAutopilotReviewer(context)
-      return runAutopilotCli([
-        "review",
-        "probe",
-        "--run",
-        args.run,
-        "--review-id",
-        args.reviewId,
-        "--review-nonce",
-        args.reviewNonce,
-        "--task-id",
-        context.sessionID,
-        "--timeout-seconds",
-        String(args.timeoutSeconds),
-        "--json",
-        "--",
-        ...args.command,
-      ], (args.timeoutSeconds + 20) * 1000)
-    },
-  })
-}
-
 export default async () => {
   const managedConfig = await readManagedConfig()
   let openAIAuthGetter: (() => Promise<OpenCodeAuth | undefined>) | undefined
@@ -566,8 +455,6 @@ export default async () => {
   },
   tool: {
     imagegen: createImagegenTool(async () => openAIAuthGetter ? openAIAuthGetter() : undefined),
-    autopilot_review_attest: createAutopilotReviewAttestTool(),
-    autopilot_review_probe: createAutopilotReviewProbeTool(),
   },
   config(cfg) {
     applyManagedOpenCodeConfig(cfg, managedConfig, secretStore)
@@ -590,10 +477,6 @@ export default async () => {
       "learning-worker": {
         ...readAgentDefinition("learning-worker"),
         ...readAgentExecutionOverride(cfg.agent?.["learning-worker"]),
-      },
-      "autopilot-reviewer": {
-        ...readAgentDefinition("autopilot-reviewer"),
-        ...readRequiredReviewerExecutionOverride(cfg.agent?.["autopilot-reviewer"]),
       },
     }
     cfg.agent.goal = { ...cfg.agent.goal, disable: true }

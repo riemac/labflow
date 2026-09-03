@@ -2,11 +2,11 @@
 
 Use this profile when the primary outcome is a scientific or algorithmic conclusion, a validated method, an experiment-backed feasibility decision, or a research implementation whose meaning depends on evidence rather than software completion alone.
 
-## Research Contract
+## Research Boundary
 
-Ground the run in the object of study, intended mechanism, evaluation estimand, baseline, authoritative design sources, available evidence, formal success boundary, and approved compute/data envelope. Preserve units, coordinate frames, dataset splits, seeds, checkpoints, simulator versions, and other identities that affect interpretation.
+Ground the work in the object of study, intended mechanism, evaluation estimand, baseline, authoritative design sources, available evidence, formal success boundary, and approved compute/data envelope. Preserve units, coordinate frames, dataset splits, seeds, checkpoints, simulator versions, and other identities that affect interpretation.
 
-Research may include substantial engineering. Source changes, infrastructure repairs, profiling, data tooling, and experiment orchestration are allowed inside the contract because they support scientific evidence; they are not automatically scientific contributions.
+Research may include substantial engineering. Source changes, infrastructure repairs, profiling, data tooling, and experiment orchestration are allowed inside the approved scope because they support scientific evidence; they are not automatically scientific contributions.
 
 ## Candidate Portfolio
 
@@ -25,7 +25,7 @@ Advance only as far as the current evidence supports:
 5. robustness checks such as multiple seeds, held-out data, ablations, calibration, or transfer when relevant;
 6. formal experiments within the frozen budget and evaluation contract.
 
-Passing one rung authorizes the next rung only when the contract permits its resources. A runnable path is not evidence of a valid learning signal; a small improvement is not a formal result; a selected checkpoint is not unbiased evaluation unless the selection protocol supports that claim.
+Passing one rung authorizes the next rung only when the approved resource boundary permits it. A runnable path is not evidence of a valid learning signal; a small improvement is not a formal result; a selected checkpoint is not unbiased evaluation unless the selection protocol supports that claim.
 
 ## Resource-Aware Waves
 
@@ -37,4 +37,4 @@ Within the approved resource budget, autonomously scale a supported route from p
 
 For every candidate wave, compare predicted and observed behavior, inspect failure modes, separate method failure from infrastructure failure, and choose whether to retain, repair, combine, or discard. Keep independently valid infrastructure improvements as their own checkpoints even when the method that exposed them fails.
 
-Maintain the project's existing research documents, decision tree, record, casefile, experiment manifests, plots, and artifact lineage. End with the strongest supported conclusion, counterevidence, failed mechanisms, retained code/commits, formal run identities, unresolved scientific boundaries, and a clear distinction between feasibility and accepted evidence.
+Use the project's natural research artifacts when durable evidence is needed: existing records, experiment manifests, plots, checkpoints, or user-requested notes. Do not create or interrupt work to maintain a generic Autopilot log. End with the strongest supported conclusion, counterevidence, failed mechanisms worth retaining, code or commits, formal experiment identities, unresolved scientific boundaries, and a clear distinction between feasibility and accepted evidence.

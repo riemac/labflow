@@ -94,6 +94,11 @@ test("bootstrap registers machine-local Goal and PTY plugins with a runtime togg
   const override = {
     version: 1,
     enabled: true,
+    goalOptions: {
+      maxTurns: 1000,
+      maxDurationMs: 144000000,
+      maxTokens: 100000000,
+    },
     goalPluginUrl: pathToFileURL(goalPath).href,
     ptyPluginUrl: pathToFileURL(ptyPath).href,
     ptyIntegrationUrl: pathToFileURL(integrationPath).href,
