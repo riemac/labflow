@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.6 - 2026-09-03
+
+- Restored Autopilot's XML semantic sections, flipped preflight, maximum-useful-parallelism guidance, candidate pruning, and lightweight Mermaid control flow without reintroducing dossiers, lifecycle scripts, mandatory process documents, or the dedicated reviewer.
+
 ## 1.2.5 - 2026-09-03
 
 - Slimmed OpenCode Autopilot to an explicitly activated, adaptive workflow centered on one maintained Goal plus native TODO, PTY, Git, and artifact state; project documentation is now task-driven rather than mandatory workflow maintenance.
