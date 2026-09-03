@@ -7,13 +7,23 @@ description: "仅当用户明确要求 autopilot、auto、autoresearch、无人�
 
 Autopilot 是用户明确授权的 OpenCode 长程执行模式，不是 primary agent、固定流水线、文档维护工作流，也不允许静默扩权。
 
-## 启动
+<activation_contract>
 
-只有“开始 auto 吧”“启动 autoresearch”“无人值守执行”等明确表达才激活。若 decision-complete Plan 已经形成，随后一次明确启动就足够，不重复确认。启动前读取项目并简洁回译目标、成功与失败边界、固定决定、non-goals、人类判断门、资源范围和禁止副作用；只有缺失的高影响边界会导致跑错目标或不安全时，才聚合询问一次。
+只有“开始 auto 吧”“启动 autoresearch”“无人值守执行”等明确表达才激活。若 decision-complete Plan 已经形成，随后一次明确启动就足够，不重复确认。启动前先读取可发现的项目事实；只有缺失的高影响边界会导致跑错目标或不安全时，才聚合询问一次。
 
 当前为 `plan` 或 `labflow-plan` 时保持只读，只提供交接；用户切回可执行 primary agent 后才能设置或恢复 Goal 并开始工作。执行后不以日常可逆问题打断工作，采用保守且有用的选择继续取证；不可逆选择、缺少授权、危险动作或必须由人决定的事项用 `goal_block` 停止。
 
-## Goal 生命周期
+</activation_contract>
+
+<flipped_preflight>
+
+把用户最初的表述视为动机、症状、方向或希望发生的变化，不机械当成最终目标。读取项目和证据后，用简洁自然语言回译当前最佳理解：真正要实现什么、为什么重要、成功与失败或反证如何区分、哪些决定和 non-goals 已固定、哪些属于方法自由，以及哪里需要人类判断或副作用授权。
+
+把目标不确定性与方法不确定性分开。目标不确定性在启动前协作解决；实现路线、实验设计、架构、超参数、候选筛选和工作分解保持自适应，除非它们改变目标或授权边界。
+
+</flipped_preflight>
+
+<goal_ownership>
 
 改变 Goal 前先调用 `goal_status`：
 
@@ -27,7 +37,9 @@ Goal 的 objective、success criteria 和 constraints 在 active 期间每次模
 
 有意保留停止用 `goal_pause`；用户明确继续后用 `goal_resume`；具体外部或人类需求用 `goal_block`；直接验证总体目标后才调用 `goal_complete`。完成证据应列出决定性产物和检查，不只宣称完成。
 
-## 自适应执行
+</goal_ownership>
+
+<adaptive_execution>
 
 不创建 phase 文档，持续执行轻量证据循环：
 
@@ -40,7 +52,9 @@ Goal 的 objective、success criteria 和 constraints 在 active 期间每次模
 
 运行成功不等于科学有效，编译通过不等于行为验收，流畅文字也不等于论文 claim 有证据。
 
-## 原生状态与文档
+</adaptive_execution>
+
+<native_state>
 
 Goal 保存稳定结果、当前重点、约束和完成状态；`todowrite` 在有价值时管理可执行多步工作；`pty_list` 与完成通知保存长进程状态；Git 保存源码历史和恢复边界；测试、日志、checkpoint、图表、论文、数据等真实产物保存任务证据。
 
@@ -48,24 +62,59 @@ Goal 保存稳定结果、当前重点、约束和完成状态；`todowrite` 在
 
 Compact 或恢复后调用 `goal_status`，检查 TODO、PTY、Git 和真实产物，从下一个未完成具体步骤继续；不能因为对话记忆不完整而重复启动任务。
 
-## 并行、PTY 与资源
+</native_state>
 
-只有独立工作能实质节省时间或降低路线偏见时才并行；明确的局部路线优先直接执行。每条并行 lane 必须有不同问题或隔离输出，主 Agent 负责整合。
+<maximum_useful_parallelism>
 
-短任务用普通有界命令，长时、交互或正式过程用 PTY。PTY 使用正确 project-local workdir、明确标题、`notifyOnExit: true` 和适用的自然 timeout，禁止 sleep/poll。Goal-PTY adapter 只等待同 session 中正在运行或停止的 notifying PTY；PTY 退出后检查有界结果、保留有效产物、结束当前 turn，再由 idle 恢复 Goal continuation。
+追求最大有效并行，不追求最大进程数。只有独立 lane 能实质节省时间或降低路线偏见时才并行；明确的局部路线优先直接执行。每条 lane 必须有真正不同的问题、机制或隔离输出，主 Agent 保留整合和最终判断。
+
+不确定路线不要过早押注一个答案；保留少量机制不同的候选，用最便宜的决定性证据筛除。不要制造表面变体，也不要并行重复检索同一个偏好答案。
 
 昂贵实验前估计 GPU、VRAM、CPU、RAM、磁盘、墙钟和产物体积；峰值或语义不确定时先运行代表性 canary，前置证据通过后再扩容。
 
-## 用户插话
+</maximum_useful_parallelism>
+
+<event_driven_work>
+
+短任务用普通有界命令，长时、交互或正式过程用 PTY。PTY 使用正确 project-local workdir、明确标题、`notifyOnExit: true` 和适用的自然 timeout，禁止 sleep/poll。Goal-PTY adapter 只等待同 session 中正在运行或停止的 notifying PTY；PTY 退出后检查有界结果、保留有效产物、结束当前 turn，再由 idle 恢复 Goal continuation。
+
+</event_driven_work>
+
+<human_interruption>
 
 用户消息优先并通常暂停 Goal。先回答用户；若用户说明只是询问并明确授权 Auto 继续，则恢复同一个 Goal。若目标或限制改变，在语义仍连贯时更新同一 Goal；只有用户实质替换任务时才创建新 Goal。没有继续授权就保持暂停。
 
-## 三类 Profile
+</human_interruption>
+
+<profiles>
 
 按主要结果读取一个 profile：科研/算法结论与实验可行性用 `references/research.md`；正确、可维护、验证过的软件行为用 `references/coding.md`；证据对齐的论文与投稿产物用 `references/paper.md`。Profile 只指导证据和执行，不要求额外状态文件；混合任务可以借用其他 profile 的方法，不增加工作流层。
 
-## 停止与交接
+</profiles>
+
+<workflow_map>
+
+```mermaid
+flowchart TD
+    A[用户明确启动 Auto] --> B[读取事实并回译真正目标]
+    B --> C{当前 Goal 是否匹配?}
+    C -- 没有 Goal --> D[goal_set 一次]
+    C -- 同一任务 --> E[保留或实质更新 Goal]
+    C -- 冲突 --> F[解决冲突或 goal_block]
+    D --> G[自适应证据驱动执行]
+    E --> G
+    G --> H{总体结果已验证?}
+    H -- 否 --> G
+    H -- 人类决定或阻塞 --> I[goal_pause 或 goal_block]
+    H -- 是 --> J[携带证据 goal_complete]
+```
+
+</workflow_map>
+
+<stop_and_handoff>
 
 在验证完成、用户暂停、预算耗尽、安全边界、具体外部阻塞或已无可辩护路线时停止。把最强支持结论、反证、有保留价值的失败路线、真实产物和复现检查写入任务自然承载面。
 
 保护无关 dirty changes，不 reset、clean、stash 或覆盖不属于本任务的工作。除非用户或批准 Plan 明确授权，不 bump、建 release tag、push、发布、部署、发送外部消息、购买资源、轮换凭据或修改生产环境。
+
+</stop_and_handoff>
