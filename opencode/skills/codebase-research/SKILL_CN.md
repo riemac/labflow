@@ -12,12 +12,14 @@ description: "当 agent 需要在回答或编辑前检查本地仓库时使用�
 1. **Shell 缩小范围**：`tree` 看结构，`fdfind` 找文件（优先于常规 `find`），`rg` 找符号、配置键和字符串（优先于常规 `grep`）。必要时加深度限制，并排除缓存、依赖、生成文件、日志、输出和数据目录。
 2. **Read 精读**：读入口、定义、注册点、上下游各一层、类似实现、相关测试/示例。已知关键路径时直接读，不要强行先做穷举搜索。
 
+多文件搜索结果优先使用 `rg -n --heading`，避免重复长路径；下游工具需要每条结果自包含时，改用 `--no-heading` 或 `--json`。
+
 示例：
 
 ```bash
 tree target_dir -L 3 -a -I '.git|__pycache__|.venv|node_modules|dist|build|logs|outputs'
 fdfind 'reward|manager|cfg' target_dir
-rg -n "RewardManager|RewTerm|RewardsCfg" target_dir
+rg -n --heading "RewardManager|RewTerm|RewardsCfg" target_dir
 ```
 
 ## Subagent 委派
