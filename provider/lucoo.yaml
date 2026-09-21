@@ -1,19 +1,67 @@
 version: 1
-id: gmn
+id: lucoo
 config:
-  npm: "@ai-sdk/openai"
-  name: GMN
+  npm: "@ai-sdk/openai-compatible"
+  name: Lucoo
   options:
-    baseURL: https://gmn.chuangzuoli.com/v1
+    baseURL: https://api.lucoo.net/v1
     headerTimeout: 60000
   models:
+    grok-4.6:
+      name: Grok 4.6
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      limit:
+        context: 500000
+        output: 64000
+      variants:
+        low:
+          reasoningEffort: low
+        medium:
+          reasoningEffort: medium
+        high:
+          reasoningEffort: high
+        xhigh:
+          reasoningEffort: xhigh
+    gemini-3.8-flash:
+      name: Gemini 3.8 Flash
+      family: gemini-flash
+      provider:
+        npm: "@ai-sdk/google"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      limit:
+        context: 1048576
+        input: 1048576
+        output: 65536
     gpt-5.6-sol:
       name: GPT-5.6 Sol
       family: gpt
       release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
       reasoning: true
       attachment: true
       tool_call: true
+      temperature: true
       modalities:
         input:
           - text
@@ -29,9 +77,9 @@ config:
           - reasoning.encrypted_content
         store: false
       limit:
-        context: 372000
-        input: 372000
-        output: 32000
+        context: 520000
+        input: 520000
+        output: 64000
       variants:
         none:
           disabled: true
@@ -54,9 +102,12 @@ config:
       name: GPT-5.6 Terra
       family: gpt-mini
       release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
       reasoning: true
       attachment: true
       tool_call: true
+      temperature: true
       modalities:
         input:
           - text
@@ -72,8 +123,8 @@ config:
           - reasoning.encrypted_content
         store: false
       limit:
-        context: 372000
-        input: 372000
+        context: 420000
+        input: 420000
         output: 64000
       variants:
         none:
@@ -97,9 +148,12 @@ config:
       name: GPT-5.6 Luna
       family: gpt-nano
       release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
       reasoning: true
       attachment: true
       tool_call: true
+      temperature: true
       modalities:
         input:
           - text
@@ -115,8 +169,8 @@ config:
           - reasoning.encrypted_content
         store: false
       limit:
-        context: 372000
-        input: 372000
+        context: 420000
+        input: 420000
         output: 64000
       variants:
         none:
@@ -137,7 +191,24 @@ config:
           reasoningEffort: max
           reasoningSummary: auto
 auth:
+  models:
+    gemini-3.8-flash:
+      secret: lucoo-gemini-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-sol:
+      secret: lucoo-gpt-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-terra:
+      secret: lucoo-gpt-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-luna:
+      secret: lucoo-gpt-authorization
+      header: Authorization
+      prefix: ""
   default:
-    secret: gmn
+    secret: lucoo-grok
     header: Authorization
     prefix: "Bearer "

@@ -1,18 +1,18 @@
 # Labflow OpenCode Configuration
 
-This directory is the tracked source of truth for portable OpenCode configuration. The repository may remain public because provider credentials live only in `secrets.sops.yaml`, encrypted to the age recipients declared by the tracked root `.sops.yaml`.
+This directory is the tracked source of truth for portable OpenCode-specific configuration (`defaults.yaml`, `plugins.yaml`, `imagegen.yaml`).
+
+Model provider channels and encrypted secrets live centrally in `provider/` (`provider/*.yaml`, `provider/secrets.sops.yaml`) as the repository-wide Single Source of Truth. OpenCode directly consumes `@labflow/provider` in memory.
 
 ## Files
 
 - `defaults.yaml` contains portable OpenCode fields other than `provider` and `plugin`.
-- `providers/*.yaml` contains one provider per file. The `config` mapping follows the OpenCode provider shape; the optional `auth` mapping names encrypted aliases and their request-time header or query placement.
 - `plugins.yaml` contains third-party plugins that must be registered before the labflow plugin runs.
 - `imagegen.yaml` contains named imagegen profiles plus configurable default and explicit ordered fallback routes.
-- `secrets.sops.yaml` is created by explicit migration and must remain encrypted. `secrets.sops.example.yaml` documents only its pre-encryption shape.
 
 The generated `~/.config/opencode/opencode.json` remains machine-local because its labflow `file://` URL contains the clone's absolute path. After migration it is a thin bootstrap containing only `$schema` and startup plugin registrations; the labflow plugin injects tracked defaults and providers with existing machine-local values taking precedence.
 
-The tracked agent defaults disable OpenCode's built-in `explore` and `general` subagents and provide a portable model choice for labflow's unified `explore-worker`. User configuration may change that model or its reasoning options; tests derive expectations from the managed defaults instead of fixing one provider choice. The `learning-worker` intentionally leaves model selection to inheritance or user configuration.
+The tracked agent defaults disable OpenCode's built-in `explore` and `general` subagents and provide portable model choices for labflow's `explore-worker` and `learning-worker`. User configuration may change those models or their reasoning options; tests derive expectations from the managed defaults instead of fixing one provider choice.
 
 Tracked startup plugins include `opencode-pty`, which exposes background PTY sessions after OpenCode restarts. Labflow global rules reserve long-running PTY ownership for the primary agent, while domain workers continue to use bounded shell commands unless an assignment grants a narrower exception.
 
@@ -21,6 +21,24 @@ The tracked Goal plugin is pinned to the tested release. Its `/goal` command int
 Goal defaults permit up to 1000 automatic continuations and 40 active hours with a deliberately non-binding 100-million context-token ceiling, while retaining the five-second cooldown and child-session gate. `sessionTitleStatus` is enabled so the current objective, turn count, active duration, and context budget remain visible in the session title.
 
 When a machine-local Goal/PTY fork is active, `~/.config/opencode/labflow-plugin-overrides.json.goalOptions` is the runtime-authoritative layer over the tracked Goal defaults copied into the bootstrap tuple. Keep `maxTurns`, `maxDurationMs`, and `maxTokens` there so a stale bootstrap cannot silently restore upstream limits; per-Goal values explicitly approved in a Plan may still override these defaults. The local fork also accepts `maxGoalTextCharacters` as a unified limit for the objective, success criteria, and constraints in the static Goal block injected into model requests.
+
+## High-Fidelity Compaction
+
+Labflow replaces the built-in compaction system prompt and fixed request template. The English `../agents/compaction.md` is the sole runtime prompt; `compaction_CN.md` is a Chinese discussion companion and is never registered or loaded. Model and reasoning choices remain under `config.agent.compaction` in `defaults.yaml`; an inline `prompt` does not override the managed English contract.
+
+The shared XML containers adapt to research, engineering, and general work. Complex, sustained discussions can receive paper-length reconstructions rather than terse outlines; completed topics retain their meaningful trajectory, and completed work is not rewritten as a next action. The abstract starts directly with prose. Other headings describe the actual subject, not the container's purpose; the goal can separate the overarching topic from a distinct current-stage objective. The model chooses language and internal structure, and omits containers with no substantive content. Literal XML examples and code remain distinguished from active output containers.
+
+Optional text-native diagrams in the understanding body serve the receiving agent's continued reasoning, not presentation. They can make processes, dependencies, branches, or conceptual relationships explicit without requiring rendering, a fixed diagram format, or an additional output container. Qualifications and supporting arguments remain available in the accompanying text.
+
+The compaction hook supplies the latest successful prior summary from the current session. OpenCode normally summarizes only an older prefix and replays its retained recent tail separately. Labflow's immediately following message transform adds that recent context to the disposable compaction input as well, so the summary can reconcile old plans with later completion records. Existing messages are not duplicated in this input, and native verbatim replay and its retention boundary remain unchanged. The extra input uses the same native serialization and tool-result truncation as the prefix. The temporary snapshot is session-scoped and cleared after consumption, on idle/deletion/disposal, or before a retry; it is not a persistent memory store.
+
+A first compaction needs no prior summary. Read failures, an unidentifiable active boundary, or an unmatched compaction input stop that compaction explicitly, without replacing history or silently returning to the built-in template. Retry after restoring session access.
+
+For the receiving model, the message transform prefixes successful summary text with a fixed `context_checkpoint` notice: this is reconstructed history from the same session, not a new user request; newer messages update its state, and only unfinished, authorized work should continue. The notice exists only in the request copy. Stored/exported summaries and the prior-summary text used for subsequent compaction remain unchanged.
+
+Compaction API requests set `maxOutputTokens` to `min(64000, model.limit.output)` when the model declares a valid positive limit, or `64000` otherwise. Native OpenAI OAuth is the explicit exception: its subscription endpoint rejects `max_output_tokens`, so that route leaves the limit to the service. OpenAI API-key and other provider routes retain the explicit budget. This does not change other agents and is a request budget rather than a promised body length; reasoning may consume part of it. Existing trigger settings, recent-history retention, and native tool-result truncation remain unchanged.
+
+Changes load after restarting OpenCode; no installer rerun is needed. Validate registration with `opencode debug agent compaction`, run `node --experimental-strip-types --test tests/compaction.test.mjs` from `opencode/`, and use an isolated session to check actual compaction and provider behavior.
 
 ## Security Model
 

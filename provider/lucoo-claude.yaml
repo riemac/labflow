@@ -53,8 +53,8 @@ config:
       limit:
         context: 1000000
         output: 128000
-    claude-opus-4-8:
-      name: Claude Opus 4.8
+    claude-opus-5:
+      name: Claude Opus 5
       family: claude-opus
       release_date: 2026-05-28
       reasoning: true
@@ -76,6 +76,30 @@ config:
       limit:
         context: 1000000
         output: 128000
+    claude-opus-4-6:
+      name: Claude Opus 4.6
+      family: claude-opus
+      release_date: 2026-05-28
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: false
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        thinking:
+          type: adaptive
+          display: summarized
+        effort: high
+      limit:
+        context: 1000000
+        output: 128000
+
 auth:
   default:
     secret: lucoo-claude

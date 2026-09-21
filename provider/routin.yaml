@@ -1,0 +1,269 @@
+version: 1
+id: routin
+config:
+  npm: "@ai-sdk/openai-compatible"
+  name: Routin
+  options:
+    baseURL: https://api.routin.ai/v1
+    headerTimeout: 60000
+  models:
+    muse-spark-1.3:
+      name: Muse Spark 1.3
+      provider:
+        npm: "@ai-sdk/openai"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: false
+      modalities:
+        input:
+          - text
+          - image
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 1000000
+        input: 1000000
+        output: 131072
+      variants:
+        minimal:
+          reasoningEffort: minimal
+          reasoningSummary: auto
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+    grok-4.6:
+      name: Grok 4.6
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      limit:
+        context: 500000
+        output: 64000
+      variants:
+        low:
+          reasoningEffort: low
+        medium:
+          reasoningEffort: medium
+        high:
+          reasoningEffort: high
+        xhigh:
+          reasoningEffort: xhigh
+    gemini-3.7-flash:
+      name: Gemini 3.7 Flash
+      family: gemini-flash
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: true
+      modalities:
+        input:
+          - text
+          - image
+        output:
+          - text
+      limit:
+        context: 1000000
+        input: 1000000
+        output: 65536
+    gemini-3.8-flash:
+      name: Gemini 3.8 Flash
+      family: gemini-flash
+      release_date: 2026-07-09
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: true
+      modalities:
+        input:
+          - text
+          - image
+        output:
+          - text
+      limit:
+        context: 1000000
+        input: 1000000
+        output: 65536
+    gpt-5.6-sol:
+      name: GPT-5.6 Sol
+      family: gpt
+      release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 420000
+        input: 420000
+        output: 64000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+    gpt-5.6-terra:
+      name: GPT-5.6 Terra
+      family: gpt-mini
+      release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 420000
+        input: 420000
+        output: 64000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+    gpt-5.6-luna:
+      name: GPT-5.6 Luna
+      family: gpt-nano
+      release_date: 2026-07-09
+      provider:
+        npm: "@ai-sdk/openai"
+      reasoning: true
+      attachment: true
+      tool_call: true
+      modalities:
+        input:
+          - text
+          - image
+          - pdf
+        output:
+          - text
+      options:
+        reasoningEffort: xhigh
+        reasoningSummary: auto
+        textVerbosity: low
+        include:
+          - reasoning.encrypted_content
+        store: false
+      limit:
+        context: 600000
+        input: 600000
+        output: 64000
+      variants:
+        none:
+          disabled: true
+        low:
+          reasoningEffort: low
+          reasoningSummary: auto
+        medium:
+          reasoningEffort: medium
+          reasoningSummary: auto
+        high:
+          reasoningEffort: high
+          reasoningSummary: auto
+        xhigh:
+          reasoningEffort: xhigh
+          reasoningSummary: auto
+        max:
+          reasoningEffort: max
+          reasoningSummary: auto
+auth:
+  models:
+    muse-spark-1.3:
+      secret: routin-muse-spark
+      header: Authorization
+      prefix: "Bearer "
+    gpt-5.6-sol:
+      secret: routin-gpt-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-terra:
+      secret: routin-gpt-authorization
+      header: Authorization
+      prefix: ""
+    gpt-5.6-luna:
+      secret: routin-gpt-authorization
+      header: Authorization
+      prefix: ""
+  default:
+    secret: routin-grok
+    header: Authorization
+    prefix: "Bearer "

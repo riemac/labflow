@@ -1,0 +1,31 @@
+version: 1
+id: linkapi
+config:
+  npm: "@ai-sdk/openai-compatible"
+  name: LinkAPI
+  options:
+    baseURL: https://api.linkapi.ai/v1
+    headerTimeout: 60000
+  models:
+    gemini-3.8-flash:
+      name: Gemini 3.8 Flash
+      family: gemini-flash
+      reasoning: true
+      attachment: true
+      tool_call: true
+      temperature: true
+      modalities:
+        input:
+          - text
+          - image
+        output:
+          - text
+      limit:
+        context: 1000000
+        input: 1000000
+        output: 65536
+auth:
+  default:
+    secret: linkapi
+    header: Authorization
+    prefix: "Bearer "

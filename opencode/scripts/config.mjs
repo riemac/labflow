@@ -3,28 +3,63 @@ import * as fs from "node:fs/promises"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
-import { parse as parseYaml } from "yaml"
+import {
+  isPlainObject,
+  loadProviders,
+  normalizeAuth,
+  normalizeBinding,
+  PROVIDER_DIR,
+  readOptionalYaml,
+  readYaml,
+  requireString,
+  requireVersion,
+  resolveModelBinding,
+  SECRETS_FILE,
+  SecretStore,
+  yamlFiles,
+} from "../../provider/index.mjs"
+
+export {
+  isPlainObject,
+  loadProviders,
+  normalizeAuth,
+  normalizeBinding,
+  PROVIDER_DIR,
+  resolveModelBinding,
+  SECRETS_FILE,
+  SecretStore,
+}
 
 const execFileAsync = promisify(execFile)
 const OPENCODE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 export const MANAGED_CONFIG_DIR = path.join(OPENCODE_DIR, "config")
 const SECRET_SENTINEL = "labflow-managed"
 
-export async function readManagedConfig(configDir = process.env.LABFLOW_CONFIG_DIR ?? MANAGED_CONFIG_DIR) {
+export async function readManagedConfig(
+  configDir = process.env.LABFLOW_CONFIG_DIR ?? MANAGED_CONFIG_DIR,
+  providerDir = process.env.LABFLOW_PROVIDER_DIR ?? PROVIDER_DIR,
+) {
   const defaultsDocument = await readOptionalYaml(path.join(configDir, "defaults.yaml"))
   const imagegen = await readOptionalYaml(path.join(configDir, "imagegen.yaml"))
   const plugins = await readOptionalYaml(path.join(configDir, "plugins.yaml"))
-  const providers = {}
-  const providersDir = path.join(configDir, "providers")
 
-  for (const name of await yamlFiles(providersDir)) {
-    const document = await readYaml(path.join(providersDir, name))
-    requireVersion(document, `providers/${name}`)
-    const id = requireString(document.id, `providers/${name}.id`)
-    if (!isPlainObject(document.config)) throw new Error(`providers/${name}.config must be a mapping`)
-    if (providers[id]) throw new Error(`duplicate managed provider ID: ${id}`)
-    providers[id] = { config: document.config, auth: document.auth }
-  }
+  const localProvidersDir = path.join(configDir, "providers")
+  let effectiveProviderDir = providerDir
+  try {
+    const stat = await fs.stat(localProvidersDir)
+    if (stat.isDirectory()) {
+      effectiveProviderDir = localProvidersDir
+    }
+  } catch {}
+
+  const localSecretPath = path.join(configDir, "secrets.sops.yaml")
+  let effectiveSecretPath = SECRETS_FILE
+  try {
+    const stat = await fs.stat(localSecretPath)
+    if (stat.isFile()) effectiveSecretPath = localSecretPath
+  } catch {}
+
+  const providers = await loadProviders(effectiveProviderDir)
 
   if (Object.keys(defaultsDocument).length > 0) requireVersion(defaultsDocument, "defaults.yaml")
   if (Object.keys(imagegen).length > 0) requireVersion(imagegen, "imagegen.yaml")
@@ -36,63 +71,8 @@ export async function readManagedConfig(configDir = process.env.LABFLOW_CONFIG_D
     plugins,
     providers,
     configDir,
-  }
-}
-
-export class SecretStore {
-  constructor(options = {}) {
-    this.secretPath = options.secretPath ?? path.join(process.env.LABFLOW_CONFIG_DIR ?? MANAGED_CONFIG_DIR, "secrets.sops.yaml")
-    this.sopsBin = options.sopsBin ?? process.env.LABFLOW_SOPS_BIN ?? "sops"
-    this.environment = options.environment ?? process.env
-    this.loader = options.loader
-    this.cache = undefined
-  }
-
-  async get(alias) {
-    requireString(alias, "secret alias")
-    const secrets = await this.load()
-    const value = secrets[alias]
-    if (typeof value !== "string" || value.length === 0) {
-      throw new Error(`missing encrypted secret alias: ${alias}`)
-    }
-    return value
-  }
-
-  async load() {
-    if (this.cache) return this.cache
-    const document = this.loader ? await this.loader() : await this.decrypt()
-    if (!isPlainObject(document) || document.version !== 1 || !isPlainObject(document.secrets)) {
-      throw new Error("decrypted secrets must contain version: 1 and a secrets mapping")
-    }
-    for (const [alias, value] of Object.entries(document.secrets)) {
-      requireString(alias, "secret alias")
-      if (typeof value !== "string" || value.length === 0) {
-        throw new Error(`encrypted secret ${alias} must be a non-empty string`)
-      }
-    }
-    this.cache = document.secrets
-    return this.cache
-  }
-
-  dispose() {
-    this.cache = undefined
-  }
-
-  async decrypt() {
-    try {
-      const { stdout } = await execFileAsync(
-        this.sopsBin,
-        ["--decrypt", "--input-type", "yaml", "--output-type", "json", this.secretPath],
-        { encoding: "utf8", env: this.environment, maxBuffer: 4 * 1024 * 1024 },
-      )
-      return JSON.parse(stdout)
-    } catch (error) {
-      if (error?.code === "ENOENT") {
-        throw new Error(`sops is required to decrypt ${this.secretPath}`)
-      }
-      const detail = typeof error?.stderr === "string" ? error.stderr.trim().slice(0, 800) : ""
-      throw new Error(`could not decrypt ${this.secretPath}${detail ? `: ${detail}` : ""}`)
-    }
+    providerDir: effectiveProviderDir,
+    secretPath: effectiveSecretPath,
   }
 }
 
@@ -281,80 +261,28 @@ export function stripTrailingCommas(input) {
   return output
 }
 
-async function readOptionalYaml(filePath) {
-  try {
-    return await readYaml(filePath)
-  } catch (error) {
-    if (error?.code === "ENOENT") return {}
-    throw error
-  }
-}
 
-async function readYaml(filePath) {
-  try {
-    const document = parseYaml(await fs.readFile(filePath, "utf8")) ?? {}
-    if (!isPlainObject(document)) throw new Error("document must be a mapping")
-    return document
-  } catch (error) {
-    if (error?.code === "ENOENT") throw error
-    throw new Error(`could not read ${filePath}: ${error.message}`)
-  }
-}
-
-async function yamlFiles(directory) {
-  try {
-    return (await fs.readdir(directory)).filter((name) => /\.ya?ml$/i.test(name)).sort()
-  } catch (error) {
-    if (error?.code === "ENOENT") return []
-    throw error
-  }
-}
-
-function normalizeAuth(auth) {
-  if (!isPlainObject(auth)) throw new Error("provider auth must be a mapping")
-  const models = {}
-  if (auth.models !== undefined) {
-    if (!isPlainObject(auth.models)) throw new Error("provider auth.models must be a mapping")
-    for (const [model, binding] of Object.entries(auth.models)) models[model] = normalizeBinding(binding)
-  }
-  const defaultBinding = auth.default === undefined ? undefined : normalizeBinding(auth.default)
-  if (!defaultBinding && Object.keys(models).length === 0) throw new Error("provider auth requires default or model bindings")
-  return { default: defaultBinding, models }
-}
-
-function normalizeBinding(binding) {
-  if (!isPlainObject(binding)) throw new Error("provider auth binding must be a mapping")
-  const secret = requireString(binding.secret, "provider auth secret")
-  const header = binding.header === undefined ? "Authorization" : requireString(binding.header, "provider auth header")
-  const query = binding.query === undefined ? undefined : requireString(binding.query, "provider auth query")
-  if (query && binding.header !== undefined) throw new Error("provider auth binding cannot set both header and query")
-  return {
-    secret,
-    header,
-    query,
-    prefix: binding.prefix === undefined ? "Bearer " : String(binding.prefix),
-  }
-}
 
 async function requestModel(request) {
+  return (await requestModelFromBody(request)) ?? requestModelFromUrl(request.url)
+}
+
+async function requestModelFromBody(request) {
   try {
-    const text = await request.clone().text()
-    const document = JSON.parse(text)
+    const document = JSON.parse(await request.clone().text())
     return typeof document?.model === "string" ? document.model : undefined
   } catch {
     return undefined
   }
 }
 
-function requireVersion(document, name) {
-  if (document.version !== 1) throw new Error(`${name} must declare version: 1`)
+function requestModelFromUrl(url) {
+  try {
+    const match = new URL(url).pathname.match(/\/models\/([^/:]+)(?::|$)/)
+    return match ? decodeURIComponent(match[1]) : undefined
+  } catch {
+    return undefined
+  }
 }
 
-function requireString(value, name) {
-  if (typeof value !== "string" || value.length === 0) throw new Error(`${name} must be a non-empty string`)
-  return value
-}
 
-function isPlainObject(value) {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
-}

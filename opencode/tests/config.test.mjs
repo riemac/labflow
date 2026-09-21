@@ -17,7 +17,62 @@ async function temporaryDirectory(t, prefix) {
   return directory
 }
 
-test("native OpenAI OAuth exposes standard and fast GPT-5.6 modes", async () => {
+test("lucoo grok and gpt models declare vision and temperature capabilities", async () => {
+  const managed = await readManagedConfig()
+  const grok = managed.providers.lucoo.config.models["grok-4.6"]
+  const gpt = managed.providers.lucoo.config.models["gpt-5.6-sol"]
+
+  assert.equal(grok.attachment, true)
+  assert.equal(grok.temperature, true)
+  assert.deepEqual(grok.modalities.input, ["text", "image", "pdf"])
+  assert.equal(gpt.attachment, true)
+  assert.equal(gpt.temperature, true)
+  assert.deepEqual(gpt.modalities.input, ["text", "image", "pdf"])
+})
+
+test("routin current models use the intended group credentials", async () => {
+  const managed = await readManagedConfig()
+  const routin = managed.providers.routin
+  const models = routin.config.models
+
+  assert.equal(models["muse-spark-1.2"], undefined)
+  assert.equal(models["grok-4.5"], undefined)
+  assert.equal(models["muse-spark-1.3"].limit.context, 1_000_000)
+  assert.equal(models["grok-4.6"].limit.context, 500_000)
+  assert.deepEqual(models["gemini-3.7-flash"].limit, models["gemini-3.8-flash"].limit)
+  assert.equal(models["gemini-3.8-flash"].limit.context, 1_000_000)
+  assert.equal(routin.auth.models["muse-spark-1.3"].secret, "routin-muse-spark")
+  assert.equal(routin.auth.models["gemini-3.7-flash"], undefined)
+  assert.equal(routin.auth.models["gemini-3.8-flash"], undefined)
+  assert.equal(routin.auth.models["grok-4.6"], undefined)
+  assert.equal(routin.auth.default.secret, "routin-grok")
+})
+
+
+test("LinkAPI exposes Gemini 3.8 Flash through its chat-compatible endpoint", async () => {
+  const managed = await readManagedConfig()
+  const provider = managed.providers.linkapi
+  const model = provider.config.models["gemini-3.8-flash"]
+
+  assert.equal(provider.config.npm, "@ai-sdk/openai-compatible")
+  assert.equal(provider.config.options.baseURL, "https://api.linkapi.ai/v1")
+  assert.equal(model.reasoning, true)
+  assert.equal(model.attachment, true)
+  assert.equal(model.tool_call, true)
+  assert.deepEqual(model.modalities.input, ["text", "image"])
+  assert.deepEqual(model.limit, {
+    context: 1_000_000,
+    input: 1_000_000,
+    output: 65_536,
+  })
+  assert.deepEqual(provider.auth.default, {
+    secret: "linkapi",
+    header: "Authorization",
+    prefix: "Bearer ",
+  })
+})
+
+test("native OpenAI OAuth exposes GPT-5.6 modes and official GPT-6 Astra", async () => {
   const managed = await readManagedConfig()
   const openai = managed.providers.openai.config
 
@@ -26,6 +81,12 @@ test("native OpenAI OAuth exposes standard and fast GPT-5.6 modes", async () => 
     assert.equal(openai.whitelist.includes(`${model}-fast`), true)
     assert.deepEqual(openai.models[`${model}-fast`].limit, openai.models[model].limit)
   }
+  assert.equal(openai.whitelist.includes("gpt-6-astra"), true)
+  assert.deepEqual(openai.models["gpt-6-astra"].limit, {
+    context: 1050000,
+    input: 922000,
+    output: 128000,
+  })
 })
 
 test("managed config keeps local overrides and secrets out of resolved config", async (t) => {
@@ -113,6 +174,33 @@ test("secure provider fetch selects model bindings and overwrites request auth",
   assert.deepEqual(requests.map((request) => JSON.parse(request.body).model), ["special", "ordinary"])
   controller.abort()
   assert.equal(requests[0].signal.aborted, true)
+})
+
+test("secure provider fetch selects model bindings from Google generateContent URLs", async () => {
+  const requests = []
+  const store = new SecretStore({
+    loader: async () => ({
+      version: 1,
+      secrets: { default: "default-secret", gemini: "gemini-secret" },
+    }),
+  })
+  const secureFetch = createSecureFetch({
+    default: { secret: "default", header: "Authorization", prefix: "Bearer " },
+    models: {
+      "gemini-3.7-flash": { secret: "gemini", header: "Authorization", prefix: "" },
+    },
+  }, store, async (request) => {
+    requests.push(request)
+    return new Response("ok")
+  })
+
+  await secureFetch(new Request("https://relay.example/v1/models/gemini-3.7-flash:generateContent", {
+    method: "POST",
+    headers: { Authorization: "Bearer labflow-managed" },
+    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "hi" }] }] }),
+  }))
+
+  assert.equal(requests[0].headers.get("Authorization"), "gemini-secret")
 })
 
 test("secure provider fetch supports query credentials", async () => {

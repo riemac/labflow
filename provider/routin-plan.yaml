@@ -29,9 +29,9 @@ config:
           - reasoning.encrypted_content
         store: false
       limit:
-        context: 372000
-        input: 372000
-        output: 32000
+        context: 420000
+        input: 420000
+        output: 64000
       variants:
         none:
           disabled: true
@@ -72,8 +72,8 @@ config:
           - reasoning.encrypted_content
         store: false
       limit:
-        context: 372000
-        input: 372000
+        context: 420000
+        input: 420000
         output: 64000
       variants:
         none:
@@ -115,8 +115,8 @@ config:
           - reasoning.encrypted_content
         store: false
       limit:
-        context: 372000
-        input: 372000
+        context: 420000
+        input: 420000
         output: 64000
       variants:
         none:

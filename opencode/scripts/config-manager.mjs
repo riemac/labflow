@@ -26,7 +26,12 @@ const GOAL_PTY_ADAPTER_ENTRY = pathToFileURL(path.join(OPENCODE_DIR, "plugins", 
 const LOCAL_PLUGIN_OVERRIDES_FILE = process.env.LABFLOW_PLUGIN_OVERRIDES_FILE ?? path.join(GLOBAL_CONFIG_DIR, "labflow-plugin-overrides.json")
 const AGE_KEY_FILE = process.env.SOPS_AGE_KEY_FILE ?? path.join(homeDir(), ".config", "sops", "age", "keys.txt")
 const SOPS_CONFIG_FILE = path.join(REPO_DIR, ".sops.yaml")
-const SECRETS_FILE = path.join(CONFIG_DIR, "secrets.sops.yaml")
+const PROVIDER_DIR = process.env.LABFLOW_PROVIDER_DIR ?? path.join(REPO_DIR, "provider")
+const SECRETS_FILE = process.env.LABFLOW_SECRETS_FILE ?? (
+  process.env.LABFLOW_CONFIG_DIR
+    ? path.join(CONFIG_DIR, "secrets.sops.yaml")
+    : path.join(PROVIDER_DIR, "secrets.sops.yaml")
+)
 
 main().catch((error) => {
   console.error(`labflow config error: ${safeMessage(error)}`)
@@ -99,9 +104,10 @@ async function migrateConfig() {
     { filePath: path.join(CONFIG_DIR, "defaults.yaml"), content: yaml({ version: 1, config: migrated.defaults }) },
     { filePath: path.join(CONFIG_DIR, "plugins.yaml"), content: yaml({ version: 1, plugins: migrated.plugins, bootstrap: {} }) },
   ]
+  const targetProviderDir = process.env.LABFLOW_CONFIG_DIR ? path.join(CONFIG_DIR, "providers") : PROVIDER_DIR
   for (const [id, provider] of Object.entries(migrated.providers)) {
     writes.push({
-      filePath: path.join(CONFIG_DIR, "providers", `${safeFileName(id)}.yaml`),
+      filePath: path.join(targetProviderDir, `${safeFileName(id)}.yaml`),
       content: yaml({
         version: 1,
         id,
