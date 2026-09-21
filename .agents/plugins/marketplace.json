@@ -8,7 +8,7 @@
       "name": "labflow",
       "source": {
         "source": "local",
-        "path": "./plugins/labflow"
+        "path": "./codex"
       },
       "policy": {
         "installation": "AVAILABLE",

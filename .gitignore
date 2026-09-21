@@ -6,6 +6,7 @@ labflow.code-workspace
 # CocoIndex Code (ccc)
 /.cocoindex_code/
 opencode/node_modules/
+node_modules
 opencode/labflow.local.json
 opencode/.secrets/
 figures/*

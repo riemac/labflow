@@ -3,21 +3,17 @@
 This file is for agents editing **labflow itself**. It is repository guidance,
 not downstream research-project instructions.
 
-**labflow** is a research coding plugin. The primary interface is skills;
-agents, rules, hooks, and MCP support those skills. labflow ships for two host
-platforms with different runtime models, so platform-specific guidance lives in
-two companion files — **read the one matching what you are editing**:
+**labflow** is a personal research workflow toolbox. The primary interface is skills;
+agents, rules, and MCP support those skills. labflow ships across three peer
+platforms with distinct runtime models, while model channels and credentials live
+in a shared Single Source of Truth:
 
-- **[AGENTS_Codex.md](AGENTS_Codex.md)** — editing the Codex plugin: surfaces
-  under `plugins/labflow/` (`.codex-plugin/`, `hooks/`, `.mcp.json`, `agents/`,
-  `prompts/`, `skills/`), stage runtime, marketplace, plugin reload.
-- **[AGENTS_Opencode.md](AGENTS_Opencode.md)** — editing the OpenCode
-  integration: surfaces under `opencode/` (rules file, primary agents, skills),
-  `install.sh` deployment, plugin system, and the de-Codex mapping.
+- **`provider/`** — [provider/README.md](provider/README.md): Single Source of Truth for model channels, endpoints, limits, capabilities, and SOPS-encrypted secrets.
+- **`codex/`** — **[codex/AGENTS.md](codex/AGENTS.md)**: editing the Codex plugin (`.codex-plugin/`, `.mcp.json`, `agents/`, `skills/`), marketplace, plugin reload, and dedicated research workers.
+- **`opencode/`** — **[opencode/AGENTS.md](opencode/AGENTS.md)**: editing the OpenCode integration (`plugins/`, primary agents, stages, rules, skills), `install.sh` deployment, and provider resolution.
+- **`copilot/`** — **[copilot/AGENTS.md](copilot/AGENTS.md)**: editing the Copilot integration (`plugin.json`, `mcp.json`, `com.github.copilot/`), Agents Window orchestration, and provider sync.
 
-Most skills under `plugins/labflow/skills/` are shared source; the OpenCode
-integration adapts copies into `opencode/skills/`. When a change
-touches both platforms, update both companion files.
+The platforms share research contracts where useful, but do not require a symmetric skill catalog. Codex uses a native primary agent for research evidence and document work with native GPT models; OpenCode maintains coding agents; Copilot leverages the VS Code Agents Window and CLI. Keep literature/learning dossier formats and portable helpers compatible, and adapt only host orchestration. When a change touches multiple platforms, update their corresponding companion files.
 
 ## Cross-platform conventions
 
@@ -48,8 +44,7 @@ boundary.
 
 ### Ability vs stage
 
-- A **stage** is a lightweight stateful collaboration mode (Codex: hook context
-  + optional HUD; OpenCode: a primary agent you switch into).
+- A **stage** is a lightweight collaboration mode. OpenCode represents it with a primary agent; Codex uses its native primary agent and Plan Mode without a Labflow stage runtime; Copilot utilizes the Agents Window and session handoffs.
 - An **ability** is an independent skill for a reusable cognitive, research,
   design, or execution action. Abilities imply no fixed pipeline.
 - Native planning/implementation modes remain the default; do not wrap them
