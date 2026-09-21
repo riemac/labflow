@@ -1,5 +1,43 @@
 # Changelog
 
+## Unreleased
+
+## 1.3.0 - 2026-09-21
+
+- Migrated model provider ecosystem to a self-contained Single Source of Truth under `provider/`:
+  - Created `@labflow/provider` domain module (`provider/index.mjs`) providing memory-cached lazy SOPS decryption (`SecretStore`), channel schema validation, and model-credential binding resolution.
+  - Decommissioned deprecated `91token` relay provider.
+  - Removed legacy symlinks from `opencode/config/` (`providers`, `secrets.sops.yaml`, `secrets.sops.example.yaml`), keeping OpenCode configurations clean and decoupled.
+- Added first-class GitHub Copilot & VS Code Agents Window integration (`copilot/`):
+  - Implemented `copilot/scripts/sync-providers.mjs` to synchronize provider definitions into VS Code `chatLanguageModels.json` custom endpoint groups and Copilot CLI `~/.copilot/providers.json` registry; injected model-level `requestHeaders` (`Authorization` / `x-api-key`) and stripped redundant `Bearer` prefixes to bypass VS Code SecretStorage plaintext key eviction (`502 Invalid token`).
+  - Added `copilot/scripts/doctor.mjs` diagnostic suite verifying SOPS, age keys, model channels, CLI JSON array registry, and plugin manifests.
+  - Added `copilot/scripts/use-provider.sh` shell helper for instant Copilot CLI BYOK environment variable injection.
+  - Created Agent Plugins 1.0 manifests (`copilot/plugin.json`, `copilot/mcp.json`).
+- Refactored repository into clean peer platforms (`codex/`, `opencode/`, `copilot/`, `provider/`) with nested `AGENTS.md` documentation hierarchy.
+- Refocused Codex plugin under `codex/` on native primary agent document and research evidence work with native GPT models; added author-side `paper-editor`, `paper-writing`, and `scientific-figures` skills, and updated marketplace manifests.
+- Added high-fidelity XML compaction contract for OpenCode (`opencode/agents/compaction.md`), providing context preservation, adaptive reasoning exposition, and 64k token API budgets.
+
+- Added a tested native-SVG export helper for Inkscape, retaining editable text and existing output recovery while surfacing renderer diagnostics; documented actual 1.4.4 composition, group movement and LaTeX-overlay tests.
+- Added topic-based figure and analysis-workspace guidance, explicit source ownership, deprecated-candidate retention and version-aware manuscript preservation.
+- Recorded demonstrated conversion limits for HTML-based SVG exports and required legacy entry-point inspection before help/dry-run calls, following an observed help-triggered render side effect.
+
+## 1.2.8 - 2026-09-08
+
+- Corrected substantial manuscript and key-figure workflows to require author-side rendered-page inspection, independent scientific and visual/editorial reviews, and same-reviewer verification after revision.
+- Strengthened the paper reviewer’s figure-purpose, learning-semantics, typography and page-composition judgments, separating scientific recommendations from visual readiness and preserving phase-specific blind inputs.
+- Added evolving figure-methodology, visual-review and SVG/Inkscape references, covering reference analysis, composition alternatives, layered production and actual publication-size checks; structured the two author skills with semantic XML sections while preserving YAML discovery metadata and lightweight local edits.
+- Required runtime checks of both review streams and the installed reviewer’s current skill-exclusion paths after plugin reload, rather than treating static checks or image access as a design verdict.
+
+## 1.2.7 - 2026-09-07
+
+- Replaced OpenCode's fixed compaction prompt with an English high-fidelity XML contract and an unloaded Chinese review companion, supporting adaptive research/engineering exposition, meaningful completed-topic history, and accurate completion boundaries.
+- Restored prior summaries when replacing the native compaction request template, stopped explicitly on unavailable history, and applied a compaction-only API output budget of up to 64,000 tokens; native OpenAI OAuth keeps its service-managed limit because the subscription endpoint rejects the parameter.
+- Added regression coverage for repeated compaction, session isolation, history recovery, prompt registration, and provider output-budget handling.
+- Made compact headings content-driven, kept abstracts in uninterrupted prose, and supplied retained recent updates to the compactor so its state can reflect completed work while native verbatim replay remains intact.
+- Allowed optional text-native diagrams as working representations for the receiving agent's continued reasoning, without mandatory diagram sections or rendering dependencies.
+- Set the configured OpenAI compaction agent's text verbosity to high instead of inheriting OpenCode's low default, leaving its prompt and reasoning-effort selection unchanged.
+- Added a request-only checkpoint identity notice for receiving agents, without modifying saved summaries or carrying the notice into subsequent compaction.
+
 ## 1.2.6 - 2026-09-03
 
 - Restored Autopilot's XML semantic sections, flipped preflight, maximum-useful-parallelism guidance, candidate pruning, and lightweight Mermaid control flow without reintroducing dossiers, lifecycle scripts, mandatory process documents, or the dedicated reviewer.
@@ -49,6 +87,12 @@
 - Added the reusable hidden `learning-worker` for up to eight independent blind lenses, resumable cross-examination, focused external evidence, disjoint audit artifacts, and explicitly bounded ten-minute probe execution while the primary agent retains scientific judgment and human-facing synthesis.
 - Added local-only learning case dossiers with dynamic paper-flavor topic reports, sealed case identities, evidence indexes, hidden worker state, isolated probe scaffolds, and a standard-library `init`/`new-case`/`seal-case`/`new-probe`/`validate` helper.
 - Added tracked `opencode-pty` integration and global long-process ownership rules so primary agents can launch user-approved formal jobs with exit notifications, focused log recovery, and explicit permission caveats without polling.
+
+## 1.0.3 - 2026-08-24
+
+- Rebuilt `labflow-develop` around an adaptive evidence-guided research loop that inspects discoverable facts first, works one to three dependent frontier questions at a time, carries decisions forward, and converts empirical uncertainty into minimal validation probes without forcing routine discussions through an interview.
+- Added project-aware `docs/<session-topic>/decision-tree.md` and `record.md` checkpoints with synchronized research-state frontmatter, traceable Mermaid decision maps, semantically lossless context records, explicit supersession, and safe Develop-to-Plan recovery boundaries.
+- Tuned Develop toward natural colleague-style research dialogue inspired by Feynman's explanatory clarity and Fowler's design judgment, with plain-language intuition, restrained terminology, reasoned recommendations, and less boilerplate or mixed-language phrasing.
 
 ## 1.0.2 - 2026-08-17
 
