@@ -1,0 +1,31 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "labflow",
+  "version": "1.3.0",
+  "description": "Labflow research workflow plugin for GitHub Copilot & VS Code Agents Window",
+  "author": {
+    "name": "riemac"
+  },
+  "license": "MIT",
+  "keywords": [
+    "research",
+    "multi-agent",
+    "copilot",
+    "agents-window",
+    "science"
+  ],
+  "extensions": {
+    "com.github.copilot": {
+      "agents": {
+        "paths": [
+          "com.github.copilot/agents"
+        ]
+      },
+      "rules": {
+        "paths": [
+          "com.github.copilot/rules"
+        ]
+      }
+    }
+  }
+}
