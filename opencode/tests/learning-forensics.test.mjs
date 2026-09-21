@@ -14,16 +14,16 @@ const OPENCODE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 const REPO_DIR = path.resolve(OPENCODE_DIR, "..")
 const PLUGIN_PATH = path.join(OPENCODE_DIR, "plugins", "labflow.ts")
 const WORKER_PATH = path.join(OPENCODE_DIR, "agents", "learning-worker.md")
-const CODEX_WORKER_PATH = path.join(REPO_DIR, "plugins", "labflow", "agents", "learning-worker.toml")
-const CODEX_MANIFEST_PATH = path.join(REPO_DIR, "plugins", "labflow", ".codex-plugin", "plugin.json")
+const CODEX_WORKER_PATH = path.join(REPO_DIR, "codex", "agents", "learning-worker.toml")
+const CODEX_MANIFEST_PATH = path.join(REPO_DIR, "codex", ".codex-plugin", "plugin.json")
 const OPENCODE_HELPER = path.join(OPENCODE_DIR, "skills", "learning-forensics", "scripts", "case.py")
-const CODEX_HELPER = path.join(REPO_DIR, "plugins", "labflow", "skills", "learning-forensics", "scripts", "case.py")
+const CODEX_HELPER = path.join(REPO_DIR, "codex", "skills", "learning-forensics", "scripts", "case.py")
 const OPENCODE_REFERENCES = path.join(OPENCODE_DIR, "skills", "learning-forensics", "references")
-const CODEX_REFERENCES = path.join(REPO_DIR, "plugins", "labflow", "skills", "learning-forensics", "references")
+const CODEX_REFERENCES = path.join(REPO_DIR, "codex", "skills", "learning-forensics", "references")
 const OPENCODE_SKILL = path.join(OPENCODE_DIR, "skills", "learning-forensics", "SKILL.md")
-const CODEX_SKILL = path.join(REPO_DIR, "plugins", "labflow", "skills", "learning-forensics", "SKILL.md")
+const CODEX_SKILL = path.join(REPO_DIR, "codex", "skills", "learning-forensics", "SKILL.md")
 const OPENCODE_SKILL_CN = path.join(OPENCODE_DIR, "skills", "learning-forensics", "SKILL_CN.md")
-const CODEX_SKILL_CN = path.join(REPO_DIR, "plugins", "labflow", "skills", "learning-forensics", "SKILL_CN.md")
+const CODEX_SKILL_CN = path.join(REPO_DIR, "codex", "skills", "learning-forensics", "SKILL_CN.md")
 
 
 async function temporaryDirectory(t, prefix) {
@@ -46,6 +46,8 @@ async function relativeFiles(root, directory = root) {
 
 function normalizePlatformDelegation(text) {
   return text
+    .replaceAll("`explore-worker`", "<retrieval-role>")
+    .replaceAll("`explorer`", "<retrieval-role>")
     .replace(/^Use the Task tool with .*$/m, "<platform-delegation>")
     .replace(/^Use Codex's native background-agent mechanism\..*$/m, "<platform-delegation>")
     .replace(/^Record every returned task ID/m, "Record every returned runtime handle")
@@ -63,10 +65,14 @@ test("plugin registers the bounded learning worker and preserves user model over
   const defaults = {}
   hooks.config(defaults)
 
+  const managed = await readManagedConfig()
+  const expectedWorker = managed.defaults.agent["learning-worker"]
   const worker = defaults.agent["learning-worker"]
   assert.equal(worker.mode, "subagent")
   assert.equal(worker.hidden, true)
-  assert.equal(worker.model, undefined)
+  assert.equal(worker.model, expectedWorker.model)
+  assert.equal(worker.options.reasoningEffort, expectedWorker.options.reasoningEffort)
+  assert.equal(worker.options.store, expectedWorker.options.store)
   assert.equal(worker.permission.edit["*"], "deny")
   assert.equal(worker.permission.edit["**/.learning/audit/lanes/**"], "allow")
   assert.equal(worker.permission.edit["**/.learning/probes/**"], "allow")
@@ -74,13 +80,7 @@ test("plugin registers the bounded learning worker and preserves user model over
   assert.equal(worker.permission.read["**/.learning/state/**"], "deny")
   assert.equal(worker.permission.read["**/.learning/cases/**"], "allow")
   assert.equal(worker.permission.external_directory, "deny")
-  assert.equal(worker.permission.bash["*"], "deny")
-  assert.equal(worker.permission.bash["python **/.learning/**"], "allow")
-  assert.equal(worker.permission.bash["timeout *"], undefined)
-  assert.equal(worker.permission.bash["pytest **/.learning/**"], "allow")
-  assert.equal(worker.permission.bash["pytest *"], undefined)
-  assert.equal(worker.permission.bash["*install*"], "deny")
-  assert.equal(worker.permission.bash["*git commit*"], "deny")
+  assert.equal(worker.permission.bash, "allow")
   assert.equal(worker.permission.task, "deny")
   assert.equal(worker.permission.question, "deny")
   for (const tool of ["pty_spawn", "pty_write", "pty_read", "pty_list", "pty_kill"]) {
@@ -136,7 +136,7 @@ test("Codex learning worker uses the documented custom-agent TOML schema", async
 test("repository and Codex plugin publish one learning-forensics version", async () => {
   const version = (await fs.readFile(path.join(REPO_DIR, "VERSION"), "utf8")).trim()
   const manifest = JSON.parse(await fs.readFile(CODEX_MANIFEST_PATH, "utf8"))
-  assert.equal(version, "1.2.6")
+  assert.equal(version, "1.3.0")
   assert.equal(manifest.version, version)
   assert.equal(manifest.keywords.includes("learning-forensics"), true)
 })

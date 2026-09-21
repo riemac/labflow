@@ -21,71 +21,7 @@ permission:
     "**/.learning/audit/lanes/**": allow
     "**/.learning/probes/**": allow
   external_directory: deny
-  bash:
-    "*": deny
-    "pwd": allow
-    "ls *": allow
-    "tree *": allow
-    "fd *": allow
-    "fdfind *": allow
-    "rg *": allow
-    "wc *": allow
-    "file *": allow
-    "stat *": allow
-    "du *": allow
-    "df *": allow
-    "ps *": allow
-    "nvidia-smi *": allow
-    "jq *": allow
-    "sha256sum *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "git grep*": allow
-    "git rev-parse*": allow
-    "ctx7 *": allow
-    "gh api *": allow
-    "gh search *": allow
-    "gh issue view*": allow
-    "gh pr view*": allow
-    "gh release view*": allow
-    "litnav *": allow
-    "python **/.learning/**": allow
-    "python3 **/.learning/**": allow
-    "*/python **/.learning/**": allow
-    "pytest **/.learning/**": allow
-    "ruff check **/.learning/**": allow
-    "pyright **/.learning/**": allow
-    "ffprobe *": allow
-    "*&&*": deny
-    "*;*": deny
-    "*|*": deny
-    "*>*": deny
-    "*<*": deny
-    "*`*": deny
-    "*$(*": deny
-    "* -c *": deny
-    "* bash *": deny
-    "* sh *": deny
-    "* zsh *": deny
-    "*pip*": deny
-    "*install*": deny
-    "*format*": deny
-    "*--fix*": deny
-    "*rm *": deny
-    "*mv *": deny
-    "*cp *": deny
-    "*git commit*": deny
-    "*git push*": deny
-    "*git reset*": deny
-    "*git checkout*": deny
-    "*nohup*": deny
-    "*kill *": deny
-    "*pkill *": deny
-    "* -X *": deny
-    "* --method *": deny
+  bash: allow
   webfetch: allow
   websearch: allow
   skill: allow

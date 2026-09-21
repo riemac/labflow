@@ -15,7 +15,7 @@ test("autopilot uses one maintained Goal and native operational state", async ()
   const [source, chinese, agents] = await Promise.all([
     fs.readFile(path.join(SKILL_DIR, "SKILL.md"), "utf8"),
     fs.readFile(path.join(SKILL_DIR, "SKILL_CN.md"), "utf8"),
-    fs.readFile(path.join(REPO_DIR, "AGENTS_Opencode.md"), "utf8"),
+    fs.readFile(path.join(OPENCODE_DIR, "AGENTS.md"), "utf8"),
   ])
 
   assert.match(source, /^name: autopilot$/m)

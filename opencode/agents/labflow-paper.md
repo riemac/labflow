@@ -7,7 +7,7 @@ permission:
   glob: deny
   grep: deny
   list: allow
-  bash: ask
+  bash: allow
   task: allow
   todowrite: allow
   webfetch: allow

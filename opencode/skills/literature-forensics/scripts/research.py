@@ -3,7 +3,7 @@
 
 This standard-library helper owns only deterministic filesystem mechanics. It
 does not search papers, interpret evidence, write research conclusions, or
-manage OpenCode task sessions. Scholarly retrieval belongs to Litnav; research
+manage host worker sessions. Scholarly retrieval belongs to Litnav; research
 judgment belongs to the coordinator and literature worker.
 """
 

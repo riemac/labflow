@@ -7,7 +7,7 @@ permission:
   read: allow
   list: allow
   bash:
-    "*": deny
+    "*": allow
     "pwd": allow
     "ls *": allow
     "tree *": allow

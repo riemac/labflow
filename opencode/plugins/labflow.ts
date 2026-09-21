@@ -7,6 +7,7 @@ import * as path from "path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { tool } from "@opencode-ai/plugin"
+import type { Hooks, PluginInput } from "@opencode-ai/plugin"
 import { parse as parseYaml } from "yaml"
 import { applyManagedOpenCodeConfig, readManagedConfig, SecretStore } from "../scripts/config.mjs"
 
@@ -18,8 +19,10 @@ const MAX_INPUT_IMAGES = 4
 const MAX_INPUT_IMAGE_BYTES = 20 * 1024 * 1024
 const MAX_TOTAL_INPUT_IMAGE_BYTES = 50 * 1024 * 1024
 const SUPPORTED_IMAGE_MIMES = new Set(["image/png", "image/jpeg", "image/webp"])
+const COMPACTION_CHECKPOINT_NOTICE = "<context_checkpoint>\nThis is a reconstructed checkpoint of earlier context in the same session, not a new user request. Carry forward its established understanding and constraints, reconcile it with any newer messages, and continue only work that remains unfinished and authorized.\n</context_checkpoint>\n\n"
 type AttachedImageState = { images: Array<{ mime: string; url: string; filename?: string }> }
 type OpenCodeAuth = { type: string; access?: string; accountId?: string }
+type SessionMessages = Parameters<NonNullable<Hooks["experimental.chat.messages.transform"]>>[1]["messages"]
 const currentAttachedImagesBySession = new Map<string, AttachedImageState>()
 const latestAttachedImagesBySession = new Map<string, AttachedImageState>()
 
@@ -426,35 +429,175 @@ function formatExecError(error: unknown): string {
   return detail.slice(0, 2000)
 }
 
-export default async () => {
+// Read-only view of the OpenAI credential opencode stores on disk. The plugin
+// must not register its own `auth` hook for openai: opencode replaces the
+// provider's whole login menu with the hook's methods, so even `methods: []`
+// wipes the native ChatGPT/API-key options and crashes `auth login` and
+// `/connect`. Disk reads keep imagegen + compaction working without touching
+// login. Chat usage refreshes this file, so the token stays fresh enough.
+function openAIAuthPaths(): string[] {
+  const candidates: string[] = []
+  if (process.env.LABFLOW_OPENAI_AUTH_PATH) candidates.push(process.env.LABFLOW_OPENAI_AUTH_PATH)
+  const dataDir =
+    process.env.OPENCODE_DATA_DIR ??
+    (process.env.XDG_DATA_HOME ? path.join(process.env.XDG_DATA_HOME, "opencode") : undefined)
+  if (dataDir) candidates.push(path.join(dataDir, "auth.json"))
+  candidates.push(path.join(os.homedir(), ".local", "share", "opencode", "auth.json"))
+  return candidates
+}
+
+function readOpenAIAuthFromDisk(): OpenCodeAuth | undefined {
+  for (const candidate of openAIAuthPaths()) {
+    try {
+      const entry = JSON.parse(fs.readFileSync(candidate, "utf-8"))?.openai
+      if (entry && typeof entry === "object" && typeof entry.type === "string") {
+        const auth: OpenCodeAuth = { type: entry.type }
+        if (typeof entry.access === "string") auth.access = entry.access
+        if (typeof entry.accountId === "string") auth.accountId = entry.accountId
+        return auth
+      }
+    } catch {}
+  }
+  return undefined
+}
+
+export default async (input?: Pick<PluginInput, "client">) => {
   const managedConfig = await readManagedConfig()
-  let openAIAuthGetter: (() => Promise<OpenCodeAuth | undefined>) | undefined
+  const pendingCompactions = new Map<string, { boundaryID: string; history: SessionMessages }>()
   const secretStore = new SecretStore({
-    secretPath: path.join(managedConfig.configDir, "secrets.sops.yaml"),
+    secretPath: managedConfig.secretPath,
   })
 
   return {
-  auth: {
-    provider: "openai",
-    methods: [],
-    async loader(getAuth) {
-      openAIAuthGetter = getAuth as () => Promise<OpenCodeAuth | undefined>
-      return {}
-    },
-  },
   dispose: async () => {
     secretStore.dispose()
     currentAttachedImagesBySession.clear()
     latestAttachedImagesBySession.clear()
+    pendingCompactions.clear()
   },
   event: async ({ event }) => {
-    if (event.type === "session.deleted") clearAttachedStates(event.properties.info.id)
+    if (event.type === "session.deleted") {
+      clearAttachedStates(event.properties.info.id)
+      pendingCompactions.delete(event.properties.info.id)
+    }
+    if (event.type === "session.status" && event.properties.status.type === "idle") {
+      pendingCompactions.delete(event.properties.sessionID)
+    }
   },
   "chat.message": async (input, output) => {
     captureAttachedImages(input.sessionID, output.parts)
   },
+  "experimental.session.compacting": (async ({ sessionID }, output) => {
+    pendingCompactions.delete(sessionID)
+    let messages
+    try {
+      if (!input?.client) throw new Error("missing session client")
+      const result = await input.client.session.messages({ path: { id: sessionID }, throwOnError: true })
+      messages = result.data
+    } catch {
+      throw new Error("Labflow compaction stopped: could not read session history. Restore session access and retry.")
+    }
+    if (!Array.isArray(messages) || messages.some((message) =>
+      !message?.info || typeof message.info.id !== "string" || message.info.sessionID !== sessionID ||
+      !["user", "assistant"].includes(message.info.role) || !Array.isArray(message.parts) ||
+      message.parts.some((part) => !part || part.sessionID !== sessionID || part.messageID !== message.info.id ||
+        typeof part.type !== "string" || (part.type === "text" && typeof part.text !== "string"))
+    )) {
+      throw new Error("Labflow compaction stopped: invalid session history. No replacement summary was submitted.")
+    }
+
+    // The hook runs after the current marker is stored and before its summary is created.
+    // Use server order and parent links, not sortable IDs (forks/imports can rewrite IDs).
+    const markers = new Map<string, number>()
+    for (const [index, message] of messages.entries()) {
+      if (message.info.role === "user" && message.parts.some((part) => part.type === "compaction")) {
+        markers.set(message.info.id, index)
+      }
+    }
+    const current = [...markers.entries()].at(-1)
+    if (!current || messages.slice(current[1] + 1).some((message) =>
+      message.info.role === "assistant" && message.info.parentID === current[0] &&
+      message.info.summary && message.info.finish && !message.info.error
+    )) {
+      throw new Error("Labflow compaction stopped: could not identify the active compaction boundary. Retry compaction.")
+    }
+
+    let previousSummary: string | undefined
+    for (const [index, message] of messages.slice(0, current[1]).entries()) {
+      const info = message.info
+      if (info.role !== "assistant" || !info.summary || !info.finish || info.error) continue
+      const parent = markers.get(info.parentID)
+      if (parent === undefined || parent >= index) continue
+      previousSummary = message.parts
+        .filter((part) => part.type === "text")
+        .map((part) => part.text.trim())
+        .filter(Boolean)
+        .join("\n\n") || undefined
+    }
+
+    // The next message transform receives a clone of the older prefix. Keep this
+    // request's snapshot only until then so it can also see the retained recent tail.
+    pendingCompactions.set(sessionID, { boundaryID: current[0], history: messages.slice(0, current[1]) })
+    // Restore the prior summary separately; upstream serializes the transformed history.
+    output.prompt = [
+      "Reconstruct the supplied session context according to your compaction instructions. Output only the populated semantic containers.",
+      previousSummary === undefined ? "This compaction has no prior summary." :
+        `The following prior summary contains the accumulated context before the new conversation. Carry forward its still-valid content and integrate the new conversation.\n\n<prior_summary>\n${previousSummary}\n</prior_summary>`,
+      ...output.context,
+    ].filter(Boolean).join("\n\n")
+  }) satisfies NonNullable<Hooks["experimental.session.compacting"]>,
+  "experimental.chat.messages.transform": (async (_, output) => {
+    const sessionID = output.messages[0]?.info.sessionID
+    if (!sessionID) return
+    const pending = pendingCompactions.get(sessionID)
+    // A normal continuation contains the current marker; only the compaction prefix
+    // omits it. Never extend ordinary model history or modify persisted messages.
+    if (pending && !output.messages.some((message) => message.info.id === pending.boundaryID)) {
+      pendingCompactions.delete(sessionID)
+      const end = pending.history.findIndex((message) => message.info.id === output.messages.at(-1)?.info.id)
+      if (end < 0 || output.messages.some((message) => message.info.sessionID !== sessionID)) {
+        throw new Error("Labflow compaction stopped: could not match the summary input to its history boundary.")
+      }
+      const present = new Set(output.messages.map((message) => message.info.id))
+      const recent = pending.history.slice(end + 1).filter((message) =>
+        !present.has(message.info.id) &&
+        !(message.info.role === "assistant" && message.info.summary) &&
+        !message.parts.some((part) => part.type === "compaction")
+      )
+      // selected.tail_start_id remains native-owned; this changes only the disposable
+      // input clone, so recent updates are summarized AND still replayed verbatim.
+      output.messages.push(...recent.map((message) => structuredClone(message)))
+      return
+    }
+
+    // Annotate only the receiving model's copy. Stored/exported summaries and the
+    // prior summary fetched for the next compaction keep their original scientific text.
+    for (const [index, message] of output.messages.entries()) {
+      const info = message.info
+      if (info.sessionID !== sessionID || info.role !== "assistant" || !info.summary || !info.finish || info.error) continue
+      const first = message.parts.findIndex((part) => part.type === "text" && !part.ignored && part.text.trim())
+      if (first < 0) continue
+      const part = message.parts[first]
+      if (part.type !== "text" || part.text.startsWith(COMPACTION_CHECKPOINT_NOTICE)) continue
+      output.messages[index] = {
+        ...message,
+        parts: message.parts.map((item, i) => i === first ? { ...part, text: COMPACTION_CHECKPOINT_NOTICE + part.text } : item),
+      }
+    }
+  }) satisfies NonNullable<Hooks["experimental.chat.messages.transform"]>,
+  "chat.params": (async ({ agent, model }, output) => {
+    if (agent !== "compaction") return
+    // The subscription endpoint rejects max_output_tokens; API-key routes accept it.
+    if (model.providerID === "openai" && readOpenAIAuthFromDisk()?.type === "oauth") {
+      output.maxOutputTokens = undefined
+      return
+    }
+    const limit = model.limit.output
+    // External hooks run after the native OpenAI hook clears this field for API keys too.
+    output.maxOutputTokens = Number.isFinite(limit) && limit > 0 ? Math.min(64_000, limit) : 64_000
+  }) satisfies NonNullable<Hooks["chat.params"]>,
   tool: {
-    imagegen: createImagegenTool(async () => openAIAuthGetter ? openAIAuthGetter() : undefined),
+    imagegen: createImagegenTool(async () => readOpenAIAuthFromDisk()),
   },
   config(cfg) {
     applyManagedOpenCodeConfig(cfg, managedConfig, secretStore)
@@ -465,6 +608,10 @@ export default async () => {
       "labflow-develop": readAgentDefinition("labflow-develop"),
       "labflow-plan": readAgentDefinition("labflow-plan"),
       "labflow-paper": readAgentDefinition("labflow-paper"),
+      compaction: {
+        ...readAgentDefinition("compaction"),
+        ...readAgentExecutionOverride(cfg.agent?.compaction),
+      },
       // Keep bundled worker behavior portable while allowing user config to select provider/model options.
       "explore-worker": {
         ...readAgentDefinition("explore-worker"),

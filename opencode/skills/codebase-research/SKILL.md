@@ -12,7 +12,7 @@ Run independent shell probes and obvious file reads in parallel when that shorte
 1. **Shell narrowing**: use `tree` for structure, `fdfind` for file discovery (prefer over plain `find`), and `rg` for symbols/config keys/strings (prefer over plain `grep`). Use depth limits and excludes for caches, dependencies, generated files, logs, outputs, and data when useful.
 2. **Read key files**: verify behavior in entry points, definitions, registration sites, one caller/callee layer, similar implementations, and relevant tests/examples. If key paths are already known, read directly; do not force exhaustive search first.
 
-For multi-file search results, prefer `rg -n --heading` to avoid repeating long paths; use `--no-heading` or `--json` when downstream tooling needs self-contained records.
+Use `rg -n --heading` to avoid repeating long paths; use `--no-heading` or `--json` when downstream tooling needs self-contained records.
 
 Example shell probes:
 

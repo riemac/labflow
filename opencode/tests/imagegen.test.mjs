@@ -66,13 +66,7 @@ test("plugin preserves native agent system prompts", async (t) => {
   const hooks = await plugin.default()
   t.after(() => hooks.dispose())
 
-  assert.equal(hooks.auth.provider, "openai")
-  assert.deepEqual(hooks.auth.methods, [])
-  assert.deepEqual(await hooks.auth.loader(async () => ({
-    type: "oauth",
-    access: "not-exposed-to-test-output",
-    accountId: "account-test",
-  })), {})
+  assert.equal(hooks.auth, undefined)
 
   for (const agent of ["build", "labflow-plan"]) {
     const output = { message: { system: "existing system" }, parts: [] }
@@ -92,7 +86,7 @@ test("plugin registers the bounded explore worker and preserves model overrides"
   const expectedWorker = managed.defaults.agent["explore-worker"]
 
   assert.equal(defaults.agent.explore.disable, true)
-  assert.equal(defaults.agent.general.disable, true)
+  assert.equal(defaults.agent.general, undefined)
   assert.equal(defaults.agent["explore-worker"].model, expectedWorker.model)
   assert.equal(defaults.agent["explore-worker"].options.reasoningEffort, expectedWorker.options.reasoningEffort)
   assert.equal(defaults.agent["explore-worker"].options.store, expectedWorker.options.store)
@@ -123,6 +117,23 @@ test("plugin registers the bounded explore worker and preserves model overrides"
   assert.equal(overridden.agent["explore-worker"].options.store, false)
   assert.match(overridden.agent["explore-worker"].prompt, /# Explore Worker/)
   assert.equal(overridden.agent["explore-worker"].permission.edit, "deny")
+})
+
+test("plugin preserves explicit native general overrides", async (t) => {
+  const plugin = await import(`${new URL(`file://${PLUGIN_PATH}`).href}?general=${Date.now()}`)
+  const hooks = await plugin.default()
+  t.after(() => hooks.dispose())
+
+  for (const disable of [false, true]) {
+    const general = {
+      disable,
+      model: "custom/implementer",
+      permission: { edit: "ask", task: "deny" },
+    }
+    const configured = { agent: { general: structuredClone(general) } }
+    hooks.config(configured)
+    assert.deepEqual(configured.agent.general, general)
+  }
 })
 
 test("bundled imagegen defaults to the configurable Pro-first route", async () => {
@@ -847,7 +858,7 @@ test("plugin edits the current user attachment through the CLI", async (t) => {
   assert.equal(requests.length, 4)
 })
 
-test("plugin forwards OpenCode OAuth from auth loader without reading auth files", async (t) => {
+test("plugin forwards on-disk OpenAI OAuth to imagegen without taking over login", async (t) => {
   const cwd = await temporaryDirectory(t, "labflow-imagegen-plugin-oauth-")
   const requests = []
   const codex = http.createServer(async (request, response) => {
@@ -870,7 +881,14 @@ test("plugin forwards OpenCode OAuth from auth loader without reading auth files
   const plugin = await import(`${new URL(`file://${PLUGIN_PATH}`).href}?oauth=${Date.now()}`)
   const hooks = await plugin.default()
   t.after(() => hooks.dispose())
-  await hooks.auth.loader(async () => ({ type: "oauth", access: "oauth-plugin-token", accountId: "account-plugin" }))
+  assert.equal(hooks.auth, undefined)
+  const authPath = path.join(cwd, "auth.json")
+  await fs.writeFile(authPath, JSON.stringify({
+    openai: { type: "oauth", access: "oauth-plugin-token", accountId: "account-plugin" },
+  }))
+  const oldAuthPath = process.env.LABFLOW_OPENAI_AUTH_PATH
+  process.env.LABFLOW_OPENAI_AUTH_PATH = authPath
+  t.after(() => restoreEnvironment("LABFLOW_OPENAI_AUTH_PATH", oldAuthPath))
 
   const result = await hooks.tool.imagegen.execute(
     {

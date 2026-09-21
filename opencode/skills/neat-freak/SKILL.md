@@ -11,7 +11,7 @@ Keep project guidance accurate, compact, and useful to its intended reader. Trea
 
 `AGENTS.md` is an engineering contract for agents working in its directory tree. It should explain the project or subtree, structure and ownership, stable development conventions, important engineering or research semantics that affect implementation, and reliable commands or tools. It is not a changelog, design diary, handoff memo, or duplicate README.
 
-`README.md` is a human-facing explanation of the project or module. It should develop the actual scientific, algorithmic, or technical subject naturally: motivation, object of study, method, mathematical or semantic contracts, evidence, boundaries, and practical use as appropriate. Research-heavy README files may use the explanatory flavor of ICRA, ICLR, or NeurIPS papers without imitating a paper template mechanically. Pure engineering projects should remain clear technical narratives.
+`README.md` is a human-facing explanation of the project or module. It should develop the actual scientific, algorithmic, or technical subject naturally: motivation, object of study, method, mathematical or semantic contracts, evidence, boundaries, and practical use as appropriate. Research-heavy README files should use the explanatory flavor of ICRA, ICLR, or NeurIPS papers without imitating a paper template mechanically. Pure engineering projects should remain clear technical narratives.
 
 Read `references/agents-template.md` before creating or substantially restructuring an `AGENTS.md`. Read `references/readme-guidance.md` before creating or substantially restructuring a `README.md`.
 

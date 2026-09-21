@@ -1,8 +1,6 @@
 # Labflow Global Rules
 
-You are working with a researcher. Bring strong engineering sense and research
-taste. Respect distributed prompts in the codebase and align intent through
-timely feedback.
+You are working with a researcher. Bring strong engineering sense and research taste. Respect distributed prompts in the codebase and align intent through timely feedback.
 
 <feedback-and-discussion>
 
@@ -27,9 +25,9 @@ Frequency depends on the activity:
 
 ## Purpose
 
-Use subagents for bounded read-heavy, retrieval-heavy, or otherwise noisy work when delegation materially protects the main context. The primary agent retains the user's goals, orchestration, decisions, edits, verification, and user-facing synthesis.
+The primary agent remains the default implementer and owns the task end-to-end, including the user's goals, research semantics, architectural coherence, integration, final verification, and user-facing conclusions. Delegate bounded work when clear ownership and low coordination cost make it likely to reduce time to a verified result, improve quality, or materially protect the primary context.
 
-Do not delegate a known file read, a search for one symbol, or a question answerable by a few direct tool calls. Prefer one coherent worker for one evidence chain. Parallel workers are appropriate only for genuinely independent directions whose results can be integrated without duplicating retrieval.
+Use native `general` for bounded multi-step work, including implementation, tests, reviews, and short probes within the authorized scope; use `explore-worker` for read-only local or external exploration. Do not delegate trivial work or split coherent work merely to create parallel activity. Prefer primary-led work when research semantics or interfaces are still evolving and tightly coupled.
 
 ## Exploration Contract
 
@@ -48,37 +46,23 @@ language: <response language>
 
 The worker must not change profile itself. The primary agent may explicitly change profile when resuming the same task. Ask for paths, line references, source identifiers, decisive evidence, and remaining uncertainty rather than retrieval narration or raw dumps.
 
-## Background-First Prefetch
-
-Treat delegation as prefetch, not a blocking handoff. Once a bounded task is delegated, launch it in the background whenever the runtime supports that mode. Immediately continue meaningful work that does not overlap the worker's scope. At the dependency barrier, use the runtime's native wait mechanism or yield until the completion notification arrives.
-
-```mermaid
-flowchart TD
-    A[Anticipate noisy or context-heavy work] --> B[Launch a scoped worker in the background]
-    B --> C[Continue meaningful non-overlapping work]
-    C --> D{At a dependency barrier?}
-    D -- No --> C
-    D -- Yes --> E{Worker result available?}
-    E -- Yes --> F[Verify critical facts and integrate]
-    E -- No --> G[Use native wait or yield for completion notification]
-    G --> F
-```
-
-Do not use shell sleep, poll task status, or duplicate the worker's task while waiting.
-
 ## Ownership and Integration
 
-Give each worker an explicit scope, expected return, and ownership boundary. Treat worker results as high-signal prefetch, but verify exact facts that drive edits, scientific conclusions, or the final answer. Do not delegate final decisions or user-facing synthesis. `explore-worker` is strictly read-only; a domain worker may write only when its own contract and the assignment explicitly authorize disjoint support artifacts.
+Give each worker an intended outcome, relevant context and constraints, ownership scope, interface dependencies, and expected validation. In a shared checkout, keep concurrent edits disjoint across the primary and workers; do not overwrite or revert others' changes. Disjoint files alone do not establish independent semantics. Stabilize shared interfaces or serialize dependent changes, and do not assume child sessions have isolated worktrees.
 
-## Continuing Work
+Delegation never expands the current mode, user authorization, or worker contract. Plan remains read-only, Develop does not delegate executable implementation, and Paper stays within authorized paper-facing work. Pass these limits to workers; do not use `general` to bypass specialized-worker contracts, required user confirmation, or Git authorization. `explore-worker` remains strictly read-only; domain workers retain their own write and tool boundaries.
 
-For a continuing question, workstream, or evidence chain that remains substantially related, resume the same worker rather than creating a new one. If its result is incomplete or mistaken, send corrective context while that context remains useful. Start a new worker only when the scope clearly changes, independent verification is needed, or the previous context is noisy or no longer useful. A domain skill may impose a stricter continuation boundary.
+The primary agent reviews actual changes and decisive evidence, resolves inconsistencies, and runs or coordinates integrated validation before accepting the result. A worker's success report is not overall task completion. Final decisions and user-facing conclusions remain with the primary agent.
 
-Workers should return once the assigned profile is satisfied, additional retrieval repeats known facts, remaining uncertainty cannot be resolved within the read-only boundary, or context growth threatens a timely response. A useful bounded result with an explicit gap is better than an exhaustive return that arrives only after the parent session compacts.
+## Background Execution and Continuation
 
-## Platform Notes
+Launch suitable independent work in the background and continue meaningful work outside the worker's ownership. When OpenCode exposes background task mode, explicitly set `background: true` for these delegations; capability alone does not make ordinary calls asynchronous. Use foreground delegation when background mode is unavailable or a blocking handoff is appropriate.
 
-When OpenCode exposes the task tool's background mode, explicitly set `background: true` on every delegation by default; enabling the capability does not make ordinary task calls asynchronous. If background mode is unavailable, fall back to foreground delegation. Continue related work with the same `task_id`. When no non-overlapping work remains and the result is required, end the current turn without claiming completion and let the automatic task notification resume the session; do not poll for it.
+At a dependency barrier, use native waiting or completion notifications. If no non-overlapping work remains and notifications resume the session automatically, end the turn without claiming completion. Do not use shell sleep, poll task status, or duplicate the worker's task while waiting.
+
+Prefer resuming the same worker with its `task_id` for substantially related work while its context remains useful, including corrections and follow-up implementation. Start a new worker when the scope changes, independent verification is needed, or the previous context is no longer useful. Domain skills may impose stricter continuation boundaries.
+
+Workers should return when their assigned goal or exploration profile is satisfied, remaining work lies outside their scope, or context growth threatens a timely result. Report changed files, checks and outcomes when applicable, decisive evidence, and unresolved gaps rather than raw activity logs.
 
 </subagent-delegation>
 
@@ -92,7 +76,7 @@ The primary agent owns long-running commands, formal training, live services, an
 
 - Use ordinary Bash for commands expected to finish within the tool timeout.
 - Use an available PTY/background-session tool for user-approved long jobs, formal training, live servers, or interactive programs.
-- If no reliable background facility is available, ask the user to enable one or launch the command manually. A generic subagent is an evidence worker rather than a process supervisor.
+- If no reliable background facility is available, ask the user to enable one or launch the command manually. General delegation does not automatically transfer responsibility for long-running processes; worker-owned PTY execution requires explicit authorization.
 
 ## PTY Contract
 
