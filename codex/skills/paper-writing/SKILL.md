@@ -17,6 +17,8 @@ Align the abstract, section order, paragraph transitions, equations, figures, ca
 
 <narrative_and_terminology>
 For a terminology, related-work, or paragraph-level argument pass, first state the reader, research question, claim, evidence, and job of the affected text. Use `paper-editor` for bounded author-side advice when available; it may read explicit author notes, annotated PDFs, local read-only implementation, and opened primary sources, then return structure and candidate prose without editing the manuscript or notes. Search and open sources when a term or positioning choice is uncertain or consequential, and distinguish historical usage, current evidence, local convention, and proposal. Read [references/narrative-and-terminology.md](references/narrative-and-terminology.md) for the detailed pass and return format. Keep known conventional wording and simple copy edits lightweight.
+
+When substantial prose would benefit from Gemini's writing, use [antigravity-writing](../antigravity-writing/SKILL.md) for independent drafts from project material, expansion of LaTeX paragraph TODOs, polishing complete arguments, and revisions in a continuing Antigravity conversation.
 </narrative_and_terminology>
 
 <scope>

@@ -1,6 +1,6 @@
 {
   "name": "labflow",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Research and paper-work skills for Codex: evidence forensics, manuscript and figure craft, source-backed editorial guidance, PDF verification, and independent reviewers.",
   "author": {
     "name": "hac",
@@ -21,6 +21,7 @@
     "literature-forensics",
     "paper-evidence",
     "paper-writing",
+    "antigravity-writing",
     "scientific-figures",
     "paper-reviewer",
     "paper-editor"

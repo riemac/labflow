@@ -12,6 +12,8 @@ Dedicated `literature-worker` and `learning-worker` subagents gather evidence as
 
 `paper-writing` coordinates evidence-backed claims, narrative, figure placement, page budgets, and revision correspondence while keeping local edits lightweight. `scientific-figures` covers scientific encodings, statistics, units, target print size, editable masters, and tool choice across scripts, draw.io, PPTX, images, and 3D. Substantial manuscript and key-figure work follows production, rendered self-inspection, two independent PDF-only reviews, revision, and same-reviewer verification. Two instances of the same `paper-reviewer` role focus on scientific reasoning and visual/editorial judgment, each with its own report and continuation. Visual taste includes the figure's proposition, focal subject, hierarchy and learning semantics as well as legibility; a successful render or completed report is not acceptance.
 
+The Codex-only [antigravity-writing](codex/skills/antigravity-writing/SKILL.md) skill brings Gemini into substantial writing when useful: independent drafts from project material, polishing complete arguments, expansion of LaTeX TODO outlines, and editorial advice. It uses the installed `agy` CLI and resumes related revisions by conversation ID; Codex integrates the prose and checks scientific meaning. A [Chinese counterpart](codex/skills/antigravity-writing/SKILL_CN.md) supports review of the writing method.
+
 Codex's host skills handle Word, presentations, spreadsheets, PDF production, image generation, and general Deep Research when available. Labflow does not duplicate those production workflows or install a replacement primary agent. Native Plan Mode remains available. Other independent skills cover codebase research, scientific brainstorming, annotation, Git task flow, documentation maintenance, and explicit Obsidian operations.
 
 OpenCode additionally maintains Develop, Plan, and Paper primary agents, profiled configuration, image generation, and explicitly activated Autopilot. See [opencode/AGENTS.md](opencode/AGENTS.md) for its implementation and [opencode/config/README.md](opencode/config/README.md) for configuration.
@@ -86,6 +88,7 @@ These are user-selected settings. Global defaults are stored under `[agents]` as
 - “用 external-research 查官方接口和版本变化。”
 - “用 learning-forensics 调查这次训练的失败原因。”
 - “用 paper-writing 梳理这篇论文的证据链和版面预算。”
+- “用 antigravity-writing 让 Gemini 按 LaTeX 里的段落 TODO 起稿，再继续润色。”
 - “让 paper-editor 检查术语、相关工作定位和段落论证，并给出候选措辞。”
 - “用 scientific-figures 检查图 2 的统计、单位和印刷可读性。”
 - “给 paper-reviewer 一份 PDF 和领域标准，做一次独立首审。”

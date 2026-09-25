@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.3.1 - 2026-09-25
+
+- Integrated `antigravity-writing` into the Codex plugin and the existing `paper-writing` workflow, with English instructions and a Chinese review counterpart. The skill supports independent Gemini drafts, prose polishing, LaTeX TODO expansion, concrete editorial feedback, and continued revisions through `agy` conversation IDs.
+- Added the CLI help entry point and writing guidance for intent, structural freedom, adopted draft versions, and preservation of reviewed prose; retained XML sections with Markdown subheadings.
+
 ## 1.3.0 - 2026-09-21
 
 - Migrated model provider ecosystem to a self-contained Single Source of Truth under `provider/`:
