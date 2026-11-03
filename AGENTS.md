@@ -10,6 +10,7 @@ in a shared Single Source of Truth:
 
 - **`provider/`** — [provider/README.md](provider/README.md): Single Source of Truth for model channels, endpoints, limits, capabilities, and SOPS-encrypted secrets.
 - **`codex/`** — **[codex/AGENTS.md](codex/AGENTS.md)**: editing the Codex plugin (`.codex-plugin/`, `.mcp.json`, `agents/`, `skills/`), marketplace, plugin reload, and dedicated research workers.
+- **`antigravity/`** — **[antigravity/AGENTS.md](antigravity/AGENTS.md)**: editing the Antigravity integration (`plugin.json`, `rules/AGENTS.md`, `skills/`), harness rules, and codex cross-agent research delegation.
 - **`opencode/`** — **[opencode/AGENTS.md](opencode/AGENTS.md)**: editing the OpenCode integration (`plugins/`, primary agents, stages, rules, skills), `install.sh` deployment, and provider resolution.
 - **`copilot/`** — **[copilot/AGENTS.md](copilot/AGENTS.md)**: editing the Copilot integration (`plugin.json`, `mcp.json`, `com.github.copilot/`), Agents Window orchestration, and provider sync.
 

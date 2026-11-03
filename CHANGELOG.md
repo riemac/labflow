@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.4.0 - 2026-11-03
+
+- Added Google Antigravity integration (`antigravity/`) as a first-class peer platform alongside `codex/`, `opencode/`, and `copilot/`:
+  - Created plugin manifest (`plugin.json`) and registered in global plugin discovery (`~/.gemini/config/plugins/labflow`).
+  - Added Antigravity harness operating rules (`rules/AGENTS.md`) enforcing mandatory interactive clarification via `ask_question`, three-tier evidence grounding (hard ground truth vs. public disclosures vs. speculation), and anti-AI-slop scientific rigor.
+  - Implemented cross-agent `codex-research` skill (`SKILL.md` and `SKILL_CN.md`) delegating deep external investigations, fact-checking, and literature audits to OpenAI Codex via `codex exec -m gpt-6-luna -c service_tier="fast"` (with fallback to `gpt-5.6-sol`).
+  - Ported and adapted core skills to Antigravity: `annotation`, `codebase-research` (adapted for Antigravity subagents), `external-research`, and `git-task-flow`.
+  - Updated root `AGENTS.md` to register `antigravity/` in repository platform inventory.
+
 ## 1.3.1 - 2026-09-25
 
 - Integrated `antigravity-writing` into the Codex plugin and the existing `paper-writing` workflow, with English instructions and a Chinese review counterpart. The skill supports independent Gemini drafts, prose polishing, LaTeX TODO expansion, concrete editorial feedback, and continued revisions through `agy` conversation IDs.
