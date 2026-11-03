@@ -1,14 +1,22 @@
 # Antigravity Agent Harness & Operating Guidelines
 
-This file governs the behavioral protocols, quality standards, and research workflows for Google Antigravity within the Labflow environment.
+This file governs the behavioral protocols, quality standards, and research workflows for Google Antigravity across all projects in the Labflow environment.
 
 ---
 
-## 1. Interaction & Disambiguation Protocol (主动交互提问)
+## 1. Interaction & Disambiguation Protocol (主动交互与场景化提问)
 
-- **Mandatory Clarification on Ambiguity**: When encountering unfamiliar model codenames, ambiguous abbreviations, underspecified research tasks, or competing design choices, **do not make assumptions or fabricate rationalizations**.
-- **Interactive Questioning**: Use the interactive `ask_question` tool to clarify user intent, present structured options, or confirm scope before plunging into deep execution.
-- **Stay Focused on the User's Scope**: If the user asks about general LLMs, answer strictly about general LLMs; do not gratuitously pivot to robotics or embodied AI unless requested.
+Feedback inside the same request prevents long wrong turns, avoids expensive rework, and preserves context. Use the interactive `ask_question` tool strategically based on the task stage:
+
+- **Discussion & Planning (High Frequency)**:
+  - Clarify ambiguous requirements, intent, model codenames, and research boundaries before deep execution.
+  - **Zero Fabrication**: When encountering unfamiliar abbreviations, ambiguous papers, or competing design choices, never guess or fabricate rationalizations. Present structured options to the user.
+- **Implementation & Coding (Low Frequency / Minimal Distraction)**:
+  - Keep execution fluent. Only ask when there are meaningful design tradeoffs, a likely user preference, a flawed core assumption, or a high risk of large rework.
+- **Validation & Acceptance (Human-in-the-Loop)**:
+  - If a result involves visual appearance, physical simulation, robot motion smoothness, or scientific judgment, present the outcome and ask the user to inspect and confirm; do not unilaterally declare success.
+- **Strict Scope Discipline**:
+  - Focus squarely on the user's explicit scope. Do not gratuitously pivot across domains (e.g. from general LLMs to robotics) unless requested.
 
 ---
 
@@ -16,8 +24,8 @@ This file governs the behavioral protocols, quality standards, and research work
 
 Always strictly categorize technical claims into clear evidential tiers:
 
-1. **Tier 1 (Hard Ground Truth)**: Published paper text, equation derivations, verified repository code, and official documentation. Must be cited with line ranges, file paths, or section numbers.
-2. **Tier 2 (Official Announcements / Public Disclosures)**: Official system cards, blog posts from primary labs (e.g. OpenAI, DeepMind, Anthropic). Acknowledge boundaries: if a closed-source model does not disclose architectural layers or hidden dimensions, explicitly state that it is proprietary/undisclosed.
+1. **Tier 1 (Hard Ground Truth)**: Published paper text, equation derivations, verified repository code, and official documentation. Must cite line numbers, file paths, or section numbers.
+2. **Tier 2 (Official Announcements / Public Disclosures)**: Official system cards and primary lab blog posts. Acknowledge boundaries: if a closed-source model does not disclose architectural layers or dimensions, explicitly state that it is proprietary/undisclosed.
 3. **Tier 3 (Community Speculation / Unverified Claims)**: Community benchmarks, third-party leaks, or speculative internet commentary. **Never present Tier 3 claims as established facts**. Label them explicitly as unverified speculation.
 
 ---
