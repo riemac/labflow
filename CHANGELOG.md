@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Migrated `imagegen-presentation-design` into the Codex plugin, with bilingual guidance for iterating slide layouts and rebuilding editable presentations from verified original material.
+- Synchronized the Codex plugin manifest with the repository's existing `1.4.0` version.
+
 ## 1.4.0 - 2026-11-03
 
 - Added Google Antigravity integration (`antigravity/`) as a first-class peer platform alongside `codex/`, `opencode/`, and `copilot/`:

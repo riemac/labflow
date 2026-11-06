@@ -14,6 +14,8 @@ Dedicated `literature-worker` and `learning-worker` subagents gather evidence as
 
 The Codex-only [antigravity-writing](codex/skills/antigravity-writing/SKILL.md) skill brings Gemini into substantial writing when useful: independent drafts from project material, polishing complete arguments, expansion of LaTeX TODO outlines, and editorial advice. It uses the installed `agy` CLI and resumes related revisions by conversation ID; Codex integrates the prose and checks scientific meaning. A [Chinese counterpart](codex/skills/antigravity-writing/SKILL_CN.md) supports review of the writing method.
 
+The Codex-only [imagegen-presentation-design](codex/skills/imagegen-presentation-design/SKILL.md) skill uses the host's image generator to explore and iteratively critique slide layouts, then reconstructs the chosen design with editable presentation objects and source-backed research material. Its [Chinese counterpart](codex/skills/imagegen-presentation-design/SKILL_CN.md) describes the same workflow.
+
 Codex's host skills handle Word, presentations, spreadsheets, PDF production, image generation, and general Deep Research when available. Labflow does not duplicate those production workflows or install a replacement primary agent. Native Plan Mode remains available. Other independent skills cover codebase research, scientific brainstorming, annotation, Git task flow, documentation maintenance, and explicit Obsidian operations.
 
 OpenCode additionally maintains Develop, Plan, and Paper primary agents, profiled configuration, image generation, and explicitly activated Autopilot. See [opencode/AGENTS.md](opencode/AGENTS.md) for its implementation and [opencode/config/README.md](opencode/config/README.md) for configuration.
@@ -91,6 +93,7 @@ These are user-selected settings. Global defaults are stored under `[agents]` as
 - “用 antigravity-writing 让 Gemini 按 LaTeX 里的段落 TODO 起稿，再继续润色。”
 - “让 paper-editor 检查术语、相关工作定位和段落论证，并给出候选措辞。”
 - “用 scientific-figures 检查图 2 的统计、单位和印刷可读性。”
+- “用 imagegen-presentation-design 迭代项目汇报的版式，再用真实素材重建可编辑 PPT。”
 - “给 paper-reviewer 一份 PDF 和领域标准，做一次独立首审。”
 
 Skills can also be selected when the request matches their documented scope. Worker contracts and static helper tests support the workflow, but actual research conclusions and visual deliverables still require source verification and user review.

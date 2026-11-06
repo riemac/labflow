@@ -1,0 +1,6 @@
+interface:
+  display_name: "图像迭代式 PPT 设计"
+  short_description: "逐页迭代视觉样稿，并重建为可编辑 PowerPoint"
+  default_prompt: "使用 $imagegen-presentation-design 先迭代 PPT 页面视觉样稿，再重建为可编辑演示文稿。"
+policy:
+  allow_implicit_invocation: true

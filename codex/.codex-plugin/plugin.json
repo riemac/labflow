@@ -1,7 +1,7 @@
 {
   "name": "labflow",
-  "version": "1.3.1",
-  "description": "Research and paper-work skills for Codex: evidence forensics, manuscript and figure craft, source-backed editorial guidance, PDF verification, and independent reviewers.",
+  "version": "1.4.0",
+  "description": "Research and presentation skills for Codex: evidence forensics, manuscript and figure craft, source-backed editing, presentation design, PDF verification, and independent reviewers.",
   "author": {
     "name": "hac",
     "url": "https://github.com/"
@@ -22,6 +22,7 @@
     "paper-evidence",
     "paper-writing",
     "antigravity-writing",
+    "imagegen-presentation-design",
     "scientific-figures",
     "paper-reviewer",
     "paper-editor"
@@ -31,7 +32,7 @@
   "interface": {
     "displayName": "Labflow",
     "shortDescription": "Research and paper skills for Codex",
-    "longDescription": "Labflow adds literature and learning forensics, source-backed scientific editing, manuscript and scientific-figure guidance, traceable PDF evidence, and independent reviewers to the native Codex agent. Document, slide, PDF production, and image generation use host capabilities.",
+    "longDescription": "Labflow adds literature and learning forensics, source-backed scientific editing, manuscript, figure and presentation design guidance, traceable PDF evidence, and independent reviewers to the native Codex agent. Document, slide, PDF production, and image generation use host capabilities.",
     "developerName": "hac",
     "category": "Research",
     "capabilities": [
