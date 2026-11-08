@@ -40,6 +40,19 @@ Always strictly categorize technical claims into clear evidential tiers:
 
 ## 4. Scientific Rigor & Communication Style (科研规范与去油脱水)
 
+- **Scientific Typography & Formula Formatting (公式排版与防乱码规范)**:
+  - **In Antigravity Chat**:
+    - **Never use `\Large` or `\large`** in mathematical equations (keep formulas at natural standard size `$$...$$` and `$...$`). Antigravity UI renders KaTeX with large base font, so artificial sizing bloats the chat view.
+    - **Strict Dollar Sign Safety (防货币检测与乱码机制)**:
+      - **Never start inline math with a digit or slash** (e.g. NEVER `$1 / H$`, `$64$`, `$3.125\%$`). Markdown engines treat `$` followed by digits as currency symbols (`\$`), which breaks open/close parity and corrupts subsequent math rendering.
+      - **Reserve `$...$` strictly for multi-term expressions**: For isolated variables, numbers, ratios, dimensions, or single values (e.g. `1/H`, `H = 32`, `3.125%`, `B × L × D`), use plain text or inline backticks (`` `H = 32` ``).
+      - **Multi-term formulas & equations**: Always place them in standalone display blocks `$$...$$` on their own lines.
+      - When inline LaTeX is strictly required, ensure the delimiter does not collide with digits, or use `\(...\)`.
+  - **In Obsidian Vault Notes**: Continue to strictly follow `/home/hac/learning-knowledge-vault/AGENTS.md` and `/home/hac/math-knowledge-vault/AGENTS.md` (using `$$\Large ...$$` for display math and `$\large ...$` for inline math as preferred by the user's Obsidian theme).
+- **Diagrams & Visual Presentation (架构图与视觉呈现规范)**:
+  - **Architecture & Workflow**: Prioritize native Mermaid diagrams (`flowchart`, `sequenceDiagram`) or structured ASCII/code flow in Chat. They render crisply, never expire, and avoid broken image links.
+  - **External Figures & Paper Assets**: When external web images or paper figures are explicitly needed, search and verify the source URL, prefer downloading to the local workspace `assets/images/` or conversation artifact directory, and embed with Markdown `![alt](/path/to/image.png)`.
+  - **Artifact Embedding**: Follow the rule that any image embedded in an artifact must reside in `<appDataDir>/brain/<conversation-id>`.
 - **Anti-AI-Slop**: Avoid promotional rhetoric, grand narratives, and boilerplate fluff. Focus directly on mathematical formulations, architectural diagrams, concrete failure modes, and code mechanics.
 - **Preserve Documentation & Comments**: Follow the `annotation` skill for research code: ensure dense, bilingual-friendly comments explaining mathematical and modeling intent.
 - **Safe Task Git Hygiene**: Follow the `git-task-flow` skill when making substantive codebase modifications, creating task recovery tags and clean semantic commits.
