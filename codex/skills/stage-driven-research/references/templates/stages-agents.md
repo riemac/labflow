@@ -82,38 +82,66 @@
 ```mermaid
 %%{init: {"flowchart": {"htmlLabels": true, "subGraphTitleMargin": {"top": 4, "bottom": 18}, "nodeSpacing": 45, "rankSpacing": 65}} }%%
 graph TD
-  subgraph G00["初态探索与基线确立"]
-    N000["<b>{{STAGE_PREFIX}}-N000 初始基线</b><br/><div style='text-align:left'>-核心特征<br/>-accepted</div>"]
-    N010["<b>{{STAGE_PREFIX}}-N010 基础受控对照</b><br/><div style='text-align:left'>-对比变量<br/>-mixed</div>"]
-    N000 -->|baseline: 建立基准| N010
+  subgraph G00["初态基线"]
+    N000["<b>{{STAGE_PREFIX}}-N000 探索起点</b><br/><div style='text-align:left'>-基线特征<br/>-accepted</div>"]
   end
 
-  subgraph G02["核心机制消融族群"]
-    N020["<b>{{STAGE_PREFIX}}-N020 消融方案 A</b><br/><div style='text-align:left'>-改动简述<br/>-mixed</div>"]
-    N021["<b>{{STAGE_PREFIX}}-N021 消融方案 B</b><br/><div style='text-align:left'>-改动简述<br/>-accepted</div>"]
-    N020 -. "contrast: 机制对照" .-> N021
+  subgraph G01["方向一：机制消融与探针"]
+    N010["<b>{{STAGE_PREFIX}}-N010 基础消融</b><br/><div style='text-align:left'>-参数敏感度<br/>-mixed</div>"]
+    N011["<b>{{STAGE_PREFIX}}-N011 极限制约</b><br/><div style='text-align:left'>-性能崩溃<br/>-rejected</div>"]
+    N012["<b>{{STAGE_PREFIX}}-N012 改进机制</b><br/><div style='text-align:left'>-机制验证有效<br/>-accepted</div>"]
+    N010 -->|ablation: 极限压力测试| N011
+    N010 -. "contrast: 机制对照" .-> N012
   end
 
-  N010 -->|ablation: 引入核心变量| N020
-  N021 -->|transfer: 选型收敛| N100["<b>{{STAGE_PREFIX}}-N100 阶段成果终验锚点</b><br/><div style='text-align:left'>-验收指标达成<br/>-accepted</div>"]
+  subgraph G02["方向二：结构重构与优化"]
+    N020["<b>{{STAGE_PREFIX}}-N020 结构变体</b><br/><div style='text-align:left'>-架构初探<br/>-mixed</div>"]
+    N021["<b>{{STAGE_PREFIX}}-N021 预算扩展</b><br/><div style='text-align:left'>-收益饱和<br/>-mixed</div>"]
+    N022["<b>{{STAGE_PREFIX}}-N022 高效实现</b><br/><div style='text-align:left'>-主干选型胜出<br/>-accepted</div>"]
+    N020 -->|scale: 扩展验证| N021
+    N020 -->|refactor: 结构优化| N022
+  end
+
+  %% 起点分叉至两个独立探索簇
+  N000 -->|fork: 探索机制敏感度| N010
+  N000 -->|fork: 探索结构重构| N020
+
+  subgraph G03["多源收敛与终验"]
+    N030["<b>{{STAGE_PREFIX}}-N030 综合融合基准</b><br/><div style='text-align:left'>-融合机制与结构<br/>-accepted</div>"]
+    N100["<b>{{STAGE_PREFIX}}-N100 阶段成果终验锚点</b><br/><div style='text-align:left'>-全面达标交付<br/>-accepted</div>"]
+    N030 -->|deliver: 独立复核终验| N100
+  end
+
+  %% 两个方向的胜出成果多源汇聚（Merge）
+  N012 -->|merge: 注入有效机制| N030
+  N022 -->|merge: 作为承载基座| N030
 
   classDef accepted fill:#d8f3dc,stroke:#2d6a4f,stroke-width:2px,color:#081c15;
   classDef mixed fill:#fff3bf,stroke:#e67700,stroke-width:1px,color:#3b2500;
   classDef rejected fill:#ffe3e3,stroke:#c92a2a,stroke-width:2px,color:#7f1d1d;
-  class N000,N021,N100 accepted;
-  class N010,N020 mixed;
+  class N000,N012,N022,N030,N100 accepted;
+  class N010,N020,N021 mixed;
+  class N011 rejected;
 ```
 
 > [!NOTE]
 > `classDef` 样式定义必须完整放置在 `graph TD` 块内部，严禁单独拆分成无图类型的代码块，以防在 Obsidian 中引发 `UnknownDiagramError`。
 
 ### 3. 节点索引表
+
 Mermaid 图之后紧随节点索引表，直接链接到具体的 run card：
 
 | 节点 | 状态 | 事实与边界 |
 | --- | --- | --- |
-| [[runs/01-baseline|{{STAGE_PREFIX}}-N000 初始基线]] | accepted | 建立基线表现与初始能力上界 |
-| [[runs/02-ablation-a|{{STAGE_PREFIX}}-N020 消融方案 A]] | mixed | 受控变化确认了局部敏感度，未完全闭合 |
+| [[runs/01-baseline|{{STAGE_PREFIX}}-N000 探索起点]] | accepted | 建立初始能力基线与任务上界 |
+| [[runs/02-ablation-param|{{STAGE_PREFIX}}-N010 基础消融]] | mixed | 确认参数敏感区间，存在稳定性取舍 |
+| [[runs/03-stress-test|{{STAGE_PREFIX}}-N011 极限制约]] | rejected | 极限边界下策略失效，确定物理禁区 |
+| [[runs/04-mechanism-fix|{{STAGE_PREFIX}}-N012 改进机制]] | accepted | 引入自适应修正机制，成功克服瓶颈 |
+| [[runs/05-arch-pilot|{{STAGE_PREFIX}}-N020 结构变体]] | mixed | 验证新表征结构可行性，吞吐略低 |
+| [[runs/06-scale-budget|{{STAGE_PREFIX}}-N021 预算扩展]] | mixed | 增加计算预算边际收益递减，未突破瓶颈 |
+| [[runs/07-efficient-impl|{{STAGE_PREFIX}}-N022 高效实现]] | accepted | 算法结构选型胜出，作为后续主要基座 |
+| [[runs/08-merged-base|{{STAGE_PREFIX}}-N030 综合融合基准]] | accepted | 成功整合有效机制与高效结构，性能达标 |
+| [[runs/09-final-acceptance|{{STAGE_PREFIX}}-N100 阶段成果终验锚点]] | accepted | 跨分布独立复核通过，完成本阶段交付 |
 
 ## 写入边界与人机权责
 - Agent 不主动创建、删除、晋升图节点；可以建议候选节点，但是否记录由用户决定。
