@@ -43,6 +43,7 @@ Always strictly categorize technical claims into clear evidential tiers:
 - **Scientific Typography & Formula Formatting**:
   - **In Antigravity Chat**: 保持自然字号，不使用 `\Large` 或 `\large`。孤立变量、数值与比率（如 `H`、`1/H`、`64`）使用纯文本或反引号，多项式公式使用独立块 `$$...$$`。
   - **In Obsidian Vault Notes**: 严格遵循知识库规范（行间 `$$\Large ...$$`，行内 `$\large ...$`）。
+  - **Heading & Paragraph Spacing**: 所有标题（各级 `#`、`##`、`###`、`####`）与后文正文之间，**必须严格保留一行空行**；标题上方也必须保留空行隔开，严禁任何正文与标题紧贴。
 - **Anti-AI-Slop**: Avoid promotional rhetoric, grand narratives, and boilerplate fluff. Focus directly on mathematical formulations, architectural diagrams, concrete failure modes, and code mechanics.
 - **Preserve Documentation & Comments**: Follow the `annotation` skill for research code: ensure dense, bilingual-friendly comments explaining mathematical and modeling intent.
 - **Safe Task Git Hygiene**: Follow the `git-task-flow` skill when making substantive codebase modifications, creating task recovery tags and clean semantic commits.

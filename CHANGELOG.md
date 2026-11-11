@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.5.0 - 2026-11-11
 
-- Migrated `imagegen-presentation-design` into the Codex plugin, with bilingual guidance for iterating slide layouts and rebuilding editable presentations from verified original material.
-- Synchronized the Codex plugin manifest with the repository's existing `1.4.0` version.
+- Added `stage-driven-research` meta-skill to both `antigravity/` and `codex/`:
+  - Designed for bootstrapping stage-driven research notebooks (Obsidian vault `Research/`) once per project.
+  - Establishes a broad-based scientific state machine for milestone promotion (crossing capability gates, confirming/refuting hypotheses, major directional shifts, key negative results) applicable across robotics, vision/3D, control, and learning.
+  - Implements clustered topological semantic graph (`MAP.md`) specifications using Mermaid `subgraph`, supporting parallel forks, sequential continuation, horizontal contrasts (`-.->`), multi-branch convergence, and cross-cluster transitions based on proven research graph patterns.
+  - Embeds nested `AGENTS.md` rules (`Research/AGENTS.md` and `Research/stages/AGENTS.md`) with Obsidian Properties compatibility (flat YAML properties), strict anti-defensive writing constraints for Codex, and optional `agy` polish protocol.
 
 ## 1.4.0 - 2026-11-03
 
