@@ -55,6 +55,13 @@ if [[ "$(uname -s)" == "Linux" ]]; then
   fi
 fi
 
+HOOK_DST="${HOME}/.a2abridge/hooks/on-inbound.sh"
+if [[ -x "${HOOK_DST}" ]] && sh -n "${HOOK_DST}" 2>/dev/null; then
+  pass "on-inbound hook" "${HOOK_DST} (POSIX sh OK)"
+else
+  warn "on-inbound hook" "missing or invalid at ${HOOK_DST} (run ./a2a/install.sh)"
+fi
+
 # 2. Local discovery directory
 if AGENTS_JSON="$(curl -fsS --max-time 3 "${DIRECTORY_URL}/agents" 2>/dev/null)"; then
   PEER_COUNT="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print(len(d) if isinstance(d,list) else "ok")' "$AGENTS_JSON" 2>/dev/null || echo "?")"

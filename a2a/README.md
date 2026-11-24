@@ -32,7 +32,7 @@ A2A_CLI_VERSION=0.5.0 A2ABRIDGE_VERSION=4.0.3 ./a2a/install.sh
 
 ## Day-to-Day Usage
 
-1. **Live Workbench Collaboration (Antigravity App ↔ Codex Desktop App)**: After running `./a2a/install.sh`, reload or open a fresh session in both apps. Each open session automatically registers itself as a standard A2A 1.0 peer under `http://127.0.0.1:7777`. Call `a2a_list_agents` to discover live peers, `a2a_send_message` to dispatch work, and `a2a_inbox` / `a2a_complete_task` to read and reply.
+1. **Live Workbench Collaboration (Antigravity App ↔ Codex Desktop App)**: After running `./a2a/install.sh`, open a session in both apps. Each open session automatically registers itself as a standard A2A 1.0 peer under `http://127.0.0.1:7777`. When Antigravity calls `a2a_send_message(blocking=true)` targeting a live Codex Desktop peer, the installed `~/.a2abridge/hooks/on-inbound.sh` hook automatically invokes native `codex queue --thread <UUID>` so the Codex Desktop GUI wakes up visibly, reads `a2a_inbox`, and returns its reply via `a2a_complete_task` without manual window switching (set `LABFLOW_A2A_AUTO_WAKE=0` to disable; hook logs are at `~/.a2abridge/hooks/on-inbound.log`).
 2. **CLI Inspection & External Peers**:
 
 ```bash

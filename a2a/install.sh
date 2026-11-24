@@ -112,6 +112,18 @@ else
   log "Installed MCP wrapper -> ${WRAPPER_DST}"
 fi
 
+# Install POSIX sh inbound hook (auto-wakes live Codex Desktop sessions via native `codex queue`).
+HOOK_SRC="${SCRIPT_DIR}/on-inbound.sh"
+HOOK_DIR="${HOME}/.a2abridge/hooks"
+HOOK_DST="${HOOK_DIR}/on-inbound.sh"
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  log "[dry-run] would install ${HOOK_SRC} -> ${HOOK_DST}"
+else
+  mkdir -p "$HOOK_DIR"
+  install -m 0755 "$HOOK_SRC" "$HOOK_DST"
+  log "Installed A2A inbound hook -> ${HOOK_DST}"
+fi
+
 # Configure and start the local A2A 1.0 discovery daemon.
 if [[ "$SKIP_SERVICE" -eq 0 ]]; then
   if [[ "$OS" == "linux" ]]; then

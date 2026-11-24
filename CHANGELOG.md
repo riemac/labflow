@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.2 - 2026-11-25
+
+- Added zero-touch live Codex Desktop GUI auto-wakeup for incoming A2A 1.0 tasks:
+  - Added POSIX `sh` hook `a2a/on-inbound.sh` (installed to `~/.a2abridge/hooks/on-inbound.sh` by `a2a/install.sh` and verified by `a2a/doctor.sh`): automatically resolves the active Codex Desktop thread UUID for the peer's working directory (excluding headless `codex exec`), deduplicates by `taskId`, and invokes native `codex queue --thread <UUID>` so Codex Desktop wakes visibly in its GUI and replies via `a2a_complete_task` on single-shot `a2a_send_message(blocking=true)` calls.
+  - Added non-intrusive `notify-send` desktop alerts for inbound tasks arriving at Antigravity and documented the hook contract and `LABFLOW_A2A_AUTO_WAKE=0` opt-out in `a2a/AGENTS.md` and `a2a/README.md`.
+
 ## 2.0.1 - 2026-11-25
 
 - Fixed premature `Transport closed` disconnects of the `a2a` MCP bridge inside multi-threaded Linux hosts (notably Codex Desktop / `app-server` on Rust Tokio):
