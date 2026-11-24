@@ -26,6 +26,15 @@ OpenCode additionally maintains Develop, Plan, and Paper primary agents, profile
 provider/
 ├── *.yaml
 └── secrets.sops.yaml
+a2a/
+├── AGENTS.md
+├── README.md
+├── install.sh
+└── doctor.sh
+antigravity/
+├── plugin.json
+├── rules/
+└── skills/
 codex/
 ├── .codex-plugin/plugin.json
 ├── .mcp.json
@@ -48,6 +57,17 @@ copilot/
 ```
 
 The `main` branch contains all peer platform integrations.
+
+## A2A 1.0 Cross-Harness Interoperability
+
+Labflow includes a standalone, transport-only [A2A 1.0](https://a2a-protocol.org/latest/) layer under [a2a/](a2a/README.md) that connects live workbench sessions (Antigravity App, Codex Desktop App, and optionally Claude Code / OpenCode) and headless background workers over a single open protocol, decoupled from upper-level workflow skills.
+
+On any Linux or macOS host, deploy and verify the local A2A mesh with:
+
+```bash
+./a2a/install.sh
+./a2a/doctor.sh --e2e
+```
 
 ## Codex Install And Reload
 

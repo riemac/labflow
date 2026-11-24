@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0 - 2026-11-25
+
+- Introduced the standalone cross-harness **A2A 1.0 interoperability transport layer (`a2a/`)**, cleanly decoupled from upper-level workflow skills and reproducible across Linux and macOS hosts:
+  - Added `a2a/install.sh` to idempotently install official `a2aproject/a2a-cli` (`a2a v0.5.0`) and `vbcherepanov/a2abridge` (`v4.0.3`) into `~/.local/bin/`, configure the local A2A 1.0 discovery daemon (`127.0.0.1:7777`) with a user-level `systemd --user` fix (`journal` output and `default.target`, bypassing upstream non-root `/var/log` permission failure), and surgically register the `a2a` MCP server into Antigravity App, Antigravity CLI, and Codex configs with automatic `.bak` backups and zero unintended config mutations.
+  - Added `a2a/doctor.sh` (with `--e2e` live smoke test) to verify binaries, directory liveness, host MCP registrations, official `a2a card get` interoperability, and a full asynchronous `a2a_send_message -> a2a_inbox -> a2a_complete_task -> a2a_get_task` round-trip.
+  - Added `a2a/AGENTS.md` and `a2a/README.md`, updated root `AGENTS.md`, `README.md`, `antigravity/AGENTS.md`, `antigravity/rules/AGENTS.md`, and `codex/AGENTS.md` to document the two-layer architecture (A2A transport vs. workflow skills) and dual live-workbench / headless collaboration modes.
+  - Synchronized `VERSION` and `codex/.codex-plugin/plugin.json` to `2.0.0`.
+
 ## 1.5.0 - 2026-11-11
 
 - Added `stage-driven-research` meta-skill to both `antigravity/` and `codex/`:

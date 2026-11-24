@@ -9,6 +9,7 @@ platforms with distinct runtime models, while model channels and credentials liv
 in a shared Single Source of Truth:
 
 - **`provider/`** — [provider/README.md](provider/README.md): Single Source of Truth for model channels, endpoints, limits, capabilities, and SOPS-encrypted secrets.
+- **`a2a/`** — **[a2a/AGENTS.md](a2a/AGENTS.md)**: cross-harness A2A 1.0 interoperability transport layer (`a2a` CLI + `a2abridge` local directory and MCP registration), decoupled from upper-level workflow skills.
 - **`codex/`** — **[codex/AGENTS.md](codex/AGENTS.md)**: editing the Codex plugin (`.codex-plugin/`, `.mcp.json`, `agents/`, `skills/`), marketplace, plugin reload, and dedicated research workers.
 - **`antigravity/`** — **[antigravity/AGENTS.md](antigravity/AGENTS.md)**: editing the Antigravity integration (`plugin.json`, `rules/AGENTS.md`, `skills/`), harness rules, and codex cross-agent research delegation.
 - **`opencode/`** — **[opencode/AGENTS.md](opencode/AGENTS.md)**: editing the OpenCode integration (`plugins/`, primary agents, stages, rules, skills), `install.sh` deployment, and provider resolution.

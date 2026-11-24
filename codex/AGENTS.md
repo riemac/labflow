@@ -6,7 +6,7 @@ Read [../AGENTS.md](../AGENTS.md) for repository conventions. Codex uses its nat
 
 - `.agents/plugins/marketplace.json`: local marketplace entry (pointing to `./codex`).
 - `codex/.codex-plugin/plugin.json`: plugin metadata and skill discovery.
-- `codex/.mcp.json`: PDF reader and DeepWiki MCP configuration.
+- `codex/.mcp.json`: PDF reader and DeepWiki MCP configuration. Host-level A2A 1.0 MCP registration (`[mcp_servers.a2a]` in `~/.codex/config.toml`) is managed separately by [../a2a/AGENTS.md](../a2a/AGENTS.md) via `a2a/install.sh` so machines without local A2A binaries stay unaffected.
 - `codex/skills/`: independent research abilities and maintenance support.
 - `codex/agents/*.toml`: dedicated worker definitions for learning forensics, literature forensics, author-side paper editing, and independent paper review.
 
