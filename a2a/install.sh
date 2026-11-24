@@ -95,11 +95,22 @@ install_tarball_binary() {
   log "Installed ${bin_name} -> ${target}"
 }
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 A2A_URL="https://github.com/a2aproject/a2a-cli/releases/download/v${A2A_CLI_VERSION}/a2a_${A2A_CLI_VERSION}_${OS}_${ARCH}.tar.gz"
 BRIDGE_URL="https://github.com/vbcherepanov/a2abridge/releases/download/v${A2ABRIDGE_VERSION}/a2abridge_${A2ABRIDGE_VERSION}_${OS}_${ARCH}.tar.gz"
 
 install_tarball_binary "a2a" "$A2A_CLI_VERSION" "$A2A_URL"
 install_tarball_binary "a2abridge" "$A2ABRIDGE_VERSION" "$BRIDGE_URL"
+
+# Install single-threaded MCP wrapper (prevents Linux PR_SET_PDEATHSIG kills under Tokio hosts like Codex Desktop).
+WRAPPER_SRC="${SCRIPT_DIR}/a2abridge-mcp.sh"
+WRAPPER_DST="${BIN_DIR}/a2abridge-mcp"
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  log "[dry-run] would install ${WRAPPER_SRC} -> ${WRAPPER_DST}"
+else
+  install -m 0755 "$WRAPPER_SRC" "$WRAPPER_DST"
+  log "Installed MCP wrapper -> ${WRAPPER_DST}"
+fi
 
 # Configure and start the local A2A 1.0 discovery daemon.
 if [[ "$SKIP_SERVICE" -eq 0 ]]; then
@@ -111,7 +122,8 @@ if [[ "$SKIP_SERVICE" -eq 0 ]]; then
     else
       mkdir -p "$UNIT_DIR"
       # Upstream v4.0.3 writes StandardOutput=file:/var/log/... which fails under non-root systemd --user.
-      cat > "$UNIT_FILE" <<EOF
+      UNIT_TMP="$(mktemp)"
+      cat > "$UNIT_TMP" <<EOF
 [Unit]
 Description=Local A2A 1.0 discovery service for AI coding agents.
 ConditionFileIsExecutable=${BIN_DIR}/a2abridge
@@ -126,10 +138,16 @@ RestartSec=5
 [Install]
 WantedBy=default.target
 EOF
-      systemctl --user daemon-reload
-      systemctl --user enable --now a2abridge-directory.service
-      systemctl --user restart a2abridge-directory.service
-      log "Started systemd --user service a2abridge-directory (${DIRECTORY_URL})"
+      if [[ -f "$UNIT_FILE" ]] && cmp -s "$UNIT_TMP" "$UNIT_FILE" && systemctl --user is-active --quiet a2abridge-directory.service; then
+        rm -f "$UNIT_TMP"
+        log "OK: systemd --user service a2abridge-directory already up to date and active (${DIRECTORY_URL})"
+      else
+        mv "$UNIT_TMP" "$UNIT_FILE"
+        systemctl --user daemon-reload
+        systemctl --user enable --now a2abridge-directory.service
+        systemctl --user restart a2abridge-directory.service
+        log "Started systemd --user service a2abridge-directory (${DIRECTORY_URL})"
+      fi
     fi
   elif [[ "$OS" == "darwin" ]]; then
     if [[ "$DRY_RUN" -eq 1 ]]; then
@@ -142,10 +160,14 @@ EOF
 fi
 
 # Surgically register the "a2a" MCP server in existing host configs without altering other settings.
-python3 - "$BIN_DIR/a2abridge" "$DIRECTORY_URL" "$DRY_RUN" "$WITH_CLAUDE" <<'EOF'
-import datetime, json, pathlib, shutil, sys, tomllib
+MCP_CMD="${BIN_DIR}/a2abridge-mcp"
+if [[ "$OS" == "darwin" ]]; then
+  MCP_CMD="${BIN_DIR}/a2abridge"
+fi
+python3 - "$MCP_CMD" "$BIN_DIR/a2abridge" "$DIRECTORY_URL" "$DRY_RUN" "$WITH_CLAUDE" <<'EOF'
+import datetime, json, pathlib, re, shutil, sys, tomllib
 
-bridge_bin, directory_url, dry_run_s, with_claude_s = sys.argv[1:5]
+mcp_cmd, raw_bridge_bin, directory_url, dry_run_s, with_claude_s = sys.argv[1:6]
 dry_run = dry_run_s == "1"
 with_claude = with_claude_s == "1"
 home = pathlib.Path.home()
@@ -163,7 +185,7 @@ def patch_json_mcp(path: pathlib.Path, peer_name: str, include_disabled: bool):
     data = json.loads(path.read_text(encoding="utf-8"))
     servers = data.setdefault("mcpServers", {})
     desired = {
-        "command": bridge_bin,
+        "command": mcp_cmd,
         "args": ["bridge", "-name", peer_name, "-directory", directory_url],
     }
     if include_disabled:
@@ -188,8 +210,24 @@ def patch_codex_toml(path: pathlib.Path):
     parsed = tomllib.loads(raw)
     existing = parsed.get("mcp_servers", {}).get("a2a")
     desired_args = ["bridge", "-name", "codex", "-directory", directory_url]
-    if existing and existing.get("command") == bridge_bin and existing.get("args") == desired_args:
+    if existing and existing.get("command") == mcp_cmd and existing.get("args") == desired_args:
         print(f"[labflow/a2a] OK: {path} already has matching [mcp_servers.a2a]")
+        return
+    # Upgrade in-place if previously registered by labflow/a2a with raw a2abridge binary
+    if existing and existing.get("command") == raw_bridge_bin and existing.get("args") == desired_args:
+        if dry_run:
+            print(f"[labflow/a2a] [dry-run] would upgrade [mcp_servers.a2a] command to {mcp_cmd} in {path}")
+            return
+        bak = backup_file(path)
+        updated = re.sub(
+            r'(\[mcp_servers\.a2a\]\s*\ncommand\s*=\s*")' + re.escape(raw_bridge_bin) + r'"',
+            r'\1' + mcp_cmd + '"',
+            raw,
+            count=1,
+        )
+        tomllib.loads(updated)
+        path.write_text(updated, encoding="utf-8")
+        print(f"[labflow/a2a] Upgraded [mcp_servers.a2a] command to {mcp_cmd} in {path} (backup: {bak.name})")
         return
     if existing is not None:
         print(f"[labflow/a2a] WARN: {path} already defines [mcp_servers.a2a] with custom settings; leaving untouched")
@@ -200,7 +238,7 @@ def patch_codex_toml(path: pathlib.Path):
     bak = backup_file(path)
     addition = (
         "\n[mcp_servers.a2a]\n"
-        f'command = "{bridge_bin}"\n'
+        f'command = "{mcp_cmd}"\n'
         f'args = ["bridge", "-name", "codex", "-directory", "{directory_url}"]\n'
     )
     path.write_text(raw.rstrip("\n") + "\n" + addition, encoding="utf-8")
@@ -208,7 +246,7 @@ def patch_codex_toml(path: pathlib.Path):
     print(f"[labflow/a2a] Appended [mcp_servers.a2a] to {path} (backup: {bak.name})")
 
 patch_json_mcp(home / ".gemini/antigravity/mcp_config.json", "antigravity", include_disabled=True)
-patch_json_mcp(home / ".gemini/config/mcp_config.json", "antigravity-cli", include_disabled=True)
+patch_json_mcp(home / ".gemini/config/mcp_config.json", "antigravity", include_disabled=True)
 patch_codex_toml(home / ".codex/config.toml")
 
 if with_claude:

@@ -45,6 +45,16 @@ else
   fail "a2abridge" "missing at ${BIN_DIR}/a2abridge"
 fi
 
+EXPECTED_MCP_CMD="${BIN_DIR}/a2abridge"
+if [[ "$(uname -s)" == "Linux" ]]; then
+  EXPECTED_MCP_CMD="${BIN_DIR}/a2abridge-mcp"
+  if [[ -x "${EXPECTED_MCP_CMD}" ]]; then
+    pass "a2abridge-mcp wrapper" "${EXPECTED_MCP_CMD}"
+  else
+    fail "a2abridge-mcp wrapper" "missing at ${EXPECTED_MCP_CMD} (run ./a2a/install.sh)"
+  fi
+fi
+
 # 2. Local discovery directory
 if AGENTS_JSON="$(curl -fsS --max-time 3 "${DIRECTORY_URL}/agents" 2>/dev/null)"; then
   PEER_COUNT="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print(len(d) if isinstance(d,list) else "ok")' "$AGENTS_JSON" 2>/dev/null || echo "?")"
@@ -54,7 +64,7 @@ else
 fi
 
 # 3. Host MCP registrations
-python3 - "${BIN_DIR}/a2abridge" <<'EOF' || FAILURES=$((FAILURES + 1))
+python3 - "${EXPECTED_MCP_CMD}" <<'EOF' || FAILURES=$((FAILURES + 1))
 import json, pathlib, sys, tomllib
 
 bridge_bin = sys.argv[1]
@@ -100,20 +110,27 @@ else:
 sys.exit(1 if errors else 0)
 EOF
 
-# 4. Optional live E2E A2A 1.0 round-trip
+# 4. Optional live E2E A2A 1.0 round-trip + multi-threaded parent survival check
 if [[ "$RUN_E2E" -eq 1 && "$FAILURES" -eq 0 ]]; then
-  python3 - "${BIN_DIR}/a2abridge" "${BIN_DIR}/a2a" "${DIRECTORY_URL}" <<'EOF' || FAILURES=$((FAILURES + 1))
-import json, subprocess, sys, tempfile, time
+  python3 - "${EXPECTED_MCP_CMD}" "${BIN_DIR}/a2a" "${DIRECTORY_URL}" <<'EOF' || FAILURES=$((FAILURES + 1))
+import json, subprocess, sys, tempfile, threading, time
 
-bridge_bin, a2a_bin, directory_url = sys.argv[1:4]
+bridge_cmd, a2a_bin, directory_url = sys.argv[1:4]
 
 class MCPClient:
     def __init__(self, name, state_dir):
-        self.proc = subprocess.Popen(
-            [bridge_bin, "bridge", "-name", name, "-directory", directory_url, "-state-dir", state_dir],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, bufsize=1
-        )
+        holder = {}
+        def spawner():
+            holder["p"] = subprocess.Popen(
+                [bridge_cmd, "bridge", "-name", name, "-directory", directory_url, "-state-dir", state_dir],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, bufsize=1
+            )
+            time.sleep(0.35)  # Allow child PR_SET_PDEATHSIG setup before spawning thread exits
+        t = threading.Thread(target=spawner)
+        t.start()
+        t.join()
+        self.proc = holder["p"]
         self.req_id = 0
 
     def rpc(self, method, params=None):

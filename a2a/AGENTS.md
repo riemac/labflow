@@ -12,14 +12,15 @@ Read [../AGENTS.md](../AGENTS.md) for repository conventions. This directory own
 
 ## Tracked Vs. Host-Local State
 
-- **Tracked in Git (`a2a/`)**: `install.sh`, `doctor.sh`, `README.md`, `AGENTS.md`.
-- **Host-local only (never commit)**: binaries under `~/.local/bin/`, runtime directory state under `~/.a2abridge/`, user systemd units under `~/.config/systemd/user/`, host config backups (`*.bak-*`), and optional mTLS federation keys/certificates.
+- **Tracked in Git (`a2a/`)**: `install.sh`, `doctor.sh`, `a2abridge-mcp.sh`, `README.md`, `AGENTS.md`.
+- **Host-local only (never commit)**: binaries and installed wrapper under `~/.local/bin/`, runtime directory state under `~/.a2abridge/`, user systemd units under `~/.config/systemd/user/`, host config backups (`*.bak-*`), and optional mTLS federation keys/certificates.
 
 ## Ownership And Safety Rules
 
 - `a2a/install.sh` manages host-level MCP registration (`~/.gemini/antigravity/mcp_config.json`, `~/.gemini/config/mcp_config.json`, `~/.codex/config.toml`) rather than hard-coding `a2abridge` into `codex/.mcp.json`, so hosts that have not installed A2A binaries remain unaffected.
 - Always back up existing host configuration files before patching and preserve every unrelated setting byte-for-byte.
 - On Linux `systemd --user`, `install.sh` writes a clean user unit with `StandardOutput=journal`, `StandardError=journal`, and `WantedBy=default.target` to avoid upstream `a2abridge v4.0.3` attempting to write to root-owned `/var/log/a2abridge-directory.out`.
+- On Linux, MCP hosts launch `~/.local/bin/a2abridge-mcp` (installed from `a2a/a2abridge-mcp.sh`) instead of invoking `a2abridge` directly. This keeps a stable single-threaded parent alive so multi-threaded hosts (such as Codex Desktop / Rust Tokio) retiring idle worker threads do not trigger Linux `PR_SET_PDEATHSIG` `SIGTERM` and break active MCP pipes (`Transport closed`).
 
 ## Validation
 

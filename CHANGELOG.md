@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1 - 2026-11-25
+
+- Fixed premature `Transport closed` disconnects of the `a2a` MCP bridge inside multi-threaded Linux hosts (notably Codex Desktop / `app-server` on Rust Tokio):
+  - Added single-threaded launcher wrapper `a2a/a2abridge-mcp.sh` (installed to `~/.local/bin/a2abridge-mcp`) to prevent Linux `PR_SET_PDEATHSIG` from sending false `SIGTERM` to `a2abridge` when Tokio retires the spawning worker thread, while preserving clean stdin-EOF shutdown with zero orphan processes.
+  - Updated `a2a/install.sh` to deploy `~/.local/bin/a2abridge-mcp`, upgrade existing `[mcp_servers.a2a]` entries in place (with backups), and standardize Antigravity peer naming to `antigravity`.
+  - Extended `a2a/doctor.sh --e2e` to spawn test peers from exiting worker threads so `PR_SET_PDEATHSIG` resilience is verified automatically.
+
 ## 2.0.0 - 2026-11-25
 
 - Introduced the standalone cross-harness **A2A 1.0 interoperability transport layer (`a2a/`)**, cleanly decoupled from upper-level workflow skills and reproducible across Linux and macOS hosts:
