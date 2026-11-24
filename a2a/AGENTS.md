@@ -1,33 +1,29 @@
-# labflow — A2A 1.0 Interoperability Layer
+# labflow — Unified A2A 1.0 Workbench Transport Layer
 
-Read [../AGENTS.md](../AGENTS.md) for repository conventions. This directory owns the cross-harness **Agent2Agent (A2A 1.0) transport and deployment layer** for Labflow.
+Read [../AGENTS.md](../AGENTS.md) for repository conventions. This directory owns the cross-workbench **Agent2Agent (A2A 1.0) transport, session-addressing, and interrupt layer** for Labflow.
 
-## Architectural Boundary
+## Architectural Boundary (Pure Primitives, Zero Policy)
 
-- **Strict layer decoupling**: `a2a/` is pure transport and discovery infrastructure. It provides standard A2A 1.0 peer addressing, MCP registration, directory lifecycle management, and CLI diagnostics without embedding upper-level research, writing, or coding workflows.
-- **No custom UI surface**: Live workbench collaborations (for example Antigravity App ↔ Codex Desktop App) use each harness's native GUI window with `a2abridge` attached as an MCP server (`a2a_list_agents`, `a2a_send_message`, `a2a_get_task`, `a2a_inbox`, `a2a_complete_task`). Headless background delegations run via detached workers or headless A2A peers without cluttering GUI conversation history.
-- **Dual entrypoints over one standard wire**:
-  - **MCP (`a2abridge bridge`)**: primary structured interface for agents across Antigravity, Codex, Claude Code, and OpenCode, using A2A's asynchronous task state machine (`submitted` → `working` → `completed`) to avoid synchronous MCP call timeouts.
-  - **Official CLI (`a2aproject/a2a-cli`)**: standard `a2a` binary for Agent Card inspection (`a2a card get`), streaming debugging, and calling external or remote A2A 1.0 peers.
+- **Strict 1:1 A2A 1.0 mapping**:
+  - **A2A `Agent`** = Workbench application (`antigravity` permanently online at `http://127.0.0.1:7778`; `codex` permanently online at `http://127.0.0.1:7779`). Neither endpoint goes offline when a desktop GUI restarts.
+  - **A2A `contextId`** = Concrete GUI conversation/session (`conversation_id` in Antigravity App `conversation_summaries.db`; `thread_id` in Codex Desktop `session_index.jsonl` / `sessions/*.jsonl`), addressable by UUID, conversation title substring, `latest`, or `new` (Codex).
+  - **A2A `Task` (`taskId`)** = Single request-reply exchange (`TASK_STATE_SUBMITTED` → `TASK_STATE_WORKING` → `TASK_STATE_COMPLETED` with `Artifact` reply).
+- **Zero hidden fallback policies**: Messages addressed to an Antigravity App session stay strictly inside that `conversation_id`'s isolated mailbox and never silently invoke `agy` CLI to clone/fork the thread. If the target GUI tab has not armed `wait-irq`, the task deterministically remains `TASK_STATE_WORKING` in that session's inbox and emits a desktop notification.
+- **Unified Codex hot/cold/new state machine**:
+  - `session="new"`: starts a thread via `codex app-server --stdio` with `Codex Desktop` client identity (`source="vscode"`) and drives the initial turn to `turn/completed` so the rollout file is flushed to disk and visible in Codex Desktop's sidebar.
+  - Existing session (cold/dormant): `thread/resume` succeeds on `app-server --stdio` and drives `turn/start` to `turn/completed` without `<turn_aborted>` disconnects.
+  - Existing session (hot/open in Codex Desktop): `thread/resume` detects `already has an active writer` in `<50ms` and dispatches via native `codex queue --thread <UUID>`, waking the open Codex Desktop GUI live.
 
 ## Tracked Vs. Host-Local State
 
-- **Tracked in Git (`a2a/`)**: `install.sh`, `doctor.sh`, `a2abridge-mcp.sh`, `on-inbound.sh`, `README.md`, `AGENTS.md`.
-- **Host-local only (never commit)**: binaries and installed wrapper under `~/.local/bin/`, runtime directory state and installed hooks under `~/.a2abridge/`, user systemd units under `~/.config/systemd/user/`, host config backups (`*.bak-*`), and optional mTLS federation keys/certificates.
-
-## Ownership And Safety Rules
-
-- `a2a/install.sh` manages host-level MCP registration (`~/.gemini/antigravity/mcp_config.json`, `~/.gemini/config/mcp_config.json`, `~/.codex/config.toml`) rather than hard-coding `a2abridge` into `codex/.mcp.json`, so hosts that have not installed A2A binaries remain unaffected.
-- Always back up existing host configuration files before patching and preserve every unrelated setting byte-for-byte.
-- On Linux `systemd --user`, `install.sh` writes a clean user unit with `StandardOutput=journal`, `StandardError=journal`, and `WantedBy=default.target` to avoid upstream `a2abridge v4.0.3` attempting to write to root-owned `/var/log/a2abridge-directory.out`.
-- On Linux, MCP hosts launch `~/.local/bin/a2abridge-mcp` (installed from `a2a/a2abridge-mcp.sh`) instead of invoking `a2abridge` directly. This keeps a stable single-threaded parent alive so multi-threaded hosts (such as Codex Desktop / Rust Tokio) retiring idle worker threads do not trigger Linux `PR_SET_PDEATHSIG` `SIGTERM` and break active MCP pipes (`Transport closed`).
-- `a2a/on-inbound.sh` (installed to `~/.a2abridge/hooks/on-inbound.sh`) MUST remain strict POSIX `sh` because upstream `a2abridge` executes user hooks via `/bin/sh` directly. When an inbound A2A task arrives at a live Codex Desktop session (`app-server` ancestor, excluding headless `codex exec`), the hook resolves the active Codex Desktop thread UUID for the session's `cwd` and invokes native `codex queue --thread <UUID>` (deduplicated by `taskId`, opt-out via `LABFLOW_A2A_AUTO_WAKE=0`) so Codex Desktop wakes up and replies automatically inside its GUI workbench. For Antigravity inbound tasks, it emits a desktop notification via `notify-send` if available.
+- **Tracked in Git (`a2a/`)**: `labflow_a2a.py`, `install.sh`, `doctor.sh`, `README.md`, `AGENTS.md`.
+- **Host-local only (never commit)**: `~/.local/bin/a2a`, `~/.local/bin/labflow-a2a`, `~/.local/state/labflow-a2a/` (persisted tasks and per-session `armed.json` / `irq.json`), `~/.config/systemd/user/labflow-a2a.service`, and host config backups (`*.bak-*`).
 
 ## Validation
 
 ```bash
-bash -n a2a/install.sh a2a/doctor.sh a2a/a2abridge-mcp.sh
-sh -n a2a/on-inbound.sh
-./a2a/doctor.sh
+bash -n a2a/install.sh a2a/doctor.sh
+python3 -m py_compile a2a/labflow_a2a.py
+./a2a/install.sh
 ./a2a/doctor.sh --e2e
 ```

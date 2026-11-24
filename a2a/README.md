@@ -1,43 +1,40 @@
-# Labflow A2A 1.0 Interoperability Layer
+# Labflow Unified A2A 1.0 Workbench Layer
 
-`a2a/` provides a reproducible, host-portable [A2A 1.0](https://a2a-protocol.org/latest/) communication backbone connecting local AI coding harnesses (**Antigravity App / CLI**, **Codex Desktop / CLI**, and optionally **Claude Code** and **OpenCode**) without reinventing proprietary bridges or coupling transport logic into upper-level skills.
+`a2a/` provides a single, zero-dependency, host-portable [A2A 1.0](https://a2a-protocol.org/latest/) transport service (`labflow-a2a`) connecting **Antigravity App** (`127.0.0.1:7778`) and **Codex Desktop App** (`127.0.0.1:7779`) at the **individual conversation/session level**, strictly decoupled from upper-level workflow skills.
 
-## Components
+## Core Design
 
-- **Official `a2a` CLI** ([`a2aproject/a2a-cli`](https://github.com/a2aproject/a2a-cli), Apache-2.0): standard command-line client for Agent Card discovery (`a2a card get`), message sending, streaming, and interacting with external A2A 1.0 peers.
-- **`a2abridge`** ([`vbcherepanov/a2abridge`](https://github.com/vbcherepanov/a2abridge), MIT, built on `a2a-go`): single Go binary providing the local A2A 1.0 discovery directory (`127.0.0.1:7777`), per-session MCP stdio bridge (`a2a_whoami`, `a2a_list_agents`, `a2a_send_message`, `a2a_send_streaming`, `a2a_get_task`, `a2a_cancel_task`, `a2a_inbox`, `a2a_complete_task`), and optional detached workers.
+- **Always-On Endpoints**: `labflow-a2a.service` keeps `antigravity` (`:7778`) and `codex` (`:7779`) permanently online across GUI restarts and registers both in the official `a2a` CLI contact book.
+- **Session-Level Addressing (`contextId`)**: List and target specific conversations by **UUID**, **conversation title**, `latest`, or `new` (Codex).
+- **Hot, Cold, and New Codex Sessions**: Open Codex Desktop chats wake live via `codex queue`; closed/restarted chats automatically revive from disk with full history via `codex app-server` `thread/resume` and stay visible in Codex Desktop's sidebar.
+- **Race-Free Antigravity GUI Interrupt (`wait-irq`)**: Arming `labflow-a2a wait-irq` in an Antigravity tab blocks on Linux `inotify` at **0% CPU / 0 tokens** and wakes that exact GUI tab in `<1ms` when Codex messages it. Never silently clones App sessions into `agy` CLI.
 
 ## Quickstart (New Host Deployment)
-
-From the repository root on Linux (`x86_64` / `arm64`) or macOS:
 
 ```bash
 ./a2a/install.sh
 ./a2a/doctor.sh --e2e
 ```
 
-Optional flags:
+## MCP Primitives (Shared Across Both Workbenches)
 
-- `--dry-run`: preview planned binary downloads, service actions, and MCP patches without writing files.
-- `--force`: re-download pinned binary versions even if already installed.
-- `--with-claude`: also register the `a2a` MCP entry in `~/.claude.json` (if present).
-- `--with-opencode`: print or prepare OpenCode MCP guidance without overwriting managed OpenCode profiles.
-- `--skip-service`: install binaries and MCP entries without touching the local directory daemon.
+| Tool | Purpose |
+| :--- | :--- |
+| `a2a_list_agents` | Check online health of `antigravity` (`:7778`) and `codex` (`:7779`) |
+| `a2a_list_sessions` | List GUI conversations (`session_id`, `title`, `cwd`, `irq_armed`, `pending_inbox_count`) |
+| `a2a_send` | Send message to `agent` + `session` (`<UUID \| title \| latest \| new>`), blocking or async |
+| `a2a_get_task` | Poll task status and reply artifacts by `task_id` |
+| `a2a_inbox` | Read pending tasks isolated to the current GUI session |
+| `a2a_reply` | Attach reply artifact, mark `TASK_STATE_COMPLETED`, and immediately unblock sender |
 
-Version pins can be overridden via environment variables:
-
-```bash
-A2A_CLI_VERSION=0.5.0 A2ABRIDGE_VERSION=4.0.3 ./a2a/install.sh
-```
-
-## Day-to-Day Usage
-
-1. **Live Workbench Collaboration (Antigravity App ↔ Codex Desktop App)**: After running `./a2a/install.sh`, open a session in both apps. Each open session automatically registers itself as a standard A2A 1.0 peer under `http://127.0.0.1:7777`. When Antigravity calls `a2a_send_message(blocking=true)` targeting a live Codex Desktop peer, the installed `~/.a2abridge/hooks/on-inbound.sh` hook automatically invokes native `codex queue --thread <UUID>` so the Codex Desktop GUI wakes up visibly, reads `a2a_inbox`, and returns its reply via `a2a_complete_task` without manual window switching (set `LABFLOW_A2A_AUTO_WAKE=0` to disable; hook logs are at `~/.a2abridge/hooks/on-inbound.log`).
-2. **CLI Inspection & External Peers**:
+## CLI & Interrupt Usage
 
 ```bash
-curl -s http://127.0.0.1:7777/agents | python3 -m json.tool
-a2a card get http://127.0.0.1:<peer-port>
-```
+# Inspect Agent Cards or send messages via official a2a CLI
+a2a card get codex
+a2a card get antigravity
+a2a send -a codex --context-id "Respond to greeting" "Check this hypothesis"
 
-3. **Rollback**: Every modified host config (`~/.gemini/antigravity/mcp_config.json`, `~/.gemini/config/mcp_config.json`, `~/.codex/config.toml`) is backed up as `<file>.bak-<YYYYMMDD-HHMMSS>` before patching. Restore the backup and run `systemctl --user disable --now a2abridge-directory.service` (Linux) or `a2abridge service uninstall` (macOS) to cleanly revert.
+# Arm zero-CPU interrupt wakeup inside an active Antigravity App tab
+~/.local/bin/labflow-a2a wait-irq
+```

@@ -32,7 +32,7 @@ Always strictly categorize technical claims into clear evidential tiers:
 
 ## 3. Cross-Agent Collaboration (`a2a/` & `codex-research`)
 
-- **A2A 1.0 Interop Layer (`labflow/a2a/`)**: Live workbench-to-workbench collaboration (e.g., Antigravity App ↔ Codex Desktop App) and standard cross-harness task delegation use the decoupled A2A 1.0 transport layer (`a2a` MCP tools: `a2a_list_agents`, `a2a_send_message`, `a2a_get_task`, `a2a_inbox`, `a2a_complete_task`; plus official `a2a` CLI). Keep transport concerns strictly separated from upper-level workflow skills.
+- **A2A 1.0 Interop Layer (`labflow/a2a/`)**: Live workbench-to-workbench collaboration (e.g., Antigravity App ↔ Codex Desktop App) uses the session-addressable A2A 1.0 transport layer (`a2a` MCP primitives: `a2a_list_agents`, `a2a_list_sessions`, `a2a_send`, `a2a_get_task`, `a2a_inbox`, `a2a_reply`; zero-CPU interrupt listener `labflow-a2a wait-irq`; and official `a2a` CLI). Keep transport concerns strictly separated from upper-level workflow skills, and never silently divert Antigravity App session messages into `agy` CLI clones.
 - **Headless Research Delegation (`codex-research`)**: For deep external research, unfamiliar model designations, cross-source fact checking, and literature prior-art forensics that should run headlessly without cluttering GUI history, delegate via the **`codex-research`** skill (`codex exec`, preferring `gpt-6-luna` / `gpt-6.2-sol` with fallback to `gpt-5.6-sol`), verify decisive citations, and synthesize cleanly for the user.
 
 ---

@@ -29,6 +29,7 @@ provider/
 a2a/
 ├── AGENTS.md
 ├── README.md
+├── labflow_a2a.py
 ├── install.sh
 └── doctor.sh
 antigravity/

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0 - 2026-11-25
+
+- Replaced per-chat ephemeral `a2abridge` nodes with the unified, always-on, **session-addressable A2A 1.0 workbench service (`a2a/labflow_a2a.py`)**:
+  - Exposes permanent A2A 1.0 JSON-RPC and HTTP+JSON endpoints for `antigravity` (`127.0.0.1:7778`) and `codex` (`127.0.0.1:7779`) under `labflow-a2a.service` (`systemd --user` / `launchd`), remaining online across GUI restarts and compatible with official `a2a` CLI (`a2a card get`, `a2a send`, named contacts).
+  - Maps A2A `contextId` 1:1 to concrete workbench conversations via read-only indexing of Codex (`~/.codex/session_index.jsonl` + `sessions/*.jsonl`) and Antigravity App (`~/.gemini/antigravity/conversation_summaries.db`), supporting lookup by UUID, conversation title substring, `latest`, or `new` (Codex).
+  - Implements a deterministic hot/cold/new Codex turn state machine: wakes open GUI threads live via `codex queue`, revives closed/cold threads with full prior context via `codex app-server` `thread/resume` + `turn/start` (preventing `<turn_aborted>` disconnects), and creates sidebar-visible `Codex Desktop` (`source="vscode"`) threads on `session="new"`.
+  - Adds race-free zero-CPU Linux `inotify` interrupt listener (`labflow-a2a wait-irq`) for per-tab Antigravity GUI wakeup while strictly isolating per-session inboxes and prohibiting silent `agy` CLI clones.
+  - Retires legacy `a2abridge` daemon/wrappers/hooks automatically in `a2a/install.sh` and expands `a2a/doctor.sh --e2e` to 12 automated protocol, session-index, and `inotify` round-trip checks.
+
 ## 2.0.2 - 2026-11-25
 
 - Added zero-touch live Codex Desktop GUI auto-wakeup for incoming A2A 1.0 tasks:
