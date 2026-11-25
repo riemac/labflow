@@ -22,7 +22,7 @@ pass() { printf '  [PASS] %-26s %s\n' "$1" "$2"; }
 warn() { printf '  [WARN] %-26s %s\n' "$1" "$2"; }
 fail() { printf '  [FAIL] %-26s %s\n' "$1" "$2"; FAILURES=$((FAILURES + 1)); }
 
-echo "Labflow A2A 1.0 Doctor (v2.1.0)"
+echo "Labflow A2A 1.0 Doctor (v2.1.1)"
 echo "-------------------------------"
 
 # 1. Binaries

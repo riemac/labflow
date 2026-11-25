@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.1 - 2026-11-25
+
+- Refactored `a2a/labflow_a2a.py` (1,508 lines) into a clean, zero-dependency Python package `a2a/labflow_a2a/` (`config.py`, `sessions.py`, `codex_driver.py`, `coordinator.py`, `http_server.py`, `mcp_server.py`, `irq.py`, `cli.py`) installed to `~/.local/share/labflow-a2a/` with a portable `~/.local/bin/labflow-a2a` shim.
+- Upgraded inbound Codex A2A message formatting (`format_natural_inbound_message`) to deliver natural-language prose directly in the chat bubble with a minimal single-line reply footer—giving Codex Desktop human-readable sidebar titles and dialogue bubbles while eliminating an extra `a2a_inbox` tool round-trip for normal-sized messages (preserving `a2a_inbox` overflow lookup for payloads > 12,000 chars).
+
 ## 2.1.0 - 2026-11-25
 
 - Replaced per-chat ephemeral `a2abridge` nodes with the unified, always-on, **session-addressable A2A 1.0 workbench service (`a2a/labflow_a2a.py`)**:

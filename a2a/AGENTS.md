@@ -16,14 +16,14 @@ Read [../AGENTS.md](../AGENTS.md) for repository conventions. This directory own
 
 ## Tracked Vs. Host-Local State
 
-- **Tracked in Git (`a2a/`)**: `labflow_a2a.py`, `install.sh`, `doctor.sh`, `README.md`, `AGENTS.md`.
-- **Host-local only (never commit)**: `~/.local/bin/a2a`, `~/.local/bin/labflow-a2a`, `~/.local/state/labflow-a2a/` (persisted tasks and per-session `armed.json` / `irq.json`), `~/.config/systemd/user/labflow-a2a.service`, and host config backups (`*.bak-*`).
+- **Tracked in Git (`a2a/`)**: `labflow_a2a/` (`config.py`, `sessions.py`, `codex_driver.py`, `coordinator.py`, `http_server.py`, `mcp_server.py`, `irq.py`, `cli.py`), `install.sh`, `doctor.sh`, `README.md`, `AGENTS.md`.
+- **Host-local only (never commit)**: `~/.local/bin/a2a`, `~/.local/bin/labflow-a2a`, `~/.local/share/labflow-a2a/`, `~/.local/state/labflow-a2a/` (persisted tasks and per-session `armed.json` / `irq.json`), `~/.config/systemd/user/labflow-a2a.service`, and host config backups (`*.bak-*`).
 
 ## Validation
 
 ```bash
 bash -n a2a/install.sh a2a/doctor.sh
-python3 -m py_compile a2a/labflow_a2a.py
+python3 -m py_compile a2a/labflow_a2a/*.py
 ./a2a/install.sh
 ./a2a/doctor.sh --e2e
 ```

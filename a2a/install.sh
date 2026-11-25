@@ -110,15 +110,28 @@ retire_legacy_a2abridge() {
 
 retire_legacy_a2abridge
 
-# 3. Install unified `labflow-a2a` executable
-SRV_SRC="${SCRIPT_DIR}/labflow_a2a.py"
+# 3. Install modular `labflow_a2a` package into ~/.local/share/labflow-a2a and shim into ~/.local/bin/labflow-a2a
+PKG_SRC="${SCRIPT_DIR}/labflow_a2a"
+PKG_ROOT="${HOME}/.local/share/labflow-a2a"
+PKG_DST="${PKG_ROOT}/labflow_a2a"
 SRV_DST="${BIN_DIR}/labflow-a2a"
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  log "[dry-run] would install ${SRV_SRC} -> ${SRV_DST}"
+  log "[dry-run] would sync ${PKG_SRC} -> ${PKG_DST} and write shim ${SRV_DST}"
 else
-  mkdir -p "$BIN_DIR"
-  install -m 0755 "$SRV_SRC" "$SRV_DST"
-  log "Installed unified service -> ${SRV_DST}"
+  mkdir -p "$BIN_DIR" "$PKG_ROOT"
+  rm -rf "$PKG_DST"
+  mkdir -p "$PKG_DST"
+  for f in "${PKG_SRC}"/*.py; do
+    install -m 0644 "$f" "${PKG_DST}/$(basename "$f")"
+  done
+  cat > "$SRV_DST" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+export PYTHONPATH="${PKG_ROOT}\${PYTHONPATH:+:\$PYTHONPATH}"
+exec python3 -m labflow_a2a "\$@"
+EOF
+  chmod 0755 "$SRV_DST"
+  log "Installed modular package -> ${PKG_DST} and shim -> ${SRV_DST}"
 fi
 
 # 4. Configure & start user-level `labflow-a2a` daemon (:7778 antigravity, :7779 codex)
@@ -137,7 +150,7 @@ Description=Labflow Session-Addressable A2A 1.0 Workbench Service (:7778 antigra
 After=default.target
 
 [Service]
-ExecStart=/usr/bin/python3 ${SRV_DST} daemon
+ExecStart=${SRV_DST} daemon
 Environment="PATH=${BIN_DIR}:/usr/local/bin:/usr/bin:/bin"
 Environment="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus"
 PassEnvironment=DISPLAY WAYLAND_DISPLAY XAUTHORITY
@@ -176,8 +189,6 @@ EOF
   <key>Label</key><string>dev.labflow.a2a</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/bin/env</string>
-    <string>python3</string>
     <string>${SRV_DST}</string>
     <string>daemon</string>
   </array>
